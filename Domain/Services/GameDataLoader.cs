@@ -6,14 +6,6 @@ namespace CoiPlanner.Domain.Services;
 /// <summary>載入並驗證 Data/*.json。</summary>
 public sealed class GameDataLoader
 {
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-    };
-
     public GameData LoadFromFile(string path)
     {
         using var stream = File.OpenRead(path);
@@ -71,7 +63,7 @@ public sealed class GameDataLoader
         GameData? data;
         try
         {
-            data = JsonSerializer.Deserialize<GameData>(stream, Options);
+            data = JsonSerializer.Deserialize<GameData>(stream, JsonDefaults.Options);
         }
         catch (JsonException ex)
         {

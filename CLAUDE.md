@@ -3,11 +3,13 @@
 ## 目標
 用 Blazor Server 做一個「規劃與模擬」控制台，顯示節點名稱、速率、流向。
 不連線遊戲，資料由使用者輸入或載入 JSON。
+規劃畫面是 ComfyUI 風格的節點編輯器：深色網格背景，節點與連線可拖動、連接。
 
 ## 技術
-- .NET 版本：（填你安裝的版本）
+- .NET 版本：.NET 8（net8.0）
 - Blazor Web App，Interactive Server
 - UI 套件：MudBlazor
+- 節點編輯器：@comfyorg/litegraph（JS），透過 JS interop 與 C# 溝通；JS 只負責畫面，計算一律在 C# Domain
 - 計算邏輯放在獨立的 Domain 資料夾，不依賴 UI，並附 xUnit 測試
 
 ## 領域模型
