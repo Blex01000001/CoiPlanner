@@ -1,3 +1,8 @@
+/* litegraph 用 body 的高度限制右鍵選單位置；規劃頁的畫布是 fixed，body 必須撐滿視窗 */
+html, body {
+    height: 100%;
+}
+
 h1:focus {
     outline: none;
 }
@@ -31,29 +36,33 @@ h1:focus {
         content: "發生錯誤。"
     }
 
-/* 產線規劃：左側畫布填滿剩餘空間，右側固定寬度的結果面板 */
+/* 產線規劃：畫布佔滿 App Bar 以下的整個視窗，結果面板浮在右上角 */
 .planner {
-    display: flex;
-    gap: 16px;
-    height: calc(100vh - var(--mud-appbar-height) - 32px);
-}
-
-.planner-canvas {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-    border-radius: 4px;
-    overflow: hidden;
+    position: fixed;
+    top: var(--mud-appbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: #222;
 }
 
-    .planner-canvas canvas {
+    .planner canvas {
         display: block;
         outline: none;
     }
 
 .planner-side {
+    position: absolute;
+    top: 12px;
+    right: 12px;
     width: 360px;
-    flex-shrink: 0;
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
     overflow-y: auto;
+}
+
+.planner-panel-toggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
 }

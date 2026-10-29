@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navigation
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -29,4 +31,25 @@
 
 @code {
     private bool _drawerOpen = true;
+
+    protected override void OnInitialized()
+    {
+        _drawerOpen = !IsPlanner(Navigation.Uri);
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    // 產線規劃頁的畫布要佔滿視窗，進入時自動收起選單；需要時仍可用左上角按鈕打開
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (IsPlanner(e.Location))
+        {
+            _drawerOpen = false;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private bool IsPlanner(string uri) =>
+        Navigation.ToBaseRelativePath(uri).StartsWith("planner", StringComparison.OrdinalIgnoreCase);
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 }

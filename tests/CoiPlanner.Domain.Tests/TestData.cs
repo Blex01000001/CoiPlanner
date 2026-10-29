@@ -12,6 +12,7 @@ internal static class TestData
             new Product { Id = "alpha_ore", Name = "Alpha Ore", Unit = "pcs" },
             new Product { Id = "beta_ingot", Name = "Beta Ingot", Unit = "pcs" },
             new Product { Id = "gamma_plate", Name = "Gamma Plate", Unit = "pcs" },
+            new Product { Id = "iron_ore", Name = "Iron Ore", Unit = "pcs" },
         ],
         Recipes =
         [
@@ -40,6 +41,9 @@ internal static class TestData
 
     public static Node Press(string id = "p", int count = 1) =>
         new() { Id = id, MachineId = "demo_press", RecipeId = "press_gamma", Count = count };
+
+    public static ResourceSource Source(string id, string productId, double ratePerMinute) =>
+        new() { Id = id, ProductId = productId, RatePerMinute = ratePerMinute };
 
     public static Edge Link(string source, string target, string productId) =>
         new() { SourceNodeId = source, TargetNodeId = target, ProductId = productId, Transport = "belt" };

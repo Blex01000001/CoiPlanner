@@ -13,7 +13,7 @@ public class GameDataLoaderTests
     {
         var data = _loader.LoadFromFile(SamplePath);
 
-        Assert.Equal(3, data.Products.Count);
+        Assert.Equal(4, data.Products.Count);
         Assert.Equal(2, data.Recipes.Count);
         Assert.Equal(2, data.Machines.Count);
     }

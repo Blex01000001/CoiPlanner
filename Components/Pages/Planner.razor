@@ -8,18 +8,26 @@
 @inject ProductionPlanSerializer Serializer
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject ILogger<Planner> Logger
 
 <PageTitle>產線規劃 - CoiPlanner</PageTitle>
 
 <div class="planner">
-    <div class="planner-canvas">
-        <canvas @ref="_canvas"></canvas>
-    </div>
+    <canvas @ref="_canvas"></canvas>
 
-    <MudPaper Class="planner-side pa-4" Elevation="1">
-        <MudText Typo="Typo.h6">產線規劃</MudText>
+    @if (!_panelOpen)
+    {
+        <MudFab Class="planner-panel-toggle" Color="Color.Primary" Size="Size.Small"
+                StartIcon="@Icons.Material.Filled.Assessment" OnClick="() => _panelOpen = true" aria-label="顯示面板" />
+    }
+
+    <MudPaper Class="@($"planner-side pa-4 {(_panelOpen ? "" : "d-none")}")" Elevation="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">產線規劃</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panelOpen = false" aria-label="收合面板" />
+        </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mb-3">
-            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器。拖動輸出插槽到同一物品的輸入插槽建立連線。
+            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線。
             選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
         </MudText>
 
@@ -33,7 +41,7 @@
                 </CustomContent>
             </MudFileUpload>
             <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep"
-                       OnClick="ClearAsync" Disabled="_editor is null || _plan.Nodes.Count == 0">清空</MudButton>
+                       OnClick="ClearAsync" Disabled="_editor is null || IsEmpty(_plan)">清空</MudButton>
         </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">修改會自動存在這個瀏覽器中。</MudText>
 
@@ -97,6 +105,7 @@
     private PlanResult? _result;
     private Dictionary<string, Product> _products = new();
     private HashSet<(string MachineId, string RecipeId)> _nodeTypes = new();
+    private bool _panelOpen = true;
 
     // 載入（自動存檔或匯入）的規劃，等畫布回報結果後用來比對有沒有被略過的節點或連線
     private ProductionPlan? _pendingLoad;
@@ -113,7 +122,7 @@
             return;
 
         var saved = await ReadAutosaveAsync();
-        _pendingLoad = saved.Nodes.Count > 0 ? saved : null;
+        _pendingLoad = IsEmpty(saved) ? null : saved;
 
         _dotnetRef = DotNetObjectReference.Create(this);
         _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
@@ -186,6 +195,13 @@
             Snackbar.Add($"無法匯入 {file.Name}：{ex.Message}", Severity.Error);
             return;
         }
+        catch (Exception ex)
+        {
+            // 任何未預期的錯誤都不能讓 circuit 中斷，記錄下來並提示使用者
+            Logger.LogError(ex, "匯入 {FileName} 失敗", file.Name);
+            Snackbar.Add($"無法匯入 {file.Name}：{ex.GetType().Name}: {ex.Message}", Severity.Error);
+            return;
+        }
         finally
         {
             // 清掉選取，否則再選同一個檔案不會觸發 FilesChanged
@@ -212,15 +228,16 @@
     /// </summary>
     private void ReportDropped(ProductionPlan requested, ProductionPlan loaded)
     {
-        var droppedNodes = requested.Nodes.Count - loaded.Nodes.Count;
+        var droppedNodes = requested.Nodes.Count + requested.Sources.Count - loaded.Nodes.Count - loaded.Sources.Count;
         var droppedEdges = requested.Edges.Count - loaded.Edges.Count;
         if (droppedNodes <= 0 && droppedEdges <= 0)
             return;
 
-        var unknown = requested.Nodes.Count(n => !_nodeTypes.Contains((n.MachineId, n.RecipeId)));
+        var unknown = requested.Nodes.Count(n => !_nodeTypes.Contains((n.MachineId, n.RecipeId)))
+            + requested.Sources.Count(s => !_products.ContainsKey(s.ProductId));
         var parts = new List<string>();
         if (droppedNodes > 0)
-            parts.Add($"{droppedNodes} 個節點（其中 {unknown} 個的機器或配方不在目前資料中）");
+            parts.Add($"{droppedNodes} 個節點（其中 {unknown} 個的機器、配方或物品不在目前資料中）");
         if (droppedEdges > 0)
             parts.Add($"{droppedEdges} 條連線");
         Snackbar.Add($"載入時略過了 {string.Join("、", parts)}。", Severity.Warning);
@@ -240,6 +257,8 @@
                 Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),
                 Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId)),
             }),
+        // 每個物品都可以放一個資源來源節點
+        Products = Data.Products.Select(p => Slot(p.Id)),
     };
 
     private object Slot(string productId) => new
@@ -248,6 +267,8 @@
         Name = _products[productId].Name,
         Unit = _products[productId].Unit,
     };
+
+    private static bool IsEmpty(ProductionPlan plan) => plan.Nodes.Count == 0 && plan.Sources.Count == 0;
 
     private string ProductName(string id) => _products.TryGetValue(id, out var p) ? p.Name : id;
 

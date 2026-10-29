@@ -7,12 +7,18 @@ const ISSUE_NODE_BGCOLOR = "#3f1f1f";
 const ISSUE_LINK_COLOR = "#e05555";
 const CHANGE_DEBOUNCE_MS = 80;
 const MIN_NODE_WIDTH = 260;
+const SOURCE_NODE_COLOR = "#2f5a44";
+const SOURCE_NODE_BGCOLOR = "#22352c";
 
 // litegraph 的節點類型是全域註冊的，同一時間只會有一個編輯器
 let current = null;
 
 function typeName(t) {
     return `${t.machineName}/${t.recipeName}`;
+}
+
+function sourceTypeName(p) {
+    return `資源/${p.name}`;
 }
 
 function registerNodeTypes(catalog) {
@@ -51,6 +57,40 @@ function registerNodeTypes(catalog) {
         }
         LiteGraph.registerNodeType(typeName(t), CoiNode);
     }
+
+    for (const p of catalog.products) {
+        // 資源來源：只有一個輸出，每分鐘產量由使用者輸入
+        class SourceNode extends LGraphNode {
+            static title = `資源 · ${p.name}`;
+            static color = SOURCE_NODE_COLOR;
+            static bgcolor = SOURCE_NODE_BGCOLOR;
+
+            constructor(title) {
+                super(title ?? SourceNode.title);
+                this.properties = { kind: "source", productId: p.productId, rate: 0 };
+                this.slotInfo = { inputs: [], outputs: [p] };
+                this.addOutput(p.name, p.productId);
+                this.rateWidget = this.addWidget("number", `每分鐘 (${p.unit})`, 0, v => {
+                    const rate = Math.max(0, v);
+                    this.properties.rate = rate;
+                    this.rateWidget.value = rate;
+                    current?.changed();
+                }, { min: 0, step: 10, precision: 2 });
+                this.size = this.computeSize();
+            }
+
+            computeSize(out) {
+                const size = super.computeSize(out);
+                size[0] = Math.max(size[0], MIN_NODE_WIDTH);
+                return size;
+            }
+
+            onConnectionsChange() {
+                current?.changed();
+            }
+        }
+        LiteGraph.registerNodeType(sourceTypeName(p), SourceNode);
+    }
 }
 
 function formatRate(value) {
@@ -61,6 +101,7 @@ class Editor {
     constructor(canvasEl, dotnetRef, catalog) {
         this.dotnetRef = dotnetRef;
         this.typesById = new Map(catalog.nodeTypes.map(t => [`${t.machineId}|${t.recipeId}`, t]));
+        this.productsById = new Map(catalog.products.map(p => [p.productId, p]));
         this.loading = false;
         this.timer = null;
         this.edgeLinkIds = [];
@@ -97,6 +138,16 @@ class Editor {
                 this.graph.add(node);
                 created.set(n.id, node);
             }
+            for (const s of plan.sources) {
+                const p = this.productsById.get(s.productId);
+                if (!p) continue;
+                const node = LiteGraph.createNode(sourceTypeName(p));
+                node.pos = [s.x, s.y];
+                node.properties.rate = s.ratePerMinute;
+                node.rateWidget.value = s.ratePerMinute;
+                this.graph.add(node);
+                created.set(s.id, node);
+            }
             for (const e of plan.edges) {
                 const source = created.get(e.sourceNodeId);
                 const target = created.get(e.targetNodeId);
@@ -122,11 +173,19 @@ class Editor {
 
     /** 目前畫布轉成 C# 的 ProductionPlan；連線順序記在 edgeLinkIds，讓 EdgeIndex 對得回 litegraph 的連線。 */
     snapshot() {
-        const nodes = this.graph._nodes.map(n => ({
+        const isSource = n => n.properties.kind === "source";
+        const nodes = this.graph._nodes.filter(n => !isSource(n)).map(n => ({
             id: String(n.id),
             machineId: n.properties.machineId,
             recipeId: n.properties.recipeId,
             count: n.properties.count,
+            x: n.pos[0],
+            y: n.pos[1],
+        }));
+        const sources = this.graph._nodes.filter(isSource).map(n => ({
+            id: String(n.id),
+            productId: n.properties.productId,
+            ratePerMinute: n.properties.rate,
             x: n.pos[0],
             y: n.pos[1],
         }));
@@ -142,7 +201,7 @@ class Editor {
                 transport: "",
             });
         }
-        return { nodes, edges };
+        return { nodes, sources, edges };
     }
 
     /** 顯示 C# PlanCalculator 的結果：插槽標上每分鐘速率，有問題的節點與連線標紅。 */
@@ -160,6 +219,7 @@ class Editor {
             label(node.outputs, node.slotInfo.outputs, r?.outputs);
             // 標籤變長時只加寬不縮窄，避免使用者手動拉寬的節點被縮回去
             node.size[0] = Math.max(node.size[0], node.computeSize()[0]);
+            // 設成 undefined 時會回到節點類型自己的顏色（資源節點是綠色）
             node.color = badNodes.has(id) ? ISSUE_NODE_COLOR : undefined;
             node.bgcolor = badNodes.has(id) ? ISSUE_NODE_BGCOLOR : undefined;
         }

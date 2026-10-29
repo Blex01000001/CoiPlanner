@@ -2,7 +2,8 @@
   "products": [
     { "id": "alpha_ore", "name": "Alpha Ore", "unit": "pcs" },
     { "id": "beta_ingot", "name": "Beta Ingot", "unit": "pcs" },
-    { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs" }
+    { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs" },
+    { "id": "iron_ore", "name": "Iron Ore", "unit": "pcs" }
   ],
   "recipes": [
     {
