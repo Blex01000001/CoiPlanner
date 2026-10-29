@@ -6,4 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Domain 與 tests 是獨立專案，不讓 Web 專案的預設 glob 把它們編進來 -->
+  <ItemGroup>
+    <Compile Remove="Domain/**;tests/**" />
+    <Content Remove="Domain/**;tests/**" />
+    <None Remove="Domain/**;tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Domain/CoiPlanner.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

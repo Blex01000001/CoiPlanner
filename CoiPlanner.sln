@@ -5,6 +5,12 @@ VisualStudioVersion = 17.12.35527.113 d17.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiPlanner", "CoiPlanner.csproj", "{5DE3D6B8-8696-4242-9E48-27CAD2B70DAC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiPlanner.Domain", "Domain\CoiPlanner.Domain.csproj", "{1BD75A8C-7A0B-4970-B158-2DC2908F69A3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2BCE497A-BBB1-49A5-8E3F-73FE4380780D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiPlanner.Domain.Tests", "tests\CoiPlanner.Domain.Tests\CoiPlanner.Domain.Tests.csproj", "{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,8 +21,19 @@ Global
 		{5DE3D6B8-8696-4242-9E48-27CAD2B70DAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5DE3D6B8-8696-4242-9E48-27CAD2B70DAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5DE3D6B8-8696-4242-9E48-27CAD2B70DAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BD75A8C-7A0B-4970-B158-2DC2908F69A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BD75A8C-7A0B-4970-B158-2DC2908F69A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BD75A8C-7A0B-4970-B158-2DC2908F69A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BD75A8C-7A0B-4970-B158-2DC2908F69A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{93BA9C2C-E999-468C-A7F6-D3C0D39A17C5} = {2BCE497A-BBB1-49A5-8E3F-73FE4380780D}
 	EndGlobalSection
 EndGlobal

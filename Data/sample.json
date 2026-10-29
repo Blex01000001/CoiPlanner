@@ -1,0 +1,27 @@
+{
+  "products": [
+    { "id": "alpha_ore", "name": "Alpha Ore", "unit": "pcs" },
+    { "id": "beta_ingot", "name": "Beta Ingot", "unit": "pcs" },
+    { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs" }
+  ],
+  "recipes": [
+    {
+      "id": "smelt_beta",
+      "name": "Smelt Beta Ingot",
+      "inputs": [ { "productId": "alpha_ore", "quantity": 2 } ],
+      "outputs": [ { "productId": "beta_ingot", "quantity": 1 } ],
+      "cycleSeconds": 10
+    },
+    {
+      "id": "press_gamma",
+      "name": "Press Gamma Plate",
+      "inputs": [ { "productId": "beta_ingot", "quantity": 3 } ],
+      "outputs": [ { "productId": "gamma_plate", "quantity": 2 } ],
+      "cycleSeconds": 20
+    }
+  ],
+  "machines": [
+    { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
+    { "id": "demo_press", "name": "Demo Press", "recipeIds": [ "press_gamma" ] }
+  ]
+}
