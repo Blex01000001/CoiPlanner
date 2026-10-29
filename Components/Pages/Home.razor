@@ -1,7 +1,101 @@
-﻿@page "/"
+@page "/"
+@using CoiPlanner.Domain.Models
+@inject GameData Data
 
-<PageTitle>Home</PageTitle>
+<PageTitle>資料瀏覽 - CoiPlanner</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudText Typo="Typo.h5" GutterBottom="true">資料瀏覽</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    來源：Data/*.json。速率為單台機器每分鐘的數量。
+</MudText>
 
-Welcome to your new app.
+<MudTabs Elevation="1" Rounded="true" TabPanelsClass="pa-4">
+    <MudTabPanel Text="@($"物品 ({Data.Products.Count})")">
+        <MudTable Items="Data.Products" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>名稱</MudTh>
+                <MudTh>單位</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id"><code>@context.Id</code></MudTd>
+                <MudTd DataLabel="名稱">@context.Name</MudTd>
+                <MudTd DataLabel="單位">@context.Unit</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@($"配方 ({Data.Recipes.Count})")">
+        <MudTable Items="Data.Recipes" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>名稱</MudTh>
+                <MudTh Style="text-align:right">週期 (秒)</MudTh>
+                <MudTh>輸入</MudTh>
+                <MudTh>輸出</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="名稱">
+                    @context.Name
+                    <MudText Typo="Typo.caption" Class="d-block"><code>@context.Id</code></MudText>
+                </MudTd>
+                <MudTd DataLabel="週期 (秒)" Style="text-align:right">@context.CycleSeconds</MudTd>
+                <MudTd DataLabel="輸入">@ItemList(context, context.Inputs, context.InputPerMinute)</MudTd>
+                <MudTd DataLabel="輸出">@ItemList(context, context.Outputs, context.OutputPerMinute)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@($"機器 ({Data.Machines.Count})")">
+        <MudTable Items="Data.Machines" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>名稱</MudTh>
+                <MudTh>可執行配方</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="名稱">
+                    @context.Name
+                    <MudText Typo="Typo.caption" Class="d-block"><code>@context.Id</code></MudText>
+                </MudTd>
+                <MudTd DataLabel="可執行配方">
+                    @foreach (var recipeId in context.RecipeIds)
+                    {
+                        <MudChip T="string" Size="Size.Small">@RecipeName(recipeId)</MudChip>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private Dictionary<string, Product> _products = new();
+    private Dictionary<string, Recipe> _recipes = new();
+
+    protected override void OnInitialized()
+    {
+        _products = Data.Products.ToDictionary(p => p.Id);
+        _recipes = Data.Recipes.ToDictionary(r => r.Id);
+    }
+
+    private string RecipeName(string id) => _recipes.TryGetValue(id, out var r) ? r.Name : id;
+
+    private RenderFragment ItemList(Recipe recipe, IReadOnlyList<ItemAmount> items, Func<string, double> perMinute) => __builder =>
+    {
+        if (items.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+            return;
+        }
+
+        foreach (var item in items)
+        {
+            var product = _products[item.ProductId];
+            <div>
+                @product.Name × @item.Quantity
+                <MudText Typo="Typo.caption" Inline="true" Color="Color.Primary">
+                    （@perMinute(item.ProductId).ToString("0.##") @product.Unit/分）
+                </MudText>
+            </div>
+        }
+    };
+}

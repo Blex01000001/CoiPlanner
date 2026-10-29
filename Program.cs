@@ -1,10 +1,18 @@
 using CoiPlanner.Components;
+using CoiPlanner.Domain.Services;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddMudServices();
+
+// 啟動時載入一次 Data/*.json；資料有誤會直接拋出 GameDataException，讓問題在啟動時就被發現
+var gameData = new GameDataLoader().LoadFromDirectory(Path.Combine(builder.Environment.ContentRootPath, "Data"));
+builder.Services.AddSingleton(gameData);
 
 var app = builder.Build();
 

@@ -13,8 +13,17 @@
     <None Remove="Domain/**;tests/**" />
   </ItemGroup>
 
+  <!-- 遊戲資料在執行時從 ContentRoot/Data 讀取，發佈時一併帶上 -->
+  <ItemGroup>
+    <Content Update="Data/*.json" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="Domain/CoiPlanner.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="9.11.0" />
   </ItemGroup>
 
 </Project>

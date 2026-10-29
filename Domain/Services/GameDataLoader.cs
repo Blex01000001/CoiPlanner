@@ -22,6 +22,52 @@ public sealed class GameDataLoader
 
     public GameData Load(Stream stream)
     {
+        var data = Deserialize(stream);
+        Validate(data);
+        return data;
+    }
+
+    /// <summary>讀取資料夾內所有 *.json，合併後一起驗證，跨檔案的重複 id 與引用也會被檢查。</summary>
+    public GameData LoadFromDirectory(string directory)
+    {
+        if (!Directory.Exists(directory))
+            throw new GameDataException($"找不到資料夾：{directory}");
+
+        var files = Directory.GetFiles(directory, "*.json").Order(StringComparer.Ordinal).ToList();
+        if (files.Count == 0)
+            throw new GameDataException($"資料夾內沒有 *.json：{directory}");
+
+        var parts = files.Select(file =>
+        {
+            try
+            {
+                using var stream = File.OpenRead(file);
+                return Deserialize(stream);
+            }
+            catch (GameDataException ex)
+            {
+                throw new GameDataException($"{Path.GetFileName(file)}：{ex.Message}", ex);
+            }
+        }).ToList();
+
+        var merged = new GameData
+        {
+            Products = parts.SelectMany(p => p.Products).ToList(),
+            Recipes = parts.SelectMany(p => p.Recipes).ToList(),
+            Machines = parts.SelectMany(p => p.Machines).ToList(),
+        };
+        Validate(merged);
+        return merged;
+    }
+
+    public GameData Parse(string json)
+    {
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+        return Load(stream);
+    }
+
+    private static GameData Deserialize(Stream stream)
+    {
         GameData? data;
         try
         {
@@ -32,17 +78,7 @@ public sealed class GameDataLoader
             throw new GameDataException($"JSON 格式錯誤：{ex.Message}", ex);
         }
 
-        if (data is null)
-            throw new GameDataException("JSON 內容為空。");
-
-        Validate(data);
-        return data;
-    }
-
-    public GameData Parse(string json)
-    {
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-        return Load(stream);
+        return data ?? throw new GameDataException("JSON 內容為空。");
     }
 
     private static void Validate(GameData data)
