@@ -2,7 +2,7 @@ using CoiPlanner.Domain.Models;
 
 namespace CoiPlanner.Domain.Tests;
 
-/// <summary>測試用的虛構資料，數值與 Data/sample.json 相同。</summary>
+/// <summary>測試用的虛構資料，數值與 Fixtures/sample.json 相同。</summary>
 internal static class TestData
 {
     public static GameData Sample { get; } = new()

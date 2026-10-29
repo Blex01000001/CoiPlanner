@@ -6,7 +6,7 @@ public class GameDataLoaderTests
 {
     private readonly GameDataLoader _loader = new();
 
-    private static string SamplePath => Path.Combine(AppContext.BaseDirectory, "Data", "sample.json");
+    private static string SamplePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json");
 
     [Fact]
     public void LoadFromFile_SampleJson_LoadsAllSections()

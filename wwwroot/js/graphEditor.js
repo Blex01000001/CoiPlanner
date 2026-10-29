@@ -267,6 +267,10 @@ class Editor {
     /** 在每條連線上畫出沿方向移動的小點，表示物料流動（不代表實際流量）。 */
     drawFlow(ctx) {
         const offset = (performance.now() / 1000 * FLOW_DOT_SPEED) % FLOW_DOT_SPACING;
+        // 小點畫在節點上層；落在節點範圍內（連線從節點後面繞過時）的點不畫，看起來才像被節點蓋住
+        const titleHeight = LiteGraph.NODE_TITLE_HEIGHT;
+        const boxes = this.graph._nodes.map(n => [n.pos[0], n.pos[1] - titleHeight, n.size[0], n.size[1] + titleHeight]);
+        const hidden = (x, y) => boxes.some(([bx, by, bw, bh]) => x > bx && x < bx + bw && y > by && y < by + bh);
         for (const link of this.graph._links.values()) {
             const origin = this.graph.getNodeById(link.origin_id);
             const target = this.graph.getNodeById(link.target_id);
@@ -281,6 +285,7 @@ class Editor {
             ctx.fillStyle = link.color ?? this.canvas.default_link_color;
             for (let d = offset; d < length; d += FLOW_DOT_SPACING) {
                 const [x, y] = this.canvas.computeConnectionPoint(a, b, d / length);
+                if (hidden(x, y)) continue;
                 ctx.beginPath();
                 ctx.arc(x, y, FLOW_DOT_RADIUS, 0, 2 * Math.PI);
                 ctx.fill();

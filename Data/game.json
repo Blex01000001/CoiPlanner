@@ -1,0 +1,69 @@
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量
+{
+  "products": [
+    { "id": "water", "name": "水", "unit": "單位" },
+    { "id": "coal", "name": "煤礦", "unit": "單位" },
+    { "id": "steam_high", "name": "蒸氣(高壓)", "unit": "單位" },
+    { "id": "iron_ore", "name": "鐵礦", "unit": "單位" },
+    { "id": "molten_iron", "name": "鐵水", "unit": "單位" },
+    { "id": "iron_ingot", "name": "鐵錠", "unit": "單位" }
+  ],
+  "recipes": [
+    {
+      "id": "pump_water",
+      "name": "抽水",
+      "inputs": [],
+      "outputs": [ { "productId": "water", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mine_coal",
+      "name": "採煤礦",
+      "inputs": [],
+      "outputs": [ { "productId": "coal", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_coal",
+      "name": "燃煤產生蒸氣",
+      "inputs": [
+        { "productId": "water", "quantity": 20 },
+        { "productId": "coal", "quantity": 20 }
+      ],
+      "outputs": [ { "productId": "steam_high", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mine_iron_ore",
+      "name": "採鐵礦",
+      "inputs": [],
+      "outputs": [ { "productId": "iron_ore", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_iron",
+      "name": "煉鐵",
+      "inputs": [
+        { "productId": "iron_ore", "quantity": 30 },
+        { "productId": "coal", "quantity": 10 }
+      ],
+      "outputs": [ { "productId": "molten_iron", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_iron_ingot",
+      "name": "鑄鐵錠",
+      "inputs": [ { "productId": "molten_iron", "quantity": 30 } ],
+      "outputs": [ { "productId": "iron_ingot", "quantity": 30 } ],
+      "cycleSeconds": 60
+    }
+  ],
+  "machines": [
+    { "id": "water_pump", "name": "抽水機", "recipeIds": [ "pump_water" ] },
+    { "id": "coal_mine", "name": "煤礦場", "recipeIds": [ "mine_coal" ] },
+    { "id": "steam_boiler_coal", "name": "蒸氣鍋爐(煤)", "recipeIds": [ "boil_steam_coal" ] },
+    { "id": "iron_ore_mine", "name": "鐵礦場", "recipeIds": [ "mine_iron_ore" ] },
+    { "id": "iron_smelter", "name": "煉鐵廠", "recipeIds": [ "smelt_iron" ] },
+    { "id": "iron_caster", "name": "鑄鐵廠", "recipeIds": [ "cast_iron_ingot" ] }
+  ]
+}

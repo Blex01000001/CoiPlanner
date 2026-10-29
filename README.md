@@ -18,12 +18,13 @@ dotnet test
 ## 專案結構
 | 路徑 | 內容 |
 |---|---|
-| `Data/*.json` | 物品、配方、機器資料；啟動時全部載入並驗證 |
+| `Data/*.json` | 物品、配方、機器資料；啟動時全部載入並驗證（目前是 `Data/game.json`） |
 | `Domain/Models` | Product、Recipe、Machine、Node、ResourceSource、Edge、ProductionPlan |
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（速率與物料平衡）、`ProductionPlanSerializer`（規劃存取） |
 | `Components/Pages/Home.razor` | 資料瀏覽 |
 | `Components/Pages/Planner.razor` | 產線規劃（節點編輯器） |
 | `wwwroot/js/graphEditor.js` | litegraph 包裝；只負責畫面，計算一律在 C# |
+| `tests/CoiPlanner.Domain.Tests/Fixtures` | 測試專用的虛構資料，不會被網站載入 |
 
 ## 已改善
 - 領域模型與 JSON 資料載入，含跨檔案的 id 與引用檢查
@@ -36,11 +37,13 @@ dotnet test
 - 產線規劃頁的畫布佔滿視窗，結果面板浮在畫布上且可收合
 - 多個來源可以合流到同一台機器：輸入插槽接上線後會自動多開一個同物品的空插槽
 - 連線上有沿方向移動的流動動畫
+- 輸入第一批遊戲資料（使用者提供）：抽水機、煤礦場、蒸氣鍋爐(煤)、鐵礦場、煉鐵廠、鑄鐵廠；移除示範用的虛構資料
+- 流動動畫不會再穿透節點顯示；graphEditor.js 更新後瀏覽器會自動載入新版，不再沿用快取
 
 ## 尚待改善
 - 在 Visual Studio 偵錯時匯入 .json 會中斷偵錯（原因調查中）
 - 連線上不顯示實際流量數字；動畫速度固定，不代表流量大小（需要先決定一個來源接多個目標時的分配規則）
 - 運輸方式（Edge.Transport）尚未定義，目前存成空字串
-- `Data/sample.json` 只有示範用的虛構配方；真實遊戲資料尚未輸入
+- 遊戲資料只有 6 種機器，其他產線尚未輸入
 - 節點右鍵選單的 Clone 未測試，複製出的數量可能不正確
 - 節點標題過長時會被截斷

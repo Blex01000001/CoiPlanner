@@ -9,6 +9,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject ILogger<Planner> Logger
+@inject IWebHostEnvironment Env
 
 <PageTitle>產線規劃 - CoiPlanner</PageTitle>
 
@@ -125,7 +126,9 @@
         _pendingLoad = IsEmpty(saved) ? null : saved;
 
         _dotnetRef = DotNetObjectReference.Create(this);
-        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
+        // 加上檔案修改時間當版本號，JS 更新後瀏覽器才不會繼續用快取裡的舊模組
+        var version = Env.WebRootFileProvider.GetFileInfo("js/graphEditor.js").LastModified.ToUnixTimeSeconds();
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/graphEditor.js?v={version}");
         _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved);
         // 第一次 OnGraphChanged 可能比 createEditor 先回來，那時還沒有 _editor 可以顯示結果
         if (_result is not null)

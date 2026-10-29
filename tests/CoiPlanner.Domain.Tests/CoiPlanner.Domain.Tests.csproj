@@ -24,9 +24,14 @@
     <ProjectReference Include="../../Domain/CoiPlanner.Domain.csproj" />
   </ItemGroup>
 
-  <!-- 測試直接讀取 repo 內的 Data/*.json，確保範例檔格式持續有效 -->
+  <!-- 測試讀取 repo 內的 Data/*.json，確保實際遊戲資料能通過驗證 -->
   <ItemGroup>
     <None Include="../../Data/*.json" Link="Data/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- 測試專用的虛構資料，數值固定，不會被網站載入 -->
+  <ItemGroup>
+    <None Update="Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
