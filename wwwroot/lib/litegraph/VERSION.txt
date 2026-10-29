@@ -1,0 +1,3 @@
+@comfyorg/litegraph 0.17.2
+https://www.npmjs.com/package/@comfyorg/litegraph
+Files copied unmodified from dist/ (litegraph.es.js, css/litegraph.css) and the package LICENSE (MIT).

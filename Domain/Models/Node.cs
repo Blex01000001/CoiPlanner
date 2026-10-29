@@ -7,4 +7,8 @@ public sealed record Node
     public required string MachineId { get; init; }
     public required string RecipeId { get; init; }
     public required int Count { get; init; }
+
+    /// <summary>節點在編輯器畫布上的位置，只影響顯示，不影響計算。</summary>
+    public double X { get; init; }
+    public double Y { get; init; }
 }

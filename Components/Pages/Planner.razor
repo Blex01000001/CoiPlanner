@@ -1,0 +1,151 @@
+@page "/planner"
+@using CoiPlanner.Domain.Models
+@using CoiPlanner.Domain.Services
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject GameData Data
+@inject PlanCalculator Calculator
+
+<PageTitle>產線規劃 - CoiPlanner</PageTitle>
+
+<div class="planner">
+    <div class="planner-canvas">
+        <canvas @ref="_canvas"></canvas>
+    </div>
+
+    <MudPaper Class="planner-side pa-4" Elevation="1">
+        <MudText Typo="Typo.h6">產線規劃</MudText>
+        <MudText Typo="Typo.caption" Class="d-block mb-4">
+            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器。拖動輸出插槽到同一物品的輸入插槽建立連線。
+        </MudText>
+
+        <MudText Typo="Typo.subtitle2" Class="mb-1">物料平衡（每分鐘）</MudText>
+        @if (_result is null || _result.Balances.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">尚無節點。</MudText>
+        }
+        else
+        {
+            <MudSimpleTable Dense="true" Elevation="0" Class="mb-4">
+                <thead>
+                    <tr>
+                        <th>物品</th>
+                        <th style="text-align:right">產出</th>
+                        <th style="text-align:right">消耗</th>
+                        <th style="text-align:right">差額</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in _result.Balances)
+                    {
+                        <tr>
+                            <td>@ProductName(b.ProductId)</td>
+                            <td style="text-align:right">@Format(b.SupplyPerMinute)</td>
+                            <td style="text-align:right">@Format(b.DemandPerMinute)</td>
+                            <td style="text-align:right">
+                                <MudText Typo="Typo.body2" Color="@NetColor(b.NetPerMinute)">@Format(b.NetPerMinute)</MudText>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+
+        <MudText Typo="Typo.subtitle2" Class="mb-1">問題</MudText>
+        @if (_result is null || _result.IsValid)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">沒有問題。</MudText>
+        }
+        else
+        {
+            @foreach (var issue in _result.Issues)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-1">@issue.Message</MudAlert>
+            }
+        }
+    </MudPaper>
+</div>
+
+@code {
+    private ElementReference _canvas;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _editor;
+    private DotNetObjectReference<Planner>? _dotnetRef;
+    private ProductionPlan _plan = new();
+    private PlanResult? _result;
+    private Dictionary<string, Product> _products = new();
+
+    protected override void OnInitialized()
+    {
+        _products = Data.Products.ToDictionary(p => p.Id);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dotnetRef = DotNetObjectReference.Create(this);
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
+        _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), _plan);
+    }
+
+    [JSInvokable]
+    public async Task OnGraphChanged(ProductionPlan plan)
+    {
+        _plan = plan;
+        _result = Calculator.Calculate(plan);
+        if (_editor is not null)
+            await _editor.InvokeVoidAsync("applyResult", _result);
+        StateHasChanged();
+    }
+
+    /// <summary>每個「機器 × 可執行配方」組合是一種節點類型。</summary>
+    private object BuildCatalog() => new
+    {
+        NodeTypes = Data.Machines
+            .SelectMany(m => m.RecipeIds.Select(id => (Machine: m, Recipe: Data.Recipes.First(r => r.Id == id))))
+            .Select(x => new
+            {
+                MachineId = x.Machine.Id,
+                MachineName = x.Machine.Name,
+                RecipeId = x.Recipe.Id,
+                RecipeName = x.Recipe.Name,
+                Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),
+                Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId)),
+            }),
+    };
+
+    private object Slot(string productId) => new
+    {
+        ProductId = productId,
+        Name = _products[productId].Name,
+        Unit = _products[productId].Unit,
+    };
+
+    private string ProductName(string id) => _products.TryGetValue(id, out var p) ? p.Name : id;
+
+    private static string Format(double value) => value.ToString("0.##");
+
+    private static Color NetColor(double net) =>
+        net < 0 ? Color.Error : net > 0 ? Color.Success : Color.Default;
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_editor is not null)
+            {
+                await _editor.InvokeVoidAsync("dispose");
+                await _editor.DisposeAsync();
+            }
+            if (_module is not null)
+                await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // 連線已中斷時瀏覽器端的物件已經不存在，不需要清理
+        }
+        _dotnetRef?.Dispose();
+    }
+}

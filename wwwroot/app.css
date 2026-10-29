@@ -30,3 +30,29 @@ h1:focus {
     .blazor-error-boundary::after {
         content: "發生錯誤。"
     }
+
+/* 產線規劃：左側畫布填滿剩餘空間，右側固定寬度的結果面板 */
+.planner {
+    display: flex;
+    gap: 16px;
+    height: calc(100vh - var(--mud-appbar-height) - 32px);
+}
+
+.planner-canvas {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #222;
+}
+
+    .planner-canvas canvas {
+        display: block;
+    }
+
+.planner-side {
+    width: 360px;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
