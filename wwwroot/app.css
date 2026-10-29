@@ -49,6 +49,7 @@ h1:focus {
 
     .planner-canvas canvas {
         display: block;
+        outline: none;
     }
 
 .planner-side {

@@ -45,6 +45,9 @@ function registerNodeTypes(catalog) {
             onConnectionsChange() {
                 current?.changed();
             }
+
+            // litegraph 刪除節點時會把上游直接接到下游；產線上這會憑空多出連線，所以停用
+            connectInputToOutput() { }
         }
         LiteGraph.registerNodeType(typeName(t), CoiNode);
     }
@@ -68,6 +71,10 @@ class Editor {
         this.graph.onNodeAdded = () => this.changed();
         this.graph.onNodeRemoved = () => this.changed();
         this.canvas.onNodeMoved = () => this.changed();
+
+        // litegraph 只在 canvas 本身收到 keydown 時處理 Delete 等快捷鍵，canvas 必須能取得焦點
+        canvasEl.tabIndex = 0;
+        canvasEl.addEventListener("pointerdown", () => canvasEl.focus({ preventScroll: true }));
 
         const parent = canvasEl.parentElement;
         this.resizeObserver = new ResizeObserver(() => this.canvas.resize(parent.clientWidth, parent.clientHeight));
@@ -179,9 +186,20 @@ function label(slots, infos, rates) {
     });
 }
 
+/** 讓瀏覽器把文字存成檔案下載。 */
+export function downloadText(fileName, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 export function createEditor(canvasEl, dotnetRef, catalog, plan) {
     current?.dispose();
     registerNodeTypes(catalog);
     current = new Editor(canvasEl, dotnetRef, catalog);
-    current.load(plan);    return current;
+    current.load(plan);
+    return current;
 }

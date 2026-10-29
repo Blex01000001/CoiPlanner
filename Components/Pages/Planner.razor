@@ -5,6 +5,9 @@
 @inject IJSRuntime JS
 @inject GameData Data
 @inject PlanCalculator Calculator
+@inject ProductionPlanSerializer Serializer
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>產線規劃 - CoiPlanner</PageTitle>
 
@@ -15,9 +18,24 @@
 
     <MudPaper Class="planner-side pa-4" Elevation="1">
         <MudText Typo="Typo.h6">產線規劃</MudText>
-        <MudText Typo="Typo.caption" Class="d-block mb-4">
+        <MudText Typo="Typo.caption" Class="d-block mb-3">
             在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器。拖動輸出插槽到同一物品的輸入插槽建立連線。
+            選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
         </MudText>
+
+        <MudStack Row="true" Spacing="1" Class="mb-1">
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Download"
+                       OnClick="ExportAsync" Disabled="_editor is null">匯出</MudButton>
+            <MudFileUpload @ref="_upload" T="IBrowserFile" Accept=".json" FilesChanged="ImportAsync" Disabled="_editor is null">
+                <CustomContent>
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Upload"
+                               OnClick="@context.OpenFilePickerAsync" Disabled="_editor is null">匯入</MudButton>
+                </CustomContent>
+            </MudFileUpload>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep"
+                       OnClick="ClearAsync" Disabled="_editor is null || _plan.Nodes.Count == 0">清空</MudButton>
+        </MudStack>
+        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">修改會自動存在這個瀏覽器中。</MudText>
 
         <MudText Typo="Typo.subtitle2" Class="mb-1">物料平衡（每分鐘）</MudText>
         @if (_result is null || _result.Balances.Count == 0)
@@ -67,17 +85,26 @@
 </div>
 
 @code {
+    private const string StorageKey = "coiplanner.plan";
+    private const long MaxImportBytes = 1024 * 1024;
+
     private ElementReference _canvas;
+    private MudFileUpload<IBrowserFile>? _upload;
     private IJSObjectReference? _module;
     private IJSObjectReference? _editor;
     private DotNetObjectReference<Planner>? _dotnetRef;
     private ProductionPlan _plan = new();
     private PlanResult? _result;
     private Dictionary<string, Product> _products = new();
+    private HashSet<(string MachineId, string RecipeId)> _nodeTypes = new();
+
+    // 載入（自動存檔或匯入）的規劃，等畫布回報結果後用來比對有沒有被略過的節點或連線
+    private ProductionPlan? _pendingLoad;
 
     protected override void OnInitialized()
     {
         _products = Data.Products.ToDictionary(p => p.Id);
+        _nodeTypes = Data.Machines.SelectMany(m => m.RecipeIds.Select(r => (m.Id, r))).ToHashSet();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -85,9 +112,16 @@
         if (!firstRender)
             return;
 
+        var saved = await ReadAutosaveAsync();
+        _pendingLoad = saved.Nodes.Count > 0 ? saved : null;
+
         _dotnetRef = DotNetObjectReference.Create(this);
         _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
-        _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), _plan);
+        _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved);
+        // 第一次 OnGraphChanged 可能比 createEditor 先回來，那時還沒有 _editor 可以顯示結果
+        if (_result is not null)
+            await _editor.InvokeVoidAsync("applyResult", _result);
+        StateHasChanged();
     }
 
     [JSInvokable]
@@ -97,7 +131,99 @@
         _result = Calculator.Calculate(plan);
         if (_editor is not null)
             await _editor.InvokeVoidAsync("applyResult", _result);
+
+        if (_pendingLoad is not null)
+        {
+            ReportDropped(_pendingLoad, plan);
+            _pendingLoad = null;
+        }
+
+        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, Serializer.Serialize(plan));
         StateHasChanged();
+    }
+
+    private async Task<ProductionPlan> ReadAutosaveAsync()
+    {
+        var json = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        if (string.IsNullOrEmpty(json))
+            return new ProductionPlan();
+
+        try
+        {
+            return Serializer.Deserialize(json);
+        }
+        catch (GameDataException)
+        {
+            Snackbar.Add("自動存檔無法讀取，已改用空白規劃。", Severity.Warning);
+            return new ProductionPlan();
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        var fileName = $"coiplanner-plan-{DateTime.Now:yyyyMMdd-HHmm}.json";
+        await _module!.InvokeVoidAsync("downloadText", fileName, Serializer.Serialize(_plan));
+    }
+
+    private async Task ImportAsync(IBrowserFile? file)
+    {
+        if (file is null || _editor is null)
+            return;
+
+        ProductionPlan plan;
+        try
+        {
+            using var reader = new StreamReader(file.OpenReadStream(MaxImportBytes));
+            plan = Serializer.Deserialize(await reader.ReadToEndAsync());
+        }
+        catch (IOException)
+        {
+            Snackbar.Add($"檔案太大，上限為 {MaxImportBytes / 1024} KB。", Severity.Error);
+            return;
+        }
+        catch (GameDataException ex)
+        {
+            Snackbar.Add($"無法匯入 {file.Name}：{ex.Message}", Severity.Error);
+            return;
+        }
+        finally
+        {
+            // 清掉選取，否則再選同一個檔案不會觸發 FilesChanged
+            if (_upload is not null)
+                await _upload.ClearAsync();
+        }
+
+        _pendingLoad = plan;
+        await _editor.InvokeVoidAsync("load", plan);
+        Snackbar.Add($"已匯入 {file.Name}。", Severity.Success);
+    }
+
+    private async Task ClearAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "清空規劃", "確定要刪除所有節點與連線嗎？此動作無法復原。", yesText: "清空", cancelText: "取消");
+        if (confirmed == true && _editor is not null)
+            await _editor.InvokeVoidAsync("load", new ProductionPlan());
+    }
+
+    /// <summary>
+    /// 畫布只會建立目前資料認得的節點類型，且一個輸入插槽只能接一條線；
+    /// 載入後比對數量，讓使用者知道有東西沒被載入。
+    /// </summary>
+    private void ReportDropped(ProductionPlan requested, ProductionPlan loaded)
+    {
+        var droppedNodes = requested.Nodes.Count - loaded.Nodes.Count;
+        var droppedEdges = requested.Edges.Count - loaded.Edges.Count;
+        if (droppedNodes <= 0 && droppedEdges <= 0)
+            return;
+
+        var unknown = requested.Nodes.Count(n => !_nodeTypes.Contains((n.MachineId, n.RecipeId)));
+        var parts = new List<string>();
+        if (droppedNodes > 0)
+            parts.Add($"{droppedNodes} 個節點（其中 {unknown} 個的機器或配方不在目前資料中）");
+        if (droppedEdges > 0)
+            parts.Add($"{droppedEdges} 條連線");
+        Snackbar.Add($"載入時略過了 {string.Join("、", parts)}。", Severity.Warning);
     }
 
     /// <summary>每個「機器 × 可執行配方」組合是一種節點類型。</summary>

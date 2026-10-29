@@ -14,6 +14,7 @@ builder.Services.AddMudServices();
 var gameData = new GameDataLoader().LoadFromDirectory(Path.Combine(builder.Environment.ContentRootPath, "Data"));
 builder.Services.AddSingleton(gameData);
 builder.Services.AddSingleton(new PlanCalculator(gameData));
+builder.Services.AddSingleton<ProductionPlanSerializer>();
 
 var app = builder.Build();
 
