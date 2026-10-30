@@ -69,8 +69,15 @@ h1:focus {
     right: 12px;
     width: 360px;
     max-width: calc(100% - 24px);
-    max-height: calc(100% - 24px);
+    /* 底部留給右下角的 fit view 按鈕 */
+    max-height: calc(100% - 76px);
     overflow-y: auto;
+}
+
+.planner-fit {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
 }
 
 .planner-panel-toggle {

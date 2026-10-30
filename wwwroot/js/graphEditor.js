@@ -15,6 +15,21 @@ const STATUS_COLORS = {
     source: "#a9c4b3",
 };
 const CHANGE_DEBOUNCE_MS = 80;
+// 背景格線：細線間距即按住 Shift 時的對齊間距，每 GRID_MAJOR_EVERY 格一條粗線；縮小到 GRID_MINOR_MIN_SCALE 以下不畫細線
+const GRID_SIZE = 20;
+const GRID_MAJOR_EVERY = 5;
+const GRID_MINOR_MIN_SCALE = 0.6;
+const GRID_BGCOLOR = "#191919";
+const GRID_MINOR_COLOR = "#131313";
+const GRID_MAJOR_COLOR = "#0c0c0c";
+// 連線粗細依運輸等級的吞吐量：每加倍粗 LINK_WIDTH_PER_DOUBLING（60/分 為 LINK_BASE_WIDTH）
+const LINK_BASE_WIDTH = 3;
+const LINK_BASE_CAPACITY = 60;
+const LINK_WIDTH_PER_DOUBLING = 1.5;
+// 一鍵定位整個工作流時，四周（含節點上方的狀態標籤）留的邊距，以及最大放大倍率
+const FIT_PADDING = 40;
+const FIT_MAX_SCALE = 1.5;
+const FIT_ANIMATION_MS = 350;
 const MIN_NODE_WIDTH = 260;
 const SOURCE_NODE_COLOR = "#2f5a44";
 const SOURCE_NODE_BGCOLOR = "#22352c";
@@ -31,6 +46,8 @@ const FLOW_LABEL_FULL_FONT = "bold 13px Arial";
 const FLOW_LABEL_COLOR = "#ddd";
 const FLOW_LABEL_FULL_COLOR = "#ff6b6b";
 const FLOW_LABEL_BGCOLOR = "rgba(24, 24, 24, 0.9)";
+
+LiteGraph.CANVAS_GRID_SIZE = GRID_SIZE;
 
 // litegraph 的節點類型是全域註冊的，同一時間只會有一個編輯器
 let current = null;
@@ -51,6 +68,18 @@ function connectSlotsWithMerge(node, output, inputNode, input, afterRerouteId) {
     if (input?.link != null && inputNode.mergeSlotFor)
         input = inputNode.mergeSlotFor(input);
     return LGraphNode.prototype.connectSlots.call(node, output, inputNode, input, afterRerouteId);
+}
+
+/**
+ * 按住 Shift 拖動節點時對齊格線。litegraph 預設對齊節點本體的左上角（標題列下方），
+ * 改成對齊含標題列的外框，節點的上緣才會落在格線上；調整大小時 litegraph 本來就是對齊外框。
+ */
+function snapNodeToGrid(node, snapTo) {
+    if (node.pinned || !snapTo) return false;
+    const title = LiteGraph.NODE_TITLE_HEIGHT;
+    node.pos[0] = Math.round(node.pos[0] / snapTo) * snapTo;
+    node.pos[1] = Math.round((node.pos[1] - title) / snapTo) * snapTo + title;
+    return true;
 }
 
 function registerNodeTypes(catalog) {
@@ -86,6 +115,10 @@ function registerNodeTypes(catalog) {
 
             connectSlots(output, inputNode, input, afterRerouteId) {
                 return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
+            }
+
+            snapToGrid(snapTo) {
+                return snapNodeToGrid(this, snapTo);
             }
 
             /**
@@ -178,6 +211,10 @@ function registerNodeTypes(catalog) {
                 return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
             }
 
+            snapToGrid(snapTo) {
+                return snapNodeToGrid(this, snapTo);
+            }
+
             onConnectionsChange() {
                 current?.changed();
             }
@@ -214,7 +251,22 @@ class Editor {
 
         this.graph = new LGraph();
         this.canvas = new LGraphCanvas(canvasEl, this.graph);
-        this.canvas.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE;
+        // 背景格線自己畫，間距才能和 Shift 對齊的間距一致（litegraph 內建的背景圖是 100px 一格）
+        this.canvas.background_image = null;
+        this.canvas.onDrawBackground = (ctx, area) => this.drawGrid(ctx, area);
+        // litegraph 預設會在畫布座標原點畫一個藍色外框，fit view 時會被看到，關掉
+        this.canvas.render_canvas_border = false;
+        // 每條連線依運輸等級的吞吐量決定粗細：畫這條線時暫時換掉 litegraph 共用的線寬
+        const renderLink = this.canvas.renderLink.bind(this.canvas);
+        this.canvas.renderLink = (ctx, a, b, link, ...rest) => {
+            const width = this.canvas.connections_width;
+            if (link) this.canvas.connections_width = this.linkWidth(link);
+            try {
+                return renderLink(ctx, a, b, link, ...rest);
+            } finally {
+                this.canvas.connections_width = width;
+            }
+        };
         // 不畫連線中間的圓點（流向改由 drawFlow 的箭頭表示）；點連線中間仍可開啟連線選單
         this.canvas.linkMarkerShape = LinkMarkerShape.None;
         this.canvas.showLinkMenu = (segment, e) => this.showLinkMenu(segment, e);
@@ -232,6 +284,14 @@ class Editor {
         // litegraph 只在 canvas 本身收到 keydown 時處理 Delete 等快捷鍵，canvas 必須能取得焦點
         canvasEl.tabIndex = 0;
         canvasEl.addEventListener("pointerdown", () => canvasEl.focus({ preventScroll: true }));
+
+        // litegraph 只在 canvas 有焦點時才知道 Shift 有沒有按著（先按 Shift 再點畫布就不會對齊）；
+        // 改成在整個視窗追蹤，按著 Shift 時開啟對齊格線
+        this.onShift = e => { LiteGraph.alwaysSnapToGrid = e.shiftKey; };
+        this.onBlur = () => { LiteGraph.alwaysSnapToGrid = false; };
+        for (const type of ["keydown", "keyup", "pointerdown", "pointermove"])
+            window.addEventListener(type, this.onShift, true);
+        window.addEventListener("blur", this.onBlur);
 
         const parent = canvasEl.parentElement;
         this.listenFileDrop(parent, maxImportBytes);
@@ -475,7 +535,8 @@ class Editor {
                 const [nx, ny] = this.canvas.computeConnectionPoint(a, b, Math.min(t + 0.01, 1));
                 const [px, py] = this.canvas.computeConnectionPoint(a, b, Math.max(t - 0.01, 0));
                 const angle = Math.atan2(ny - py, nx - px);
-                const s = FLOW_ARROW_SIZE;
+                // 箭頭和連線同色，線越粗箭頭也要越大才看得到
+                const s = Math.max(FLOW_ARROW_SIZE, this.linkWidth(link) * 0.6 + 2);
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angle);
@@ -547,7 +608,79 @@ class Editor {
         this.dropTarget = el;
     }
 
+    /** 背景格線：細線每 GRID_SIZE 一條（Shift 對齊的間距），粗線每 GRID_MAJOR_EVERY 格一條。 */
+    drawGrid(ctx, [x, y, w, h]) {
+        ctx.fillStyle = GRID_BGCOLOR;
+        ctx.fillRect(x, y, w, h);
+        const scale = this.canvas.ds.scale;
+        const major = GRID_SIZE * GRID_MAJOR_EVERY;
+        const lines = (step, color, width) => {
+            ctx.beginPath();
+            for (let gx = Math.floor(x / step) * step; gx <= x + w; gx += step) {
+                ctx.moveTo(gx, y);
+                ctx.lineTo(gx, y + h);
+            }
+            for (let gy = Math.floor(y / step) * step; gy <= y + h; gy += step) {
+                ctx.moveTo(x, gy);
+                ctx.lineTo(x + w, gy);
+            }
+            ctx.strokeStyle = color;
+            // 線寬以螢幕像素計，縮放時粗細不變
+            ctx.lineWidth = width / scale;
+            ctx.stroke();
+        };
+        if (scale >= GRID_MINOR_MIN_SCALE) lines(GRID_SIZE, GRID_MINOR_COLOR, 1);
+        lines(major, GRID_MAJOR_COLOR, 2);
+    }
+
+    /** 連線的線寬：運輸等級的吞吐量每加倍就粗一些；等級有誤時用基本線寬。 */
+    linkWidth(link) {
+        const capacity = this.transportFor(link.type)?.tiersPerMinute[(this.linkTiers.get(link.id) ?? 1) - 1];
+        if (!capacity) return LINK_BASE_WIDTH;
+        return LINK_BASE_WIDTH + LINK_WIDTH_PER_DOUBLING * Math.log2(Math.max(1, capacity / LINK_BASE_CAPACITY));
+    }
+
+    /**
+     * 視野移到整個工作流（所有節點），以動畫過渡。rightInset 是畫布右側被面板蓋住的寬度（px），
+     * 工作流會置中在剩下的區域裡。
+     */
+    fitView(rightInset = 0) {
+        const nodes = this.graph._nodes;
+        if (!nodes.length) return;
+        let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const n of nodes) {
+            const [bx, by, bw, bh] = n.boundingRect;
+            minX = Math.min(minX, bx);
+            minY = Math.min(minY, by);
+            maxX = Math.max(maxX, bx + bw);
+            maxY = Math.max(maxY, by + bh);
+        }
+        minX -= FIT_PADDING;
+        minY -= FIT_PADDING;
+        maxX += FIT_PADDING;
+        maxY += FIT_PADDING;
+
+        const ds = this.canvas.ds;
+        const dpr = window.devicePixelRatio;
+        const cw = ds.element.width / dpr;
+        const ch = ds.element.height / dpr;
+        const usable = Math.max(cw - rightInset, cw * 0.3);
+        const scale = Math.min(usable / (maxX - minX), ch / (maxY - minY), FIT_MAX_SCALE);
+        // animateToBounds 會讓範圍置中並以 zoom × 畫布大小 ÷ 範圍 決定縮放；
+        // 給它一個「縮放結果正好是 scale、中心往右偏 rightInset/2」的範圍
+        const centerX = (minX + maxX) / 2 + rightInset / 2 / scale;
+        const centerY = (minY + maxY) / 2;
+        const width = cw / scale;
+        const height = ch / scale;
+        ds.animateToBounds([centerX - width / 2, centerY - height / 2, width, height],
+            () => this.canvas.setDirty(true, true), { zoom: 1, duration: FIT_ANIMATION_MS });
+    }
+
     dispose() {
+        for (const type of ["keydown", "keyup", "pointerdown", "pointermove"])
+            window.removeEventListener(type, this.onShift, true);
+        window.removeEventListener("blur", this.onBlur);
+        LiteGraph.alwaysSnapToGrid = false;
         this.dropTarget.removeEventListener("dragover", this.onDragOver);
         this.dropTarget.removeEventListener("drop", this.onDrop);
         cancelAnimationFrame(this.animationFrame);

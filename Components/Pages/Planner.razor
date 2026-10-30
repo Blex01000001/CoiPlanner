@@ -16,6 +16,11 @@
 <div class="planner">
     <canvas @ref="_canvas"></canvas>
 
+    <MudTooltip Text="Fit view：顯示整個工作流" Placement="Placement.Left" RootClass="planner-fit">
+        <MudFab Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.FitScreen"
+                OnClick="FitViewAsync" Disabled="_editor is null" aria-label="Fit view" />
+    </MudTooltip>
+
     @if (!_panelOpen)
     {
         <MudFab Class="planner-panel-toggle" Color="Color.Primary" Size="Size.Small"
@@ -30,6 +35,7 @@
         <MudText Typo="Typo.caption" Class="d-block mb-3">
             在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
             連線中間顯示「流量/上限」（每分鐘，同一來源有多條線時依建立順序填滿），達到上限時以紅色粗體標示；點它可以選擇運輸等級或刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
+            按住 Shift 移動或調整節點大小會對齊格線；右下角的按鈕可以把視野移到整個工作流。
         </MudText>
 
         <MudStack Row="true" Spacing="1" Class="mb-1">
@@ -212,6 +218,15 @@
             _running = false;
             Snackbar.Add($"模擬發生錯誤，已暫停：{ex.Message}", Severity.Error);
         }
+    }
+
+    // 面板展開時蓋住畫布右側的寬度（面板 360px 加左右間距），fit view 時要避開
+    private const int PanelInset = 384;
+
+    private async Task FitViewAsync()
+    {
+        if (_editor is not null)
+            await _editor.InvokeVoidAsync("fitView", _panelOpen ? PanelInset : 0);
     }
 
     private void ResetSimulation()
