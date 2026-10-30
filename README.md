@@ -18,9 +18,9 @@ dotnet test
 ## 專案結構
 | 路徑 | 內容 |
 |---|---|
-| `Data/*.json` | 物品、配方、機器資料；啟動時全部載入並驗證（目前是 `Data/game.json`） |
-| `Domain/Models` | Product、Recipe、Machine、Node、ResourceSource、Edge、ProductionPlan |
-| `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（速率與物料平衡）、`ProductionPlanSerializer`（規劃存取） |
+| `Data/*.json` | 物品（含運輸型態）、配方、機器與運輸方式資料；啟動時全部載入並驗證（目前是 `Data/game.json`） |
+| `Domain/Models` | Product、Recipe、Machine、Transport、Node、ResourceSource、Edge、ProductionPlan |
+| `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（速率、物料平衡、連線流量）、`ProductionPlanSerializer`（規劃存取） |
 | `Components/Pages/Home.razor` | 資料瀏覽 |
 | `Components/Pages/Planner.razor` | 產線規劃（節點編輯器） |
 | `wwwroot/js/graphEditor.js` | litegraph 包裝；只負責畫面，計算一律在 C# |
@@ -44,11 +44,15 @@ dotnet test
 - 匯入：可以把 .json 檔直接拖到畫布上匯入，不經過檔案選擇視窗
 - SignalR 訊息上限由 32 KB 放寬到 2 MB，規劃較大時連線不會中斷
 - 程序因未處理的例外結束時，會寫入 `logs/crash.log`
+- 運輸方式（使用者提供）：管線（流體，5 級）、散裝運輸帶（散裝）、熔融通道（熔融物）、運輸帶（單件），後三者各 4 級；每種物品依型態只能走一種運輸，資料瀏覽頁新增「運輸」分頁
+- 連線預設一級；點連線中間可選擇等級或刪除連線；計算會檢查運輸方式與等級是否正確
+- 連線中間顯示「流量/上限」（每分鐘），達到上限時以紅色粗體標示；同一來源或目標有多條線時依建立順序填滿
 
 ## 尚待改善
 - 在 Visual Studio 偵錯時用「匯入」按鈕會中斷偵錯：在 Linux 上無法重現，推測是 VS 在檔案選擇視窗關閉後誤判瀏覽器已關閉而停止偵錯（未證實）。暫時請改用拖放匯入，或在 VS「工具 → 選項 → 專案和方案 → Web 專案」取消「瀏覽器視窗關閉時停止偵錯工具」；若仍閃退請提供 `logs/crash.log`
-- 連線上不顯示實際流量數字；動畫速度固定，不代表流量大小（需要先決定一個來源接多個目標時的分配規則）
-- 運輸方式（Edge.Transport）尚未定義，目前存成空字串
+- 箭頭動畫速度固定，不代表流量大小
+- 流量計算中，機器一律以配方額定速率產出，不會因為輸入不足而減產；「依序填滿」的順序是連線建立順序，畫面上看不到也不能調整
+- 把已存在的連線拖到別的輸入時，等級會回到一級
 - 遊戲資料只有 6 種機器，其他產線尚未輸入
 - 節點右鍵選單的 Clone 未測試，複製出的數量可能不正確
 - 節點標題過長時會被截斷
