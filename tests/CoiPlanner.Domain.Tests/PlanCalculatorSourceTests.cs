@@ -12,7 +12,7 @@ public class PlanCalculatorSourceTests
         new() { Nodes = nodes, Sources = sources, Edges = edges };
 
     [Fact]
-    public void Calculate_Source_AddsSupplyAtItsRate()
+    public void Calculate_Source_RatedOutputIsItsRate()
     {
         var result = _calculator.Calculate(Plan([], [Source("s", "iron_ore", 120)]));
 
@@ -20,13 +20,10 @@ public class PlanCalculatorSourceTests
         var node = Assert.Single(result.Nodes);
         Assert.Empty(node.Inputs);
         Assert.Equal(new ProductRate("iron_ore", 120), Assert.Single(node.Outputs));
-        var balance = Assert.Single(result.Balances);
-        Assert.Equal(120, balance.SupplyPerMinute);
-        Assert.Equal(0, balance.DemandPerMinute);
     }
 
     [Fact]
-    public void Calculate_SourceFeedingMachine_BalancesAgainstDemand()
+    public void Calculate_SourceFeedingMachine_IsValid()
     {
         // 1 台熔爐消耗 alpha_ore 12/分
         var result = _calculator.Calculate(Plan(
@@ -35,7 +32,7 @@ public class PlanCalculatorSourceTests
             Link("s", "f", "alpha_ore")));
 
         Assert.True(result.IsValid);
-        Assert.Equal(0, Assert.Single(result.Balances, b => b.ProductId == "alpha_ore").NetPerMinute);
+        Assert.Equal([100.0], result.EdgeCapacities);
     }
 
     [Fact]
@@ -54,7 +51,6 @@ public class PlanCalculatorSourceTests
         var issue = Assert.Single(result.Issues);
         Assert.Equal("s", issue.NodeId);
         Assert.Empty(result.Nodes);
-        Assert.Empty(result.Balances);
     }
 
     [Fact]

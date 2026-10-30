@@ -92,82 +92,26 @@ public class PlanCalculatorTransportTests
     private static ProductionPlan Plan(Node[] nodes, ResourceSource[] sources, params Edge[] edges) =>
         new() { Nodes = nodes, Sources = sources, Edges = edges };
 
-    [Fact]
-    public void Calculate_Edge_CarriesTargetDemand()
+    [Theory]
+    [InlineData(1, 10)]
+    [InlineData(2, 100)]
+    public void Calculate_Edge_CapacityFromTier(int tier, double capacity)
     {
-        // 熔爐需要 alpha_ore 12/分，來源有 30/分，二級輸送帶上限 100
-        var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore")));
+        var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore", tier: tier)));
 
         Assert.True(result.IsValid);
-        var edge = Assert.Single(result.Edges);
-        Assert.Equal(new EdgeResult(0, 12, 100), edge);
-        Assert.False(edge.IsFull);
+        Assert.Equal([capacity], result.EdgeCapacities);
     }
 
     [Fact]
-    public void Calculate_Edge_LimitedByCapacity_IsFull()
-    {
-        // 一級輸送帶上限 10，需求 12
-        var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore", tier: 1)));
-
-        var edge = Assert.Single(result.Edges);
-        Assert.Equal(10, edge.FlowPerMinute);
-        Assert.Equal(10, edge.CapacityPerMinute);
-        Assert.True(edge.IsFull);
-    }
-
-    [Fact]
-    public void Calculate_Edge_LimitedBySupply()
-    {
-        var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 5)], Link("s", "f", "alpha_ore")));
-
-        Assert.Equal(5, Assert.Single(result.Edges).FlowPerMinute);
-    }
-
-    [Fact]
-    public void Calculate_OneSourceManyTargets_FillsInOrder()
-    {
-        // 20/分 分給兩台各需 12/分的熔爐：第一條先填滿 12，第二條拿剩下的 8
-        var result = _calculator.Calculate(Plan(
-            [Furnace("f1"), Furnace("f2")],
-            [Source("s", "alpha_ore", 20)],
-            Link("s", "f1", "alpha_ore"),
-            Link("s", "f2", "alpha_ore")));
-
-        Assert.Equal([12.0, 8.0], result.Edges.Select(e => e.FlowPerMinute));
-    }
-
-    [Fact]
-    public void Calculate_ManySourcesOneTarget_FillsInOrder()
-    {
-        // 兩個 10/分 的來源合流到需要 12/分 的熔爐：第一條 10，第二條補 2
-        var result = _calculator.Calculate(Plan(
-            [Furnace("f")],
-            [Source("a", "alpha_ore", 10), Source("b", "alpha_ore", 10)],
-            Link("a", "f", "alpha_ore"),
-            Link("b", "f", "alpha_ore")));
-
-        Assert.Equal([10.0, 2.0], result.Edges.Select(e => e.FlowPerMinute));
-    }
-
-    [Fact]
-    public void Calculate_MachineToMachine_UsesRatedOutput()
-    {
-        // 熔爐額定產出 beta_ingot 6/分，壓床需要 9/分
-        var result = _calculator.Calculate(Plan([Furnace("f"), Press("p")], [], Link("f", "p", "beta_ingot")));
-
-        Assert.Equal(6, Assert.Single(result.Edges).FlowPerMinute);
-    }
-
-    [Fact]
-    public void Calculate_WrongTransport_ReportsIssueAndNoFlow()
+    public void Calculate_WrongTransport_ReportsIssueAndNoCapacity()
     {
         var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore", transport: "pipe", tier: 1)));
 
         var issue = Assert.Single(result.Issues);
         Assert.Equal(0, issue.EdgeIndex);
         Assert.Contains("Demo Belt", issue.Message);
-        Assert.Equal(new EdgeResult(0, 0, null), Assert.Single(result.Edges));
+        Assert.Null(Assert.Single(result.EdgeCapacities));
     }
 
     [Fact]
@@ -186,7 +130,7 @@ public class PlanCalculatorTransportTests
         var result = _calculator.Calculate(Plan([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore", tier: tier)));
 
         Assert.Contains($"{tier} 級", Assert.Single(result.Issues).Message);
-        Assert.Null(Assert.Single(result.Edges).CapacityPerMinute);
+        Assert.Null(Assert.Single(result.EdgeCapacities));
     }
 
     [Fact]
@@ -202,12 +146,12 @@ public class PlanCalculatorTransportTests
     }
 
     [Fact]
-    public void Calculate_EdgeToUnknownNode_HasNoFlow()
+    public void Calculate_EdgeToUnknownNode_HasNoCapacity()
     {
         var result = _calculator.Calculate(Plan([], [Source("s", "alpha_ore", 30)], Link("s", "missing", "alpha_ore")));
 
         Assert.False(result.IsValid);
-        Assert.Equal(new EdgeResult(0, 0, null), Assert.Single(result.Edges));
+        Assert.Null(Assert.Single(result.EdgeCapacities));
     }
 
     [Fact]

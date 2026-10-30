@@ -1,17 +1,32 @@
 // 包裝 @comfyorg/litegraph 的節點編輯器。
-// 這裡只負責畫面：使用者每次修改後把規劃送回 C#，計算結果再由 C# 透過 applyResult 傳回來顯示。
+// 這裡只負責畫面：使用者每次修改後把規劃送回 C#；檢查結果由 applyResult、模擬狀態由 applySimulation 傳回來顯示。
 import { LiteGraph, LGraph, LGraphCanvas, LGraphNode, LinkMarkerShape } from "../lib/litegraph/litegraph.es.js";
 
 const ISSUE_NODE_COLOR = "#7a2a2a";
 const ISSUE_NODE_BGCOLOR = "#3f1f1f";
 const ISSUE_LINK_COLOR = "#e05555";
+// 停擺（缺料或輸出堵塞）的機器節點用橘色醒目提示；規劃錯誤的紅色優先
+const STOPPED_NODE_COLOR = "#8a5a1a";
+const STOPPED_NODE_BGCOLOR = "#3d2e1a";
+// 節點上方的狀態標籤
+const STATUS_FONT = "bold 12px Arial";
+const STATUS_COLORS = {
+    stopped: "#ff9f43",
+    starting: "#5dade2",
+    reduced: "#f4d03f",
+    running: "#58d68d",
+    source: "#a9c4b3",
+};
 const CHANGE_DEBOUNCE_MS = 80;
 const MIN_NODE_WIDTH = 260;
 const SOURCE_NODE_COLOR = "#2f5a44";
 const SOURCE_NODE_BGCOLOR = "#22352c";
-// 流量動畫：箭頭沿連線方向移動，間距、速度與大小以畫布座標（px）計
+// 流量動畫：箭頭沿連線方向移動，間距、速度與大小以畫布座標（px）計；
+// 滿載時速度為 FLOW_ARROW_SPEED，有流量但很少時至少有 FLOW_ARROW_MIN_RATIO 的速度，沒有流量時不動並變淡
 const FLOW_ARROW_SPACING = 40;
 const FLOW_ARROW_SPEED = 60;
+const FLOW_ARROW_MIN_RATIO = 0.25;
+const FLOW_ARROW_IDLE_ALPHA = 0.3;
 const FLOW_ARROW_SIZE = 5;
 // 連線中點的流量標籤；達到運輸上限時改用醒目的顏色與粗體
 const FLOW_LABEL_FONT = "12px Arial";
@@ -186,8 +201,15 @@ class Editor {
         this.transportsByKind = new Map(catalog.transports.map(t => [t.kind, t]));
         // 每條連線（litegraph 連線 id）的運輸等級；沒有記錄的是預設的一級
         this.linkTiers = new Map();
-        // C# 算出的每條連線流量與上限，key 是 litegraph 連線 id
+        // C# 模擬的每條連線流量與上限，key 是 litegraph 連線 id
         this.edgeResults = new Map();
+        // C# 模擬的節點狀態，key 是節點 id（字串）
+        this.nodeStates = new Map();
+        // 規劃檢查有問題的節點 id
+        this.badNodes = new Set();
+        // 每條連線箭頭目前的位移；速度隨流量改變，所以要逐幀累加而不是用時間直接算
+        this.linkPhases = new Map();
+        this.lastFrame = performance.now();
         this.loading = false;
         this.timer = null;
         this.edgeLinkIds = [];
@@ -307,30 +329,81 @@ class Editor {
         return { nodes, sources, edges };
     }
 
-    /** 顯示 C# PlanCalculator 的結果：插槽標上每分鐘速率，有問題的節點與連線標紅。 */
+    /** 顯示 C# PlanCalculator 的檢查結果：有問題的節點與連線標紅。 */
     applyResult(result) {
-        const rates = new Map(result.nodes.map(r => [r.nodeId, r]));
-        const badNodes = new Set(result.issues.filter(i => i.nodeId != null).map(i => i.nodeId));
+        this.badNodes = new Set(result.issues.filter(i => i.nodeId != null).map(i => i.nodeId));
         const badLinks = new Set(result.issues
             .filter(i => i.edgeIndex != null)
             .map(i => this.edgeLinkIds[i.edgeIndex]));
-
-        for (const node of this.graph._nodes) {
-            const id = String(node.id);
-            const r = rates.get(id);
-            label(node.inputs, node.slotInfo.inputs, r?.inputs);
-            label(node.outputs, node.slotInfo.outputs, r?.outputs);
-            // 標籤變長時只加寬不縮窄，避免使用者手動拉寬的節點被縮回去
-            node.size[0] = Math.max(node.size[0], node.computeSize()[0]);
-            // 設成 undefined 時會回到節點類型自己的顏色（資源節點是綠色）
-            node.color = badNodes.has(id) ? ISSUE_NODE_COLOR : undefined;
-            node.bgcolor = badNodes.has(id) ? ISSUE_NODE_BGCOLOR : undefined;
-        }
         for (const link of this.graph._links.values()) {
             link.color = badLinks.has(link.id) ? ISSUE_LINK_COLOR : undefined;
         }
-        this.edgeResults = new Map(result.edges.map(e => [this.edgeLinkIds[e.edgeIndex], e]));
+        this.applyNodeStyles();
+    }
+
+    /** 顯示 C# ProductionSimulator 的狀態：插槽標上「實際/額定」速率，停擺的機器標成橘色。 */
+    applySimulation(sim) {
+        this.nodeStates = new Map(sim.nodes.map(n => [n.nodeId, n]));
+        this.edgeResults = new Map(sim.edges.map(e => [this.edgeLinkIds[e.edgeIndex], e]));
+        this.applyNodeStyles();
+    }
+
+    applyNodeStyles() {
+        for (const node of this.graph._nodes) {
+            const id = String(node.id);
+            const state = this.nodeStates.get(id);
+            label(node.inputs, node.slotInfo.inputs, state?.inputs);
+            label(node.outputs, node.slotInfo.outputs, state?.outputs);
+            // 標籤變長時只加寬不縮窄，避免使用者手動拉寬的節點被縮回去
+            node.size[0] = Math.max(node.size[0], node.computeSize()[0]);
+            // 設成 undefined 時會回到節點類型自己的顏色（資源節點是綠色）
+            const bad = this.badNodes.has(id);
+            const stopped = !bad && isMachineStopped(node, state);
+            node.color = bad ? ISSUE_NODE_COLOR : stopped ? STOPPED_NODE_COLOR : undefined;
+            node.bgcolor = bad ? ISSUE_NODE_BGCOLOR : stopped ? STOPPED_NODE_BGCOLOR : undefined;
+        }
         this.canvas.setDirty(true, true);
+    }
+
+    /** 節點上方的狀態文字與顏色；沒有模擬狀態（例如規劃有錯）時不顯示。 */
+    statusOf(node, state) {
+        const pct = `${Math.round(state.utilization * 100)}%`;
+        if (node.properties.kind === "source")
+            return { text: `供應 ${pct}`, color: STATUS_COLORS.source };
+        switch (state.status) {
+            case "Starved": {
+                const names = state.missingInputs.map(id => this.productsById.get(id)?.name ?? id).join("、");
+                return { text: `停擺：缺${names}`, color: STATUS_COLORS.stopped };
+            }
+            case "Blocked":
+                return { text: "停擺：輸出堵塞", color: STATUS_COLORS.stopped };
+            case "Starting":
+                return { text: `啟動中 ${state.startupRemainingSeconds.toFixed(1)} 秒`, color: STATUS_COLORS.starting };
+            default:
+                return state.utilization < 0.995
+                    ? { text: `減產 ${pct}`, color: STATUS_COLORS.reduced }
+                    : { text: `運轉中 ${pct}`, color: STATUS_COLORS.running };
+        }
+    }
+
+    drawStatus(ctx) {
+        ctx.font = STATUS_FONT;
+        for (const node of this.graph._nodes) {
+            const state = this.nodeStates.get(String(node.id));
+            if (!state) continue;
+            const { text, color } = this.statusOf(node, state);
+            const x = node.pos[0];
+            const y = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT - 12;
+            const w = ctx.measureText(text).width + 10;
+            ctx.fillStyle = FLOW_LABEL_BGCOLOR;
+            ctx.beginPath();
+            ctx.roundRect(x, y - 9, w, 18, 4);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, x + 5, y + 1);
+            ctx.textBaseline = "alphabetic";
+        }
     }
 
     transportFor(productId) {
@@ -354,9 +427,11 @@ class Editor {
         return false;
     }
 
-    /** 在每條連線上畫出沿方向移動的箭頭，表示物料流動（不代表實際流量）。 */
+    /** 在每條連線上畫出沿方向移動的箭頭，速度隨模擬的流量改變；沒有流量的連線箭頭不動並變淡。 */
     drawFlow(ctx) {
-        const offset = (performance.now() / 1000 * FLOW_ARROW_SPEED) % FLOW_ARROW_SPACING;
+        const now = performance.now();
+        const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
+        this.lastFrame = now;
         // 箭頭畫在節點上層；落在節點範圍內（連線從節點後面繞過時）的箭頭不畫，看起來才像被節點蓋住
         const titleHeight = LiteGraph.NODE_TITLE_HEIGHT;
         const boxes = this.graph._nodes.map(n => [n.pos[0], n.pos[1] - titleHeight, n.size[0], n.size[1] + titleHeight]);
@@ -372,7 +447,14 @@ class Editor {
             const length = Math.hypot(b[0] - a[0], b[1] - a[1]) * 1.2;
             if (length < 1) continue;
 
+            const r = this.edgeResults.get(link.id);
+            const ratio = r && r.flowPerMinute > 1e-6 ? Math.min(1, r.flowPerMinute / r.capacityPerMinute) : 0;
+            const speed = ratio > 0 ? FLOW_ARROW_SPEED * Math.max(FLOW_ARROW_MIN_RATIO, ratio) : 0;
+            const offset = ((this.linkPhases.get(link.id) ?? 0) + speed * dt) % FLOW_ARROW_SPACING;
+            this.linkPhases.set(link.id, offset);
+
             ctx.fillStyle = link.color ?? this.canvas.default_link_color;
+            ctx.globalAlpha = ratio > 0 ? 1 : FLOW_ARROW_IDLE_ALPHA;
             for (let d = offset; d < length; d += FLOW_ARROW_SPACING) {
                 const t = d / length;
                 const [x, y] = this.canvas.computeConnectionPoint(a, b, t);
@@ -394,20 +476,22 @@ class Editor {
                 ctx.fill();
                 ctx.restore();
             }
+            ctx.globalAlpha = 1;
 
             this.drawFlowLabel(ctx, link, a, b, hidden);
         }
+        this.drawStatus(ctx);
     }
 
     /** 在連線中點畫「流量/上限」；達到上限時用醒目的顏色與粗體。 */
     drawFlowLabel(ctx, link, a, b, hidden) {
         const r = this.edgeResults.get(link.id);
-        if (r?.capacityPerMinute == null) return;
+        if (!r) return;
         const [x, y] = this.canvas.computeConnectionPoint(a, b, 0.5);
         if (hidden(x, y)) return;
 
-        const full = r.flowPerMinute >= r.capacityPerMinute - 1e-9;
-        const text = `${formatRate(r.flowPerMinute)}/${formatRate(r.capacityPerMinute)}`;
+        const full = r.isFull;
+        const text = `${formatRate(round1(r.flowPerMinute))}/${formatRate(r.capacityPerMinute)}`;
         ctx.font = full ? FLOW_LABEL_FULL_FONT : FLOW_LABEL_FONT;
         const w = ctx.measureText(text).width + 10;
         const h = 18;
@@ -463,18 +547,28 @@ class Editor {
     }
 }
 
-/** 每種物品的第一個插槽標上這個節點合計的每分鐘速率；合流用的其他插槽只標名稱。 */
-function label(slots, infos, rates) {
+/** 每種物品的第一個插槽標上「實際/額定」每分鐘速率（實際為最近幾秒平均）；合流用的其他插槽留白。 */
+function label(slots, infos, states) {
     const seen = new Set();
     for (const slot of slots) {
         const info = infos.find(i => i.productId === slot.type);
         if (!info) continue;
-        const rate = rates?.find(r => r.productId === info.productId);
+        const state = states?.find(r => r.productId === info.productId);
         const first = !seen.has(info.productId);
         seen.add(info.productId);
         // 合流插槽疊在原插槽上，標籤留白才不會重疊
-        slot.label = !first ? " " : rate ? `${info.name}  ${formatRate(rate.perMinute)} ${info.unit}/分` : info.name;
+        slot.label = !first ? " "
+            : state ? `${info.name}  ${formatRate(round1(state.actualPerMinute))}/${formatRate(state.ratedPerMinute)} ${info.unit}/分`
+            : info.name;
     }
+}
+
+function round1(value) {
+    return Math.round(value * 10) / 10;
+}
+
+function isMachineStopped(node, state) {
+    return node.properties.kind !== "source" && (state?.status === "Starved" || state?.status === "Blocked");
 }
 
 /** 讓瀏覽器把文字存成檔案下載。 */

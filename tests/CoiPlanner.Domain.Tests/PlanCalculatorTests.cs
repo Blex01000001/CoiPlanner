@@ -11,13 +11,13 @@ public class PlanCalculatorTests
     private static ProductionPlan Plan(Node[] nodes, params Edge[] edges) => new() { Nodes = nodes, Edges = edges };
 
     [Fact]
-    public void Calculate_EmptyPlan_IsValidWithNoBalances()
+    public void Calculate_EmptyPlan_IsValid()
     {
         var result = _calculator.Calculate(new ProductionPlan());
 
         Assert.True(result.IsValid);
         Assert.Empty(result.Nodes);
-        Assert.Empty(result.Balances);
+        Assert.Empty(result.EdgeCapacities);
     }
 
     [Fact]
@@ -31,31 +31,14 @@ public class PlanCalculatorTests
     }
 
     [Fact]
-    public void Calculate_BalancedChain_HasZeroNetForIntermediate()
+    public void Calculate_ValidChain_HasEdgeCapacity()
     {
-        // 3 台熔爐產出 18 beta/分，2 台壓床消耗 18 beta/分
         var result = _calculator.Calculate(Plan(
             [Furnace(count: 3), Press(count: 2)],
             Link("f", "p", "beta_ingot")));
 
         Assert.True(result.IsValid);
-        var beta = Assert.Single(result.Balances, b => b.ProductId == "beta_ingot");
-        Assert.Equal(18, beta.SupplyPerMinute);
-        Assert.Equal(18, beta.DemandPerMinute);
-        Assert.Equal(0, beta.NetPerMinute);
-    }
-
-    [Fact]
-    public void Calculate_Balances_ReportShortageAndSurplus()
-    {
-        var result = _calculator.Calculate(Plan([Furnace(count: 1), Press(count: 1)]));
-
-        var beta = Assert.Single(result.Balances, b => b.ProductId == "beta_ingot");
-        Assert.Equal(6 - 9, beta.NetPerMinute);
-        var ore = Assert.Single(result.Balances, b => b.ProductId == "alpha_ore");
-        Assert.Equal(-12, ore.NetPerMinute);
-        var plate = Assert.Single(result.Balances, b => b.ProductId == "gamma_plate");
-        Assert.Equal(6, plate.NetPerMinute);
+        Assert.Equal([100.0], result.EdgeCapacities);
     }
 
     [Fact]

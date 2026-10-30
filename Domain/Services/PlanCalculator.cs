@@ -3,7 +3,7 @@ using CoiPlanner.Domain.Models;
 namespace CoiPlanner.Domain.Services;
 
 /// <summary>
-/// 依 <see cref="GameData"/> 計算產線規劃（機器節點與資源來源）的速率與物料平衡、每條連線的流量，並找出規劃中的錯誤。
+/// 依 <see cref="GameData"/> 檢查產線規劃（機器節點、資源來源與連線），並算出每個節點的額定速率與每條連線的運輸上限。
 /// </summary>
 public sealed class PlanCalculator
 {
@@ -69,42 +69,7 @@ public sealed class PlanCalculator
         for (var i = 0; i < plan.Edges.Count; i++)
             capacities[i] = CheckEdge(plan.Edges[i], i, ids, produces, consumes, issues);
 
-        return new PlanResult(nodeResults, Balance(nodeResults), issues, AllocateFlows(plan.Edges, capacities, nodeResults));
-    }
-
-    /// <summary>
-    /// 依序填滿：照連線的順序，每條線運送「來源剩餘產量、目標剩餘需求、運輸上限」三者中最小的量，
-    /// 再從來源與目標扣掉。機器的產出一律以配方的額定速率計算，不考慮它的輸入是否足夠。
-    /// </summary>
-    private static List<EdgeResult> AllocateFlows(IReadOnlyList<Edge> edges, double?[] capacities, List<NodeResult> nodes)
-    {
-        var supply = new Dictionary<(string, string), double>();
-        var demand = new Dictionary<(string, string), double>();
-        foreach (var node in nodes)
-        {
-            foreach (var o in node.Outputs)
-                supply[(node.NodeId, o.ProductId)] = supply.GetValueOrDefault((node.NodeId, o.ProductId)) + o.PerMinute;
-            foreach (var i in node.Inputs)
-                demand[(node.NodeId, i.ProductId)] = demand.GetValueOrDefault((node.NodeId, i.ProductId)) + i.PerMinute;
-        }
-
-        var results = new List<EdgeResult>(edges.Count);
-        for (var i = 0; i < edges.Count; i++)
-        {
-            if (capacities[i] is not { } capacity)
-            {
-                results.Add(new EdgeResult(i, 0, null));
-                continue;
-            }
-
-            var from = (edges[i].SourceNodeId, edges[i].ProductId);
-            var to = (edges[i].TargetNodeId, edges[i].ProductId);
-            var flow = Math.Min(capacity, Math.Min(supply.GetValueOrDefault(from), demand.GetValueOrDefault(to)));
-            supply[from] = supply.GetValueOrDefault(from) - flow;
-            demand[to] = demand.GetValueOrDefault(to) - flow;
-            results.Add(new EdgeResult(i, flow, capacity));
-        }
-        return results;
+        return new PlanResult(nodeResults, issues, capacities);
     }
 
     private bool CheckSource(ResourceSource source, List<PlanIssue> issues)
@@ -199,23 +164,5 @@ public sealed class PlanCalculator
             return null;
         }
         return capacity;
-    }
-
-    private static List<ProductBalance> Balance(IEnumerable<NodeResult> nodes)
-    {
-        var supply = new Dictionary<string, double>();
-        var demand = new Dictionary<string, double>();
-        foreach (var node in nodes)
-        {
-            foreach (var o in node.Outputs)
-                supply[o.ProductId] = supply.GetValueOrDefault(o.ProductId) + o.PerMinute;
-            foreach (var i in node.Inputs)
-                demand[i.ProductId] = demand.GetValueOrDefault(i.ProductId) + i.PerMinute;
-        }
-
-        return supply.Keys.Union(demand.Keys)
-            .Order(StringComparer.Ordinal)
-            .Select(id => new ProductBalance(id, supply.GetValueOrDefault(id), demand.GetValueOrDefault(id)))
-            .ToList();
     }
 }
