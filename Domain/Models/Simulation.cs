@@ -4,7 +4,7 @@ namespace CoiPlanner.Domain.Models;
 
 /// <summary>
 /// 模擬參數。這些是使用者暫訂的模擬設定，不是遊戲資料：
-/// 暫存容量為 3 分鐘的額定用量、運送 0.5 秒、輸入齊了 0.5 秒後開始生產（讓啟動過程看得出先後順序）。
+/// 暫存容量為 1 分鐘的額定用量、運送 0.5 秒、輸入齊了 0.5 秒後開始生產（讓啟動過程看得出先後順序）。
 /// </summary>
 public sealed record SimulationSettings
 {
@@ -12,7 +12,7 @@ public sealed record SimulationSettings
     public double StepSeconds { get; init; } = 0.1;
 
     /// <summary>每個輸入／輸出暫存區可存放幾分鐘的額定用量。</summary>
-    public double BufferMinutes { get; init; } = 3;
+    public double BufferMinutes { get; init; } = 1;
 
     /// <summary>物品在連線上運送的秒數。</summary>
     public double TransitSeconds { get; init; } = 0.5;

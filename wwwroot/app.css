@@ -63,14 +63,46 @@ h1:focus {
         outline: none;
     }
 
-.planner-side {
+/* 右上角的模擬控制列 */
+.planner-sim-bar {
     position: absolute;
     top: 12px;
     right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 6px;
+}
+
+.planner-sim-clock {
+    min-width: 3.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 右側的面板切換按鈕，面板開在按鈕左邊 */
+.planner-side-buttons {
+    position: absolute;
+    top: 72px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.planner-side-button-idle {
+    background-color: #e8e8e8 !important;
+    color: #424242 !important;
+}
+
+.planner-side {
+    position: absolute;
+    top: 72px;
+    right: 68px;
     width: 360px;
-    max-width: calc(100% - 24px);
+    max-width: calc(100% - 92px);
     /* 底部留給右下角的 fit view 按鈕 */
-    max-height: calc(100% - 76px);
+    max-height: calc(100% - 136px);
     overflow-y: auto;
 }
 
@@ -78,10 +110,4 @@ h1:focus {
     position: absolute;
     right: 16px;
     bottom: 16px;
-}
-
-.planner-panel-toggle {
-    position: absolute;
-    top: 12px;
-    right: 12px;
 }

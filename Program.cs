@@ -17,7 +17,9 @@ builder.Services.AddRazorComponents()
 // 拖放匯入的檔案內容都會超過，超過時連線會直接中斷。放寬到與匯入上限（1 MB）相符
 builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 2 * 1024 * 1024);
 
-builder.Services.AddMudServices();
+// 提示訊息放在下方中央，避免蓋住產線規劃頁右上角的模擬控制列
+builder.Services.AddMudServices(config =>
+    config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.BottomCenter);
 
 // 啟動時載入一次 Data/*.json；資料有誤會直接拋出 GameDataException，讓問題在啟動時就被發現
 var gameData = new GameDataLoader().LoadFromDirectory(Path.Combine(builder.Environment.ContentRootPath, "Data"));

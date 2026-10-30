@@ -21,16 +21,43 @@
                 OnClick="FitViewAsync" Disabled="_editor is null" aria-label="Fit view" />
     </MudTooltip>
 
-    @if (!_panelOpen)
-    {
-        <MudFab Class="planner-panel-toggle" Color="Color.Primary" Size="Size.Small"
-                StartIcon="@Icons.Material.Filled.Assessment" OnClick="() => _panelOpen = true" aria-label="顯示面板" />
-    }
+    @* 右上角：模擬控制 *@
+    <MudPaper Class="planner-sim-bar" Elevation="4">
+        <MudTooltip Text="@(_running ? "暫停" : "播放")">
+            <MudIconButton Icon="@(_running ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)"
+                           Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small"
+                           OnClick="() => _running = !_running" aria-label="@(_running ? "暫停" : "播放")" />
+        </MudTooltip>
+        <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+            @foreach (var speed in Speeds)
+            {
+                <MudButton Variant="@(_speed == speed ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
+                           OnClick="() => _speed = speed">@(speed)×</MudButton>
+            }
+        </MudButtonGroup>
+        <MudTooltip Text="重置模擬">
+            <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="ResetSimulation" aria-label="重置模擬" />
+        </MudTooltip>
+        <MudText Typo="Typo.body2" Class="planner-sim-clock">@FormatTime(_snapshot?.TimeSeconds ?? 0)</MudText>
+    </MudPaper>
 
-    <MudPaper Class="@($"planner-side pa-4 {(_panelOpen ? "" : "d-none")}")" Elevation="4">
+    @* 右側：面板切換按鈕；一次只開一個面板，再按一次收合 *@
+    <div class="planner-side-buttons">
+        <MudTooltip Text="產線規劃（說明、匯入匯出、問題）" Placement="Placement.Left">
+            <MudFab Color="@(_panel == SidePanel.Plan ? Color.Primary : Color.Default)" Class="@IdleClass(SidePanel.Plan)" Size="Size.Small"
+                    StartIcon="@Icons.Material.Filled.Assessment" OnClick="() => TogglePanel(SidePanel.Plan)" aria-label="產線規劃面板" />
+        </MudTooltip>
+        <MudTooltip Text="物料平衡" Placement="Placement.Left">
+            <MudFab Color="@(_panel == SidePanel.Balance ? Color.Primary : Color.Default)" Class="@IdleClass(SidePanel.Balance)" Size="Size.Small"
+                    StartIcon="@Icons.Material.Filled.TableChart" OnClick="() => TogglePanel(SidePanel.Balance)" aria-label="物料平衡面板" />
+        </MudTooltip>
+    </div>
+
+    @* 用 d-none 隱藏而不是不渲染：檔案上傳元件要一直存在，匯入才不會因為面板收合而失效 *@
+    <MudPaper Class="@($"planner-side pa-4 {(_panel == SidePanel.Plan ? "" : "d-none")}")" Elevation="4">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
             <MudText Typo="Typo.h6">產線規劃</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panelOpen = false" aria-label="收合面板" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panel = SidePanel.None" aria-label="收合面板" />
         </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mb-3">
             在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
@@ -53,57 +80,11 @@
         <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">也可以把 .json 檔直接拖到畫布上匯入。修改會自動存在這個瀏覽器中。</MudText>
 
         <MudText Typo="Typo.subtitle2" Class="mb-1">模擬</MudText>
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-1">
-            <MudIconButton Icon="@(_running ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)"
-                           Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small"
-                           OnClick="() => _running = !_running" aria-label="@(_running ? "暫停" : "播放")" />
-            <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
-                @foreach (var speed in Speeds)
-                {
-                    <MudButton Variant="@(_speed == speed ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
-                               OnClick="() => _speed = speed">@(speed)×</MudButton>
-                }
-            </MudButtonGroup>
-            <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="ResetSimulation" aria-label="重置模擬" />
-            <MudText Typo="Typo.body2" Class="ml-auto">@FormatTime(_snapshot?.TimeSeconds ?? 0)</MudText>
-        </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">
-            每個節點獨立運作：輸入都有料後等 @Format(_sim.Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
+            右上角可以暫停、切換速度、重置。每個節點獨立運作：輸入都有料後等 @Format(_sim.Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
             暫存 @Format(_sim.Settings.BufferMinutes) 分鐘用量、運送 @Format(_sim.Settings.TransitSeconds) 秒；沒接線的輸出送進倉庫。
             數字為最近 @Format(_sim.Settings.AverageSeconds) 秒的平均。
         </MudText>
-
-        <MudText Typo="Typo.subtitle2" Class="mb-1">物料平衡（每分鐘，實際）</MudText>
-        @if (_snapshot is null || _snapshot.Balances.Count == 0)
-        {
-            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">尚無節點。</MudText>
-        }
-        else
-        {
-            <MudSimpleTable Dense="true" Elevation="0" Class="mb-4">
-                <thead>
-                    <tr>
-                        <th>物品</th>
-                        <th style="text-align:right">產出</th>
-                        <th style="text-align:right">消耗</th>
-                        <th style="text-align:right">差額</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var b in _snapshot.Balances)
-                    {
-                        <tr>
-                            <td>@ProductName(b.ProductId)</td>
-                            <td style="text-align:right">@FormatRate(b.SupplyPerMinute)</td>
-                            <td style="text-align:right">@FormatRate(b.DemandPerMinute)</td>
-                            <td style="text-align:right">
-                                <MudText Typo="Typo.body2" Color="@NetColor(b.NetPerMinute)">@FormatRate(b.NetPerMinute)</MudText>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </MudSimpleTable>
-        }
 
         <MudText Typo="Typo.subtitle2" Class="mb-1">問題</MudText>
         @if (_result is null || _result.IsValid)
@@ -118,15 +99,58 @@
             }
         }
     </MudPaper>
+
+    @if (_panel == SidePanel.Balance)
+    {
+        <MudPaper Class="planner-side pa-4" Elevation="4">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.h6">物料平衡</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panel = SidePanel.None" aria-label="收合面板" />
+            </MudStack>
+            <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
+                每分鐘的實際產出與消耗（最近 @Format(_sim.Settings.AverageSeconds) 秒平均）。
+            </MudText>
+            @if (_snapshot is null || _snapshot.Balances.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">尚無節點。</MudText>
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Elevation="0">
+                    <thead>
+                        <tr>
+                            <th>物品</th>
+                            <th style="text-align:right">產出</th>
+                            <th style="text-align:right">消耗</th>
+                            <th style="text-align:right">差額</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in _snapshot.Balances)
+                        {
+                            <tr>
+                                <td>@ProductName(b.ProductId)</td>
+                                <td style="text-align:right">@FormatRate(b.SupplyPerMinute)</td>
+                                <td style="text-align:right">@FormatRate(b.DemandPerMinute)</td>
+                                <td style="text-align:right">
+                                    <MudText Typo="Typo.body2" Color="@NetColor(b.NetPerMinute)">@FormatRate(b.NetPerMinute)</MudText>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </MudPaper>
+    }
 </div>
 
 @code {
     private const string StorageKey = "coiplanner.plan";
     private const long MaxImportBytes = 1024 * 1024;
-    private static readonly int[] Speeds = [1, 5, 20];
+    private static readonly int[] Speeds = [1, 5, 10, 20];
     // 每 100 毫秒推進一次模擬並把狀態送到畫布；1× 時正好是一步（0.1 秒）
     private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
-    // 面板（物料平衡表）每幾次更新重繪一次，畫布則每次都更新
+    // 面板（模擬時間、物料平衡表）每幾次更新重繪一次，畫布則每次都更新
     private const int PanelRefreshTicks = 3;
 
     private ElementReference _canvas;
@@ -138,7 +162,9 @@
     private PlanResult? _result;
     private Dictionary<string, Product> _products = new();
     private HashSet<(string MachineId, string RecipeId)> _nodeTypes = new();
-    private bool _panelOpen = true;
+    private enum SidePanel { None, Plan, Balance }
+
+    private SidePanel _panel = SidePanel.Plan;
 
     private readonly ProductionSimulator _sim = new();
     private SimulationSnapshot? _snapshot;
@@ -220,13 +246,19 @@
         }
     }
 
-    // 面板展開時蓋住畫布右側的寬度（面板 360px 加左右間距），fit view 時要避開
-    private const int PanelInset = 384;
+    // 畫布右側被蓋住的寬度，fit view 時要避開：右側按鈕欄（含間距 68px），面板展開時再加上面板 360px 與間距
+    private const int ButtonsInset = 68;
+    private const int PanelInset = ButtonsInset + 360 + 12;
+
+    private void TogglePanel(SidePanel panel) => _panel = _panel == panel ? SidePanel.None : panel;
+
+    // 沒開啟的面板按鈕用淺色底，在深色畫布上才看得到
+    private string IdleClass(SidePanel panel) => _panel == panel ? "" : "planner-side-button-idle";
 
     private async Task FitViewAsync()
     {
         if (_editor is not null)
-            await _editor.InvokeVoidAsync("fitView", _panelOpen ? PanelInset : 0);
+            await _editor.InvokeVoidAsync("fitView", _panel == SidePanel.None ? ButtonsInset : PanelInset);
     }
 
     private void ResetSimulation()

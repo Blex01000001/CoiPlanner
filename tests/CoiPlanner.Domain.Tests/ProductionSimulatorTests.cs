@@ -6,7 +6,7 @@ namespace CoiPlanner.Domain.Tests;
 
 /// <summary>
 /// 熔爐：alpha_ore 12/分 → beta_ingot 6/分；壓床：beta_ingot 9/分 → gamma_plate 6/分。
-/// 輸送帶一級 10/分、二級 100/分。模擬參數用預設值：步長 0.1 秒、暫存 3 分鐘、運送 0.5 秒、啟動 0.5 秒、平均 5 秒。
+/// 輸送帶一級 10/分、二級 100/分。模擬參數用預設值：步長 0.1 秒、暫存 1 分鐘、運送 0.5 秒、啟動 0.5 秒、平均 5 秒。
 /// </summary>
 public class ProductionSimulatorTests
 {
@@ -60,7 +60,7 @@ public class ProductionSimulatorTests
     {
         var sim = Simulate([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore"));
 
-        // 一開始來源送 30/分、熔爐只用 12/分，熔爐的輸入暫存（36）大約 2 分鐘後才滿，之後連線只跟著消耗運送
+        // 一開始來源送 30/分、熔爐只用 12/分，熔爐的輸入暫存（12）大約 40 秒後才滿，之後連線只跟著消耗運送
         sim.Run(300);
 
         var f = Node(sim, "f");
@@ -132,16 +132,35 @@ public class ProductionSimulatorTests
     }
 
     [Fact]
+    public void FillInOrder_SecondLinkGetsSurplusAfterFirstBufferFills()
+    {
+        // 來源 30/分先送給第一台熔爐（用 12/分）：它的 1 分鐘暫存（12）每分鐘多 18，約 40 秒才滿；
+        // 在那之前第二台熔爐分不到料，之後才拿到剩下的 18/分
+        var sim = Simulate(
+            [Furnace("f1"), Furnace("f2")],
+            [Source("s", "alpha_ore", 30)],
+            Link("s", "f1", "alpha_ore"),
+            Link("s", "f2", "alpha_ore"));
+
+        sim.Run(35);
+        Assert.Equal(NodeStatus.Starved, Node(sim, "f2").Status);
+
+        sim.Run(60);
+        Assert.Equal(NodeStatus.Running, Node(sim, "f2").Status);
+        Near(1, Node(sim, "f2").Utilization, 0.01);
+    }
+
+    [Fact]
     public void Source_BlocksWhenItsBufferIsFull()
     {
-        // 來源 30/分只被拿走 12/分，3 分鐘的暫存（90）滿了以後只能跟著需求生產
+        // 來源 30/分只被拿走 12/分，1 分鐘的暫存（30）滿了以後只能跟著需求生產
         var sim = Simulate([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore"));
 
         sim.Run(10 * 60);
 
         var s = Node(sim, "s");
         Near(12, s.Outputs[0].ActualPerMinute, 0.1);
-        Near(90, s.Outputs[0].Stock, 0.5);
+        Near(30, s.Outputs[0].Stock, 0.5);
     }
 
     [Fact]
@@ -195,7 +214,7 @@ public class ProductionSimulatorTests
         Assert.Equal(before, Node(sim, "s").Outputs[0].Stock);
         var f = Node(sim, "f");
         Assert.Equal(NodeStatus.Running, f.Status);
-        Assert.Equal(24 * 3, f.Inputs[0].Capacity);
+        Assert.Equal(24, f.Inputs[0].Capacity);
     }
 
     [Fact]
