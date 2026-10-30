@@ -60,6 +60,13 @@
       "cycleSeconds": 60
     },
     {
+      "id": "mine_lime",
+      "name": "採石灰",
+      "inputs": [],
+      "outputs": [ { "productId": "lime", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "crush_iron_ore",
       "name": "粉碎鐵礦石",
       "inputs": [ { "productId": "iron_ore", "quantity": 192 } ],
@@ -194,6 +201,7 @@
     { "id": "coal_mine", "name": "煤礦場", "recipeIds": [ "mine_coal" ] },
     { "id": "steam_boiler_coal", "name": "蒸氣鍋爐(煤)", "recipeIds": [ "boil_steam_coal" ] },
     { "id": "iron_ore_mine", "name": "鐵礦場", "recipeIds": [ "mine_iron_ore" ] },
+    { "id": "lime_quarry", "name": "石灰場", "recipeIds": [ "mine_lime" ] },
     { "id": "crusher_large", "name": "粉碎機(大型)", "recipeIds": [ "crush_iron_ore" ] },
     { "id": "blast_furnace_2", "name": "高爐II", "recipeIds": [ "smelt_iron_blast" ] },
     { "id": "air_separator", "name": "空氣分離器", "recipeIds": [ "separate_air" ] },

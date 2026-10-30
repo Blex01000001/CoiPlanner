@@ -38,7 +38,7 @@ public class RealGameDataTests
     {
         Assert.DoesNotContain(Data.Machines, m => m.Id is "iron_smelter" or "iron_caster");
         Assert.DoesNotContain(Data.Products, p => p.Id == "iron_ingot");
-        Assert.Equal(16, Data.Machines.Count);
+        Assert.Equal(17, Data.Machines.Count);
     }
 
     [Fact]
@@ -64,6 +64,7 @@ public class RealGameDataTests
     {
         Assert.Equal(new Dictionary<string, double> { ["oxygen"] = 36, ["nitrogen"] = 36 }, Amounts(RecipeOf("air_separator").Outputs));
         Assert.Equal(60, Amounts(RecipeOf("oil_well").Outputs)["crude_oil"]);
+        Assert.Equal(60, Amounts(RecipeOf("lime_quarry").Outputs)["lime"]);
         Assert.Empty(RecipeOf("air_separator").Inputs);
     }
 }
