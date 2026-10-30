@@ -1,9 +1,9 @@
 {
   "products": [
-    { "id": "alpha_ore", "name": "Alpha Ore", "unit": "pcs" },
-    { "id": "beta_ingot", "name": "Beta Ingot", "unit": "pcs" },
-    { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs" },
-    { "id": "iron_ore", "name": "Iron Ore", "unit": "pcs" }
+    { "id": "alpha_ore", "name": "Alpha Ore", "unit": "pcs", "kind": "unit" },
+    { "id": "beta_ingot", "name": "Beta Ingot", "unit": "pcs", "kind": "unit" },
+    { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs", "kind": "unit" },
+    { "id": "iron_ore", "name": "Iron Ore", "unit": "pcs", "kind": "unit" }
   ],
   "recipes": [
     {
@@ -24,5 +24,9 @@
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
     { "id": "demo_press", "name": "Demo Press", "recipeIds": [ "press_gamma" ] }
+  ],
+  "transports": [
+    { "id": "belt", "name": "Demo Belt", "kind": "unit", "tiersPerMinute": [ 10, 100 ] },
+    { "id": "pipe", "name": "Demo Pipe", "kind": "fluid", "tiersPerMinute": [ 50 ] }
   ]
 }

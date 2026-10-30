@@ -13,6 +13,12 @@ const SOURCE_NODE_BGCOLOR = "#22352c";
 const FLOW_ARROW_SPACING = 40;
 const FLOW_ARROW_SPEED = 60;
 const FLOW_ARROW_SIZE = 5;
+// 連線中點的流量標籤；達到運輸上限時改用醒目的顏色與粗體
+const FLOW_LABEL_FONT = "12px Arial";
+const FLOW_LABEL_FULL_FONT = "bold 13px Arial";
+const FLOW_LABEL_COLOR = "#ddd";
+const FLOW_LABEL_FULL_COLOR = "#ff6b6b";
+const FLOW_LABEL_BGCOLOR = "rgba(24, 24, 24, 0.9)";
 
 // litegraph 的節點類型是全域註冊的，同一時間只會有一個編輯器
 let current = null;
@@ -106,8 +112,11 @@ function registerNodeTypes(catalog) {
                         if (this.inputs[i].link == null && linked) {
                             const link = this.graph._links.get(linked.link);
                             const origin = this.graph.getNodeById(link.origin_id);
+                            // 重接會產生新的連線 id，等級要跟著搬過去
+                            const tier = current?.linkTiers.get(link.id);
                             this.disconnectInput(this.inputs.indexOf(linked), true);
-                            origin.connect(link.origin_slot, this, i);
+                            const moved = origin.connect(link.origin_slot, this, i);
+                            if (moved && tier) current.linkTiers.set(moved.id, tier);
                         }
                     }
                     for (let i = this.inputs.length - 1; i >= t.inputs.length; i--) {
@@ -174,6 +183,11 @@ class Editor {
         this.dotnetRef = dotnetRef;
         this.typesById = new Map(catalog.nodeTypes.map(t => [`${t.machineId}|${t.recipeId}`, t]));
         this.productsById = new Map(catalog.products.map(p => [p.productId, p]));
+        this.transportsByKind = new Map(catalog.transports.map(t => [t.kind, t]));
+        // 每條連線（litegraph 連線 id）的運輸等級；沒有記錄的是預設的一級
+        this.linkTiers = new Map();
+        // C# 算出的每條連線流量與上限，key 是 litegraph 連線 id
+        this.edgeResults = new Map();
         this.loading = false;
         this.timer = null;
         this.edgeLinkIds = [];
@@ -183,6 +197,7 @@ class Editor {
         this.canvas.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE;
         // 不畫連線中間的圓點（流向改由 drawFlow 的箭頭表示）；點連線中間仍可開啟連線選單
         this.canvas.linkMarkerShape = LinkMarkerShape.None;
+        this.canvas.showLinkMenu = (segment, e) => this.showLinkMenu(segment, e);
         this.graph.onNodeAdded = () => this.changed();
         this.graph.onNodeRemoved = () => this.changed();
         this.canvas.onNodeMoved = () => this.changed();
@@ -209,6 +224,7 @@ class Editor {
         this.loading = true;
         try {
             this.graph.clear();
+            this.linkTiers.clear();
             const created = new Map();
             for (const n of plan.nodes) {
                 const t = this.typesById.get(`${n.machineId}|${n.recipeId}`);
@@ -237,7 +253,9 @@ class Editor {
                 const out = source.outputs.findIndex(s => s.type === e.productId);
                 const inp = target.inputs.findIndex(s => s.type === e.productId);
                 // 原插槽已有連線時 connectSlots 會改接到合流插槽
-                if (out >= 0 && inp >= 0) source.connect(out, target, inp);
+                if (out < 0 || inp < 0) continue;
+                const link = source.connect(out, target, inp);
+                if (link) this.linkTiers.set(link.id, e.tier);
             }
         } finally {
             this.loading = false;
@@ -281,7 +299,9 @@ class Editor {
                 sourceNodeId: String(link.origin_id),
                 targetNodeId: String(link.target_id),
                 productId: String(link.type),
-                transport: "",
+                // 一種物品型態只能走一種運輸，運輸方式由物品決定；使用者只選等級
+                transport: this.transportFor(link.type)?.id ?? "",
+                tier: this.linkTiers.get(link.id) ?? 1,
             });
         }
         return { nodes, sources, edges };
@@ -309,7 +329,29 @@ class Editor {
         for (const link of this.graph._links.values()) {
             link.color = badLinks.has(link.id) ? ISSUE_LINK_COLOR : undefined;
         }
+        this.edgeResults = new Map(result.edges.map(e => [this.edgeLinkIds[e.edgeIndex], e]));
         this.canvas.setDirty(true, true);
+    }
+
+    transportFor(productId) {
+        return this.transportsByKind.get(this.productsById.get(String(productId))?.kind);
+    }
+
+    /** 點連線中間（流量標籤）時的選單：選擇運輸等級或刪除連線。取代 litegraph 預設的連線選單。 */
+    showLinkMenu(segment, e) {
+        const transport = this.transportFor(segment.type);
+        const tier = this.linkTiers.get(segment.id) ?? 1;
+        const items = (transport?.tiersPerMinute ?? []).map((cap, i) => ({
+            content: `${i + 1 === tier ? "✓ " : ""}${i + 1} 級（${formatRate(cap)}/分）`,
+            callback: () => {
+                this.linkTiers.set(segment.id, i + 1);
+                this.changed();
+            },
+        }));
+        if (items.length) items.push(null);
+        items.push({ content: "刪除連線", callback: () => this.graph.removeLink(segment.id) });
+        new LiteGraph.ContextMenu(items, { event: e, title: transport?.name ?? "連線" });
+        return false;
     }
 
     /** 在每條連線上畫出沿方向移動的箭頭，表示物料流動（不代表實際流量）。 */
@@ -352,7 +394,36 @@ class Editor {
                 ctx.fill();
                 ctx.restore();
             }
+
+            this.drawFlowLabel(ctx, link, a, b, hidden);
         }
+    }
+
+    /** 在連線中點畫「流量/上限」；達到上限時用醒目的顏色與粗體。 */
+    drawFlowLabel(ctx, link, a, b, hidden) {
+        const r = this.edgeResults.get(link.id);
+        if (r?.capacityPerMinute == null) return;
+        const [x, y] = this.canvas.computeConnectionPoint(a, b, 0.5);
+        if (hidden(x, y)) return;
+
+        const full = r.flowPerMinute >= r.capacityPerMinute - 1e-9;
+        const text = `${formatRate(r.flowPerMinute)}/${formatRate(r.capacityPerMinute)}`;
+        ctx.font = full ? FLOW_LABEL_FULL_FONT : FLOW_LABEL_FONT;
+        const w = ctx.measureText(text).width + 10;
+        const h = 18;
+        ctx.fillStyle = FLOW_LABEL_BGCOLOR;
+        ctx.strokeStyle = full ? FLOW_LABEL_FULL_COLOR : link.color ?? this.canvas.default_link_color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2, y - h / 2, w, h, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = full ? FLOW_LABEL_FULL_COLOR : FLOW_LABEL_COLOR;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x, y + 1);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
     }
 
     /** 把 .json 檔拖到畫布上匯入；內容交給 C# 解析。 */

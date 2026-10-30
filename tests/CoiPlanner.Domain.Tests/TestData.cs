@@ -9,10 +9,10 @@ internal static class TestData
     {
         Products =
         [
-            new Product { Id = "alpha_ore", Name = "Alpha Ore", Unit = "pcs" },
-            new Product { Id = "beta_ingot", Name = "Beta Ingot", Unit = "pcs" },
-            new Product { Id = "gamma_plate", Name = "Gamma Plate", Unit = "pcs" },
-            new Product { Id = "iron_ore", Name = "Iron Ore", Unit = "pcs" },
+            new Product { Id = "alpha_ore", Name = "Alpha Ore", Unit = "pcs", Kind = "unit" },
+            new Product { Id = "beta_ingot", Name = "Beta Ingot", Unit = "pcs", Kind = "unit" },
+            new Product { Id = "gamma_plate", Name = "Gamma Plate", Unit = "pcs", Kind = "unit" },
+            new Product { Id = "iron_ore", Name = "Iron Ore", Unit = "pcs", Kind = "unit" },
         ],
         Recipes =
         [
@@ -34,6 +34,11 @@ internal static class TestData
             new Machine { Id = "demo_furnace", Name = "Demo Furnace", RecipeIds = ["smelt_beta"] },
             new Machine { Id = "demo_press", Name = "Demo Press", RecipeIds = ["press_gamma"] },
         ],
+        Transports =
+        [
+            new Transport { Id = "belt", Name = "Demo Belt", Kind = "unit", TiersPerMinute = [10, 100] },
+            new Transport { Id = "pipe", Name = "Demo Pipe", Kind = "fluid", TiersPerMinute = [50] },
+        ],
     };
 
     public static Node Furnace(string id = "f", int count = 1) =>
@@ -45,6 +50,7 @@ internal static class TestData
     public static ResourceSource Source(string id, string productId, double ratePerMinute) =>
         new() { Id = id, ProductId = productId, RatePerMinute = ratePerMinute };
 
-    public static Edge Link(string source, string target, string productId) =>
-        new() { SourceNodeId = source, TargetNodeId = target, ProductId = productId, Transport = "belt" };
+    /// <summary>預設用二級輸送帶（每分鐘 100），容量足夠，不影響只測速率的測試。</summary>
+    public static Edge Link(string source, string target, string productId, string transport = "belt", int tier = 2) =>
+        new() { SourceNodeId = source, TargetNodeId = target, ProductId = productId, Transport = transport, Tier = tier };
 }

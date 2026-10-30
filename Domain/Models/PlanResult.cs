@@ -12,13 +12,23 @@ public sealed record ProductBalance(string ProductId, double SupplyPerMinute, do
     public double NetPerMinute => SupplyPerMinute - DemandPerMinute;
 }
 
+/// <summary>
+/// 一條連線每分鐘實際運送的量與運輸上限。EdgeIndex 是連線在 <see cref="ProductionPlan.Edges"/> 中的位置；
+/// 連線有錯誤（例如運輸方式不符）時 CapacityPerMinute 為 null、流量為 0。
+/// </summary>
+public sealed record EdgeResult(int EdgeIndex, double FlowPerMinute, double? CapacityPerMinute)
+{
+    public bool IsFull => CapacityPerMinute is { } cap && FlowPerMinute >= cap - 1e-9;
+}
+
 /// <summary>規劃中的問題；NodeId 或 EdgeIndex 指出問題所在位置。</summary>
 public sealed record PlanIssue(string Message, string? NodeId = null, int? EdgeIndex = null);
 
 public sealed record PlanResult(
     IReadOnlyList<NodeResult> Nodes,
     IReadOnlyList<ProductBalance> Balances,
-    IReadOnlyList<PlanIssue> Issues)
+    IReadOnlyList<PlanIssue> Issues,
+    IReadOnlyList<EdgeResult> Edges)
 {
     public bool IsValid => Issues.Count == 0;
 }

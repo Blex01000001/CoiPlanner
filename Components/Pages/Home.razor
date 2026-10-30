@@ -16,11 +16,13 @@
                 <MudTh>Id</MudTh>
                 <MudTh>名稱</MudTh>
                 <MudTh>單位</MudTh>
+                <MudTh>運輸方式</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Id"><code>@context.Id</code></MudTd>
                 <MudTd DataLabel="名稱">@context.Name</MudTd>
                 <MudTd DataLabel="單位">@context.Unit</MudTd>
+                <MudTd DataLabel="運輸方式">@TransportName(context.Kind)</MudTd>
             </RowTemplate>
         </MudTable>
     </MudTabPanel>
@@ -65,6 +67,29 @@
             </RowTemplate>
         </MudTable>
     </MudTabPanel>
+
+    <MudTabPanel Text="@($"運輸 ({Data.Transports.Count})")">
+        <MudTable Items="Data.Transports" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>名稱</MudTh>
+                <MudTh>物品型態</MudTh>
+                <MudTh>各級吞吐量（每分鐘）</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="名稱">
+                    @context.Name
+                    <MudText Typo="Typo.caption" Class="d-block"><code>@context.Id</code></MudText>
+                </MudTd>
+                <MudTd DataLabel="物品型態"><code>@context.Kind</code></MudTd>
+                <MudTd DataLabel="各級吞吐量（每分鐘）">
+                    @for (var i = 0; i < context.TiersPerMinute.Count; i++)
+                    {
+                        <MudChip T="string" Size="Size.Small">@(i + 1) 級：@context.TiersPerMinute[i].ToString("0.##")</MudChip>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
 </MudTabs>
 
 @code {
@@ -78,6 +103,9 @@
     }
 
     private string RecipeName(string id) => _recipes.TryGetValue(id, out var r) ? r.Name : id;
+
+    private string TransportName(string? kind) =>
+        Data.Transports.FirstOrDefault(t => t.Kind == kind)?.Name ?? "—";
 
     private RenderFragment ItemList(Recipe recipe, IReadOnlyList<ItemAmount> items, Func<string, double> perMinute) => __builder =>
     {

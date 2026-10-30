@@ -29,7 +29,7 @@
         </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mb-3">
             在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
-            點連線中間可刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
+            連線中間顯示「流量/上限」（每分鐘，同一來源或目標有多條線時依建立順序填滿），達到上限時以紅色粗體標示；點它可以選擇運輸等級或刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
         </MudText>
 
         <MudStack Row="true" Spacing="1" Class="mb-1">
@@ -283,6 +283,7 @@
             }),
         // 每個物品都可以放一個資源來源節點
         Products = Data.Products.Select(p => Slot(p.Id)),
+        Transports = Data.Transports.Select(t => new { t.Id, t.Name, t.Kind, t.TiersPerMinute }),
     };
 
     private object Slot(string productId) => new
@@ -290,6 +291,7 @@
         ProductId = productId,
         Name = _products[productId].Name,
         Unit = _products[productId].Unit,
+        Kind = _products[productId].Kind,
     };
 
     private static bool IsEmpty(ProductionPlan plan) => plan.Nodes.Count == 0 && plan.Sources.Count == 0;

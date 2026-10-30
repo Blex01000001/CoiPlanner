@@ -1,12 +1,12 @@
-// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量；運輸方式的 tiersPerMinute 依序為一級、二級……的每分鐘吞吐量
 {
   "products": [
-    { "id": "water", "name": "水", "unit": "單位" },
-    { "id": "coal", "name": "煤礦", "unit": "單位" },
-    { "id": "steam_high", "name": "蒸氣(高壓)", "unit": "單位" },
-    { "id": "iron_ore", "name": "鐵礦", "unit": "單位" },
-    { "id": "molten_iron", "name": "鐵水", "unit": "單位" },
-    { "id": "iron_ingot", "name": "鐵錠", "unit": "單位" }
+    { "id": "water", "name": "水", "unit": "單位", "kind": "fluid" },
+    { "id": "coal", "name": "煤礦", "unit": "單位", "kind": "loose" },
+    { "id": "steam_high", "name": "蒸氣(高壓)", "unit": "單位", "kind": "fluid" },
+    { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose" },
+    { "id": "molten_iron", "name": "鐵水", "unit": "單位", "kind": "molten" },
+    { "id": "iron_ingot", "name": "鐵錠", "unit": "單位", "kind": "unit" }
   ],
   "recipes": [
     {
@@ -65,5 +65,11 @@
     { "id": "iron_ore_mine", "name": "鐵礦場", "recipeIds": [ "mine_iron_ore" ] },
     { "id": "iron_smelter", "name": "煉鐵廠", "recipeIds": [ "smelt_iron" ] },
     { "id": "iron_caster", "name": "鑄鐵廠", "recipeIds": [ "cast_iron_ingot" ] }
+  ],
+  "transports": [
+    { "id": "pipe", "name": "管線", "kind": "fluid", "tiersPerMinute": [ 60, 120, 200, 400, 900 ] },
+    { "id": "loose_belt", "name": "散裝運輸帶", "kind": "loose", "tiersPerMinute": [ 60, 120, 220, 400 ] },
+    { "id": "molten_channel", "name": "熔融通道", "kind": "molten", "tiersPerMinute": [ 60, 120, 220, 400 ] },
+    { "id": "belt", "name": "運輸帶", "kind": "unit", "tiersPerMinute": [ 60, 120, 220, 400 ] }
   ]
 }

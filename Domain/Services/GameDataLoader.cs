@@ -47,6 +47,7 @@ public sealed class GameDataLoader
             Products = parts.SelectMany(p => p.Products).ToList(),
             Recipes = parts.SelectMany(p => p.Recipes).ToList(),
             Machines = parts.SelectMany(p => p.Machines).ToList(),
+            Transports = parts.SelectMany(p => p.Transports).ToList(),
         };
         Validate(merged);
         return merged;
@@ -80,6 +81,21 @@ public sealed class GameDataLoader
         var productIds = CollectIds(data.Products.Select(p => p.Id), "product", errors);
         var recipeIds = CollectIds(data.Recipes.Select(r => r.Id), "recipe", errors);
         CollectIds(data.Machines.Select(m => m.Id), "machine", errors);
+        CollectIds(data.Transports.Select(t => t.Id), "transport", errors);
+
+        var kinds = new HashSet<string>();
+        foreach (var transport in data.Transports)
+        {
+            if (!kinds.Add(transport.Kind))
+                errors.Add($"transport '{transport.Id}'：物品型態 '{transport.Kind}' 已經有其他運輸方式，一種型態只能走一種運輸。");
+            if (transport.TiersPerMinute.Count == 0)
+                errors.Add($"transport '{transport.Id}' 沒有任何等級（tiersPerMinute）。");
+            if (transport.TiersPerMinute.Any(t => t <= 0))
+                errors.Add($"transport '{transport.Id}' 的每個等級吞吐量都必須大於 0。");
+        }
+
+        foreach (var product in data.Products.Where(p => p.Kind is not null && !kinds.Contains(p.Kind)))
+            errors.Add($"product '{product.Id}' 的型態 '{product.Kind}' 沒有對應的運輸方式。");
 
         foreach (var recipe in data.Recipes)
         {

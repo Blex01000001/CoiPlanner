@@ -6,4 +6,5 @@ public sealed record GameData
     public IReadOnlyList<Product> Products { get; init; } = [];
     public IReadOnlyList<Recipe> Recipes { get; init; } = [];
     public IReadOnlyList<Machine> Machines { get; init; } = [];
+    public IReadOnlyList<Transport> Transports { get; init; } = [];
 }

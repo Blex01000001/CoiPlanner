@@ -2,18 +2,22 @@ using CoiPlanner.Domain.Models;
 
 namespace CoiPlanner.Domain.Services;
 
-/// <summary>依 <see cref="GameData"/> 計算產線規劃（機器節點與資源來源）的速率與物料平衡，並找出規劃中的錯誤。</summary>
+/// <summary>
+/// 依 <see cref="GameData"/> 計算產線規劃（機器節點與資源來源）的速率與物料平衡、每條連線的流量，並找出規劃中的錯誤。
+/// </summary>
 public sealed class PlanCalculator
 {
     private readonly Dictionary<string, Product> _products;
     private readonly Dictionary<string, Recipe> _recipes;
     private readonly Dictionary<string, Machine> _machines;
+    private readonly Dictionary<string, Transport> _transportsByKind;
 
     public PlanCalculator(GameData data)
     {
         _products = data.Products.ToDictionary(p => p.Id);
         _recipes = data.Recipes.ToDictionary(r => r.Id);
         _machines = data.Machines.ToDictionary(m => m.Id);
+        _transportsByKind = data.Transports.ToDictionary(t => t.Kind);
     }
 
     public PlanResult Calculate(ProductionPlan plan)
@@ -61,10 +65,46 @@ public sealed class PlanCalculator
             nodeResults.Add(new NodeResult(source.Id, [], [new ProductRate(source.ProductId, source.RatePerMinute)]));
         }
 
+        var capacities = new double?[plan.Edges.Count];
         for (var i = 0; i < plan.Edges.Count; i++)
-            CheckEdge(plan.Edges[i], i, ids, produces, consumes, issues);
+            capacities[i] = CheckEdge(plan.Edges[i], i, ids, produces, consumes, issues);
 
-        return new PlanResult(nodeResults, Balance(nodeResults), issues);
+        return new PlanResult(nodeResults, Balance(nodeResults), issues, AllocateFlows(plan.Edges, capacities, nodeResults));
+    }
+
+    /// <summary>
+    /// 依序填滿：照連線的順序，每條線運送「來源剩餘產量、目標剩餘需求、運輸上限」三者中最小的量，
+    /// 再從來源與目標扣掉。機器的產出一律以配方的額定速率計算，不考慮它的輸入是否足夠。
+    /// </summary>
+    private static List<EdgeResult> AllocateFlows(IReadOnlyList<Edge> edges, double?[] capacities, List<NodeResult> nodes)
+    {
+        var supply = new Dictionary<(string, string), double>();
+        var demand = new Dictionary<(string, string), double>();
+        foreach (var node in nodes)
+        {
+            foreach (var o in node.Outputs)
+                supply[(node.NodeId, o.ProductId)] = supply.GetValueOrDefault((node.NodeId, o.ProductId)) + o.PerMinute;
+            foreach (var i in node.Inputs)
+                demand[(node.NodeId, i.ProductId)] = demand.GetValueOrDefault((node.NodeId, i.ProductId)) + i.PerMinute;
+        }
+
+        var results = new List<EdgeResult>(edges.Count);
+        for (var i = 0; i < edges.Count; i++)
+        {
+            if (capacities[i] is not { } capacity)
+            {
+                results.Add(new EdgeResult(i, 0, null));
+                continue;
+            }
+
+            var from = (edges[i].SourceNodeId, edges[i].ProductId);
+            var to = (edges[i].TargetNodeId, edges[i].ProductId);
+            var flow = Math.Min(capacity, Math.Min(supply.GetValueOrDefault(from), demand.GetValueOrDefault(to)));
+            supply[from] = supply.GetValueOrDefault(from) - flow;
+            demand[to] = demand.GetValueOrDefault(to) - flow;
+            results.Add(new EdgeResult(i, flow, capacity));
+        }
+        return results;
     }
 
     private bool CheckSource(ResourceSource source, List<PlanIssue> issues)
@@ -109,10 +149,14 @@ public sealed class PlanCalculator
         return ok ? recipe : null;
     }
 
-    private void CheckEdge(Edge edge, int index, HashSet<string> ids,
+    /// <summary>檢查連線；沒有問題時回傳這條線每分鐘的運輸上限，有問題時回傳 null。</summary>
+    private double? CheckEdge(Edge edge, int index, HashSet<string> ids,
         Dictionary<string, HashSet<string>> produces, Dictionary<string, HashSet<string>> consumes,
         List<PlanIssue> issues)
     {
+        var before = issues.Count;
+        var capacity = CheckTransport(edge, index, issues);
+
         if (!_products.ContainsKey(edge.ProductId))
             issues.Add(new($"連線 #{index} 的物品 '{edge.ProductId}' 不存在。", EdgeIndex: index));
         if (edge.SourceNodeId == edge.TargetNodeId)
@@ -127,6 +171,34 @@ public sealed class PlanCalculator
             issues.Add(new($"連線 #{index} 的目標節點 '{edge.TargetNodeId}' 不存在。", EdgeIndex: index));
         else if (consumes.TryGetValue(edge.TargetNodeId, out var inputs) && !inputs.Contains(edge.ProductId))
             issues.Add(new($"連線 #{index}：目標節點 '{edge.TargetNodeId}' 不使用 '{edge.ProductId}'。", EdgeIndex: index));
+
+        // 端點節點本身有錯（例如機器不存在）時不在 produces/consumes 中，這條線也不計算流量
+        var endpointsOk = produces.ContainsKey(edge.SourceNodeId) && consumes.ContainsKey(edge.TargetNodeId);
+        return issues.Count == before && endpointsOk ? capacity : null;
+    }
+
+    /// <summary>連線的運輸方式必須是物品型態對應的那一種，等級必須存在。</summary>
+    private double? CheckTransport(Edge edge, int index, List<PlanIssue> issues)
+    {
+        if (!_products.TryGetValue(edge.ProductId, out var product))
+            return null;
+        if (product.Kind is null || !_transportsByKind.TryGetValue(product.Kind, out var transport))
+        {
+            issues.Add(new($"連線 #{index}：物品 '{product.Name}' 沒有對應的運輸方式。", EdgeIndex: index));
+            return null;
+        }
+        if (edge.Transport != transport.Id)
+        {
+            var actual = string.IsNullOrEmpty(edge.Transport) ? "未指定" : $"'{edge.Transport}'";
+            issues.Add(new($"連線 #{index}：'{product.Name}' 必須用{transport.Name}運輸，目前為 {actual}。", EdgeIndex: index));
+            return null;
+        }
+        if (transport.CapacityPerMinute(edge.Tier) is not { } capacity)
+        {
+            issues.Add(new($"連線 #{index}：{transport.Name}沒有 {edge.Tier} 級（共 {transport.TiersPerMinute.Count} 級）。", EdgeIndex: index));
+            return null;
+        }
+        return capacity;
     }
 
     private static List<ProductBalance> Balance(IEnumerable<NodeResult> nodes)

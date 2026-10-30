@@ -8,4 +8,7 @@ public sealed record Product
 
     /// <summary>計量單位，例如「個」或「m³」。</summary>
     public required string Unit { get; init; }
+
+    /// <summary>物品型態，例如流體、散裝；決定連線要用哪一種 <see cref="Transport"/>。</summary>
+    public string? Kind { get; init; }
 }
