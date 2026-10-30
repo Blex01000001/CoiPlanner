@@ -164,7 +164,8 @@
     private HashSet<(string MachineId, string RecipeId)> _nodeTypes = new();
     private enum SidePanel { None, Plan, Balance }
 
-    private SidePanel _panel = SidePanel.Plan;
+    // 一開始收起面板，畫布不被遮住；需要時按右側按鈕打開
+    private SidePanel _panel = SidePanel.None;
 
     private readonly ProductionSimulator _sim = new();
     private SimulationSnapshot? _snapshot;

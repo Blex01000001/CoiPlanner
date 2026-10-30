@@ -6,7 +6,26 @@
     { "id": "steam_high", "name": "蒸氣(高壓)", "unit": "單位", "kind": "fluid" },
     { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose" },
     { "id": "molten_iron", "name": "鐵水", "unit": "單位", "kind": "molten" },
-    { "id": "iron_ingot", "name": "鐵錠", "unit": "單位", "kind": "unit" }
+    { "id": "crushed_iron_ore", "name": "碎鐵礦石", "unit": "單位", "kind": "loose" },
+    { "id": "lime", "name": "石灰", "unit": "單位", "kind": "loose" },
+    { "id": "slag", "name": "爐渣", "unit": "單位", "kind": "loose" },
+    { "id": "exhaust", "name": "廢氣", "unit": "單位", "kind": "fluid" },
+    { "id": "oxygen", "name": "氧氣", "unit": "單位", "kind": "fluid" },
+    { "id": "nitrogen", "name": "氮氣", "unit": "單位", "kind": "fluid" },
+    { "id": "molten_steel", "name": "鋼水", "unit": "單位", "kind": "molten" },
+    { "id": "steel_plate", "name": "鋼板", "unit": "單位", "kind": "unit" },
+    { "id": "iron_plate", "name": "鐵板", "unit": "單位", "kind": "unit" },
+    { "id": "mechanical_parts", "name": "機械零件", "unit": "單位", "kind": "unit" },
+    { "id": "crude_oil", "name": "石油", "unit": "單位", "kind": "fluid" },
+    { "id": "medium_oil", "name": "中油", "unit": "單位", "kind": "fluid" },
+    { "id": "heavy_oil", "name": "重油", "unit": "單位", "kind": "fluid" },
+    { "id": "sour_water", "name": "酸水", "unit": "單位", "kind": "fluid" },
+    { "id": "diesel", "name": "柴油", "unit": "單位", "kind": "fluid" },
+    { "id": "light_oil", "name": "輕油", "unit": "單位", "kind": "fluid" },
+    { "id": "naphtha", "name": "石腦油", "unit": "單位", "kind": "fluid" },
+    { "id": "fuel_gas", "name": "燃氣", "unit": "單位", "kind": "fluid" },
+    { "id": "carbon_dioxide", "name": "二氧化碳", "unit": "單位", "kind": "fluid" },
+    { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit" }
   ],
   "recipes": [
     {
@@ -41,20 +60,132 @@
       "cycleSeconds": 60
     },
     {
-      "id": "smelt_iron",
-      "name": "煉鐵",
-      "inputs": [
-        { "productId": "iron_ore", "quantity": 30 },
-        { "productId": "coal", "quantity": 10 }
-      ],
-      "outputs": [ { "productId": "molten_iron", "quantity": 30 } ],
+      "id": "crush_iron_ore",
+      "name": "粉碎鐵礦石",
+      "inputs": [ { "productId": "iron_ore", "quantity": 192 } ],
+      "outputs": [ { "productId": "crushed_iron_ore", "quantity": 192 } ],
       "cycleSeconds": 60
     },
     {
-      "id": "cast_iron_ingot",
-      "name": "鑄鐵錠",
-      "inputs": [ { "productId": "molten_iron", "quantity": 30 } ],
-      "outputs": [ { "productId": "iron_ingot", "quantity": 30 } ],
+      "id": "smelt_iron_blast",
+      "name": "高爐煉鐵",
+      "inputs": [
+        { "productId": "crushed_iron_ore", "quantity": 48 },
+        { "productId": "lime", "quantity": 6 },
+        { "productId": "coal", "quantity": 15 }
+      ],
+      "outputs": [
+        { "productId": "molten_iron", "quantity": 48 },
+        { "productId": "slag", "quantity": 18 },
+        { "productId": "exhaust", "quantity": 36 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "separate_air",
+      "name": "空氣分離",
+      "inputs": [],
+      "outputs": [
+        { "productId": "oxygen", "quantity": 36 },
+        { "productId": "nitrogen", "quantity": 36 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_steel",
+      "name": "煉鋼",
+      "inputs": [
+        { "productId": "molten_iron", "quantity": 48 },
+        { "productId": "oxygen", "quantity": 18 }
+      ],
+      "outputs": [
+        { "productId": "molten_steel", "quantity": 24 },
+        { "productId": "exhaust", "quantity": 36 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_steel_plate",
+      "name": "鑄造鋼板",
+      "inputs": [
+        { "productId": "molten_steel", "quantity": 24 },
+        { "productId": "water", "quantity": 12 }
+      ],
+      "outputs": [ { "productId": "steel_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_iron_plate",
+      "name": "鑄造鐵板",
+      "inputs": [ { "productId": "molten_iron", "quantity": 24 } ],
+      "outputs": [ { "productId": "iron_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_mechanical_parts",
+      "name": "組裝機械零件",
+      "inputs": [ { "productId": "steel_plate", "quantity": 24 } ],
+      "outputs": [ { "productId": "mechanical_parts", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "pump_crude_oil",
+      "name": "抽石油",
+      "inputs": [],
+      "outputs": [ { "productId": "crude_oil", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "distill_crude_oil",
+      "name": "蒸餾石油",
+      "inputs": [
+        { "productId": "crude_oil", "quantity": 60 },
+        { "productId": "steam_high", "quantity": 6 }
+      ],
+      "outputs": [
+        { "productId": "medium_oil", "quantity": 48 },
+        { "productId": "heavy_oil", "quantity": 12 },
+        { "productId": "sour_water", "quantity": 18 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "distill_medium_oil",
+      "name": "蒸餾中油",
+      "inputs": [
+        { "productId": "medium_oil", "quantity": 48 },
+        { "productId": "steam_high", "quantity": 3 }
+      ],
+      "outputs": [
+        { "productId": "diesel", "quantity": 36 },
+        { "productId": "light_oil", "quantity": 30 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "distill_light_oil",
+      "name": "蒸餾輕油",
+      "inputs": [
+        { "productId": "light_oil", "quantity": 30 },
+        { "productId": "steam_high", "quantity": 3 }
+      ],
+      "outputs": [
+        { "productId": "naphtha", "quantity": 24 },
+        { "productId": "fuel_gas", "quantity": 12 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_cement",
+      "name": "燒製水泥",
+      "inputs": [
+        { "productId": "lime", "quantity": 18 },
+        { "productId": "fuel_gas", "quantity": 6 }
+      ],
+      "outputs": [
+        { "productId": "cement", "quantity": 6 },
+        { "productId": "carbon_dioxide", "quantity": 18 }
+      ],
       "cycleSeconds": 60
     }
   ],
@@ -63,8 +194,18 @@
     { "id": "coal_mine", "name": "煤礦場", "recipeIds": [ "mine_coal" ] },
     { "id": "steam_boiler_coal", "name": "蒸氣鍋爐(煤)", "recipeIds": [ "boil_steam_coal" ] },
     { "id": "iron_ore_mine", "name": "鐵礦場", "recipeIds": [ "mine_iron_ore" ] },
-    { "id": "iron_smelter", "name": "煉鐵廠", "recipeIds": [ "smelt_iron" ] },
-    { "id": "iron_caster", "name": "鑄鐵廠", "recipeIds": [ "cast_iron_ingot" ] }
+    { "id": "crusher_large", "name": "粉碎機(大型)", "recipeIds": [ "crush_iron_ore" ] },
+    { "id": "blast_furnace_2", "name": "高爐II", "recipeIds": [ "smelt_iron_blast" ] },
+    { "id": "air_separator", "name": "空氣分離器", "recipeIds": [ "separate_air" ] },
+    { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "recipeIds": [ "make_steel" ] },
+    { "id": "cooled_caster_2", "name": "水冷鑄造機II", "recipeIds": [ "cast_steel_plate" ] },
+    { "id": "metal_caster_2", "name": "金屬鑄造機II", "recipeIds": [ "cast_iron_plate" ] },
+    { "id": "assembly_4", "name": "組裝機IV", "recipeIds": [ "assemble_mechanical_parts" ] },
+    { "id": "oil_well", "name": "油田", "recipeIds": [ "pump_crude_oil" ] },
+    { "id": "distillation_1", "name": "蒸餾塔I", "recipeIds": [ "distill_crude_oil" ] },
+    { "id": "distillation_2", "name": "蒸餾塔II", "recipeIds": [ "distill_medium_oil" ] },
+    { "id": "distillation_3", "name": "蒸餾塔III", "recipeIds": [ "distill_light_oil" ] },
+    { "id": "rotary_kiln", "name": "迴轉窯", "recipeIds": [ "make_cement" ] }
   ],
   "transports": [
     { "id": "pipe", "name": "管線", "kind": "fluid", "tiersPerMinute": [ 60, 120, 200, 400, 900 ] },
