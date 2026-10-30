@@ -1,6 +1,6 @@
 // 包裝 @comfyorg/litegraph 的節點編輯器。
 // 這裡只負責畫面：使用者每次修改後把規劃送回 C#，計算結果再由 C# 透過 applyResult 傳回來顯示。
-import { LiteGraph, LGraph, LGraphCanvas, LGraphNode } from "../lib/litegraph/litegraph.es.js";
+import { LiteGraph, LGraph, LGraphCanvas, LGraphNode, LinkMarkerShape } from "../lib/litegraph/litegraph.es.js";
 
 const ISSUE_NODE_COLOR = "#7a2a2a";
 const ISSUE_NODE_BGCOLOR = "#3f1f1f";
@@ -9,10 +9,10 @@ const CHANGE_DEBOUNCE_MS = 80;
 const MIN_NODE_WIDTH = 260;
 const SOURCE_NODE_COLOR = "#2f5a44";
 const SOURCE_NODE_BGCOLOR = "#22352c";
-// 流量動畫：小點沿連線方向移動，間距與速度以畫布座標（px）計
-const FLOW_DOT_SPACING = 40;
-const FLOW_DOT_SPEED = 60;
-const FLOW_DOT_RADIUS = 3;
+// 流量動畫：箭頭沿連線方向移動，間距、速度與大小以畫布座標（px）計
+const FLOW_ARROW_SPACING = 40;
+const FLOW_ARROW_SPEED = 60;
+const FLOW_ARROW_SIZE = 5;
 
 // litegraph 的節點類型是全域註冊的，同一時間只會有一個編輯器
 let current = null;
@@ -23,6 +23,16 @@ function typeName(t) {
 
 function sourceTypeName(p) {
     return `資源/${p.name}`;
+}
+
+/**
+ * 輸入插槽已有連線時，把新的連線改接到同一位置上的合流插槽（見 CoiNode.mergeSlotFor）。
+ * litegraph 拖曳連線時直接呼叫輸出端節點的 connectSlots，所以要覆寫在輸出端。
+ */
+function connectSlotsWithMerge(node, output, inputNode, input, afterRerouteId) {
+    if (input?.link != null && inputNode.mergeSlotFor)
+        input = inputNode.mergeSlotFor(input);
+    return LGraphNode.prototype.connectSlots.call(node, output, inputNode, input, afterRerouteId);
 }
 
 function registerNodeTypes(catalog) {
@@ -49,7 +59,31 @@ function registerNodeTypes(catalog) {
             computeSize(out) {
                 const size = super.computeSize(out);
                 size[0] = Math.max(size[0], MIN_NODE_WIDTH);
+                // 合流插槽疊在原插槽上，不佔高度；節點高度只依配方的輸入／輸出數量
+                const rows = Math.max(this.inputs.length, this.outputs.length, 1);
+                const fixedRows = Math.max(t.inputs.length, t.outputs.length, 1);
+                size[1] -= (rows - fixedRows) * LiteGraph.NODE_SLOT_HEIGHT;
                 return size;
+            }
+
+            connectSlots(output, inputNode, input, afterRerouteId) {
+                return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
+            }
+
+            /**
+             * 插槽數量固定為配方的輸入數量（前 t.inputs.length 個）。
+             * litegraph 一個輸入插槽只能接一條線，所以同一物品的第二條以後的連線接到「合流插槽」：
+             * 隱藏在原插槽同一位置、只在有連線時存在，看起來就像一個插槽接了多條線。
+             */
+            mergeSlotFor(input) {
+                const i = this.inputs.indexOf(input);
+                const primary = i >= 0 && i < t.inputs.length ? i : t.inputs.findIndex(p => p.productId === input.type);
+                const y = (this.constructor.slot_start_y || 0) + (primary + 0.7) * LiteGraph.NODE_SLOT_HEIGHT;
+                // label 用空白：合流插槽與原插槽重疊，不能再畫一次名稱
+                return this.addInput(t.inputs[primary].name, input.type, {
+                    pos: [LiteGraph.NODE_SLOT_HEIGHT * 0.5, y],
+                    label: " ",
+                });
             }
 
             onConnectionsChange(type) {
@@ -59,18 +93,28 @@ function registerNodeTypes(catalog) {
             }
 
             /**
-             * 讓每種輸入物品都保持「剛好一個空插槽」：接滿就多開一個，多出來的空插槽收回。
-             * litegraph 一個輸入插槽只能接一條線，這樣才能讓多個來源合流到同一台機器。
+             * 整理合流插槽：原插槽空了但還有合流連線時，把一條移回原插槽
+             * （拖曳插槽時 litegraph 只抓得到原插槽），沒有連線的合流插槽收回。
              */
             syncInputSlots() {
-                for (const p of t.inputs) {
-                    const empty = this.inputs.filter(s => s.type === p.productId && s.link == null);
-                    if (empty.length === 0) {
-                        this.addInput(p.name, p.productId);
-                    } else {
-                        for (const extra of empty.slice(1))
-                            this.removeInput(this.inputs.indexOf(extra));
+                if (this.syncing) return;
+                this.syncing = true;
+                try {
+                    for (const [i, p] of t.inputs.entries()) {
+                        const isMerge = s => this.inputs.indexOf(s) >= t.inputs.length && s.type === p.productId;
+                        const linked = this.inputs.find(s => isMerge(s) && s.link != null);
+                        if (this.inputs[i].link == null && linked) {
+                            const link = this.graph._links.get(linked.link);
+                            const origin = this.graph.getNodeById(link.origin_id);
+                            this.disconnectInput(this.inputs.indexOf(linked), true);
+                            origin.connect(link.origin_slot, this, i);
+                        }
                     }
+                    for (let i = this.inputs.length - 1; i >= t.inputs.length; i--) {
+                        if (this.inputs[i].link == null) this.removeInput(i);
+                    }
+                } finally {
+                    this.syncing = false;
                 }
                 this.size[1] = this.computeSize()[1];
                 this.setDirtyCanvas(true, true);
@@ -109,6 +153,10 @@ function registerNodeTypes(catalog) {
                 return size;
             }
 
+            connectSlots(output, inputNode, input, afterRerouteId) {
+                return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
+            }
+
             onConnectionsChange() {
                 current?.changed();
             }
@@ -122,7 +170,7 @@ function formatRate(value) {
 }
 
 class Editor {
-    constructor(canvasEl, dotnetRef, catalog) {
+    constructor(canvasEl, dotnetRef, catalog, maxImportBytes) {
         this.dotnetRef = dotnetRef;
         this.typesById = new Map(catalog.nodeTypes.map(t => [`${t.machineId}|${t.recipeId}`, t]));
         this.productsById = new Map(catalog.products.map(p => [p.productId, p]));
@@ -133,6 +181,8 @@ class Editor {
         this.graph = new LGraph();
         this.canvas = new LGraphCanvas(canvasEl, this.graph);
         this.canvas.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE;
+        // 不畫連線中間的圓點（流向改由 drawFlow 的箭頭表示）；點連線中間仍可開啟連線選單
+        this.canvas.linkMarkerShape = LinkMarkerShape.None;
         this.graph.onNodeAdded = () => this.changed();
         this.graph.onNodeRemoved = () => this.changed();
         this.canvas.onNodeMoved = () => this.changed();
@@ -149,6 +199,7 @@ class Editor {
         canvasEl.addEventListener("pointerdown", () => canvasEl.focus({ preventScroll: true }));
 
         const parent = canvasEl.parentElement;
+        this.listenFileDrop(parent, maxImportBytes);
         this.resizeObserver = new ResizeObserver(() => this.canvas.resize(parent.clientWidth, parent.clientHeight));
         this.resizeObserver.observe(parent);
     }
@@ -184,12 +235,9 @@ class Editor {
                 const target = created.get(e.targetNodeId);
                 if (!source || !target) continue;
                 const out = source.outputs.findIndex(s => s.type === e.productId);
-                const inp = target.inputs.findIndex(s => s.type === e.productId && s.link == null);
-                if (out >= 0 && inp >= 0) {
-                    source.connect(out, target, inp);
-                    // 載入時要立刻開出下一個空插槽，同一物品的下一條連線才接得上
-                    target.syncInputSlots();
-                }
+                const inp = target.inputs.findIndex(s => s.type === e.productId);
+                // 原插槽已有連線時 connectSlots 會改接到合流插槽
+                if (out >= 0 && inp >= 0) source.connect(out, target, inp);
             }
         } finally {
             this.loading = false;
@@ -264,10 +312,10 @@ class Editor {
         this.canvas.setDirty(true, true);
     }
 
-    /** 在每條連線上畫出沿方向移動的小點，表示物料流動（不代表實際流量）。 */
+    /** 在每條連線上畫出沿方向移動的箭頭，表示物料流動（不代表實際流量）。 */
     drawFlow(ctx) {
-        const offset = (performance.now() / 1000 * FLOW_DOT_SPEED) % FLOW_DOT_SPACING;
-        // 小點畫在節點上層；落在節點範圍內（連線從節點後面繞過時）的點不畫，看起來才像被節點蓋住
+        const offset = (performance.now() / 1000 * FLOW_ARROW_SPEED) % FLOW_ARROW_SPACING;
+        // 箭頭畫在節點上層；落在節點範圍內（連線從節點後面繞過時）的箭頭不畫，看起來才像被節點蓋住
         const titleHeight = LiteGraph.NODE_TITLE_HEIGHT;
         const boxes = this.graph._nodes.map(n => [n.pos[0], n.pos[1] - titleHeight, n.size[0], n.size[1] + titleHeight]);
         const hidden = (x, y) => boxes.some(([bx, by, bw, bh]) => x > bx && x < bx + bw && y > by && y < by + bh);
@@ -278,22 +326,63 @@ class Editor {
 
             const a = origin.getConnectionPos(false, link.origin_slot);
             const b = target.getConnectionPos(true, link.target_slot);
-            // 以控制點的折線長度估算曲線長度，決定要畫幾個點
+            // 以控制點的折線長度估算曲線長度，決定要畫幾個箭頭
             const length = Math.hypot(b[0] - a[0], b[1] - a[1]) * 1.2;
             if (length < 1) continue;
 
             ctx.fillStyle = link.color ?? this.canvas.default_link_color;
-            for (let d = offset; d < length; d += FLOW_DOT_SPACING) {
-                const [x, y] = this.canvas.computeConnectionPoint(a, b, d / length);
+            for (let d = offset; d < length; d += FLOW_ARROW_SPACING) {
+                const t = d / length;
+                const [x, y] = this.canvas.computeConnectionPoint(a, b, t);
                 if (hidden(x, y)) continue;
+                // 箭頭方向取曲線在這一點附近的切線
+                const [nx, ny] = this.canvas.computeConnectionPoint(a, b, Math.min(t + 0.01, 1));
+                const [px, py] = this.canvas.computeConnectionPoint(a, b, Math.max(t - 0.01, 0));
+                const angle = Math.atan2(ny - py, nx - px);
+                const s = FLOW_ARROW_SIZE;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
                 ctx.beginPath();
-                ctx.arc(x, y, FLOW_DOT_RADIUS, 0, 2 * Math.PI);
+                ctx.moveTo(s * 1.4, 0);
+                ctx.lineTo(-s, -s);
+                ctx.lineTo(-s * 0.4, 0);
+                ctx.lineTo(-s, s);
+                ctx.closePath();
                 ctx.fill();
+                ctx.restore();
             }
         }
     }
 
+    /** 把 .json 檔拖到畫布上匯入；內容交給 C# 解析。 */
+    listenFileDrop(el, maxBytes) {
+        const hasFile = e => e.dataTransfer?.types.includes("Files");
+        this.onDragOver = e => {
+            if (!hasFile(e)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+        };
+        this.onDrop = async e => {
+            if (!hasFile(e)) return;
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            if (file.size > maxBytes) {
+                alert(`檔案太大，上限為 ${Math.floor(maxBytes / 1024)} KB。`);
+                return;
+            }
+            this.dotnetRef.invokeMethodAsync("OnFileDropped", file.name, await file.text())
+                .catch(err => console.error("OnFileDropped 失敗", err));
+        };
+        el.addEventListener("dragover", this.onDragOver);
+        el.addEventListener("drop", this.onDrop);
+        this.dropTarget = el;
+    }
+
     dispose() {
+        this.dropTarget.removeEventListener("dragover", this.onDragOver);
+        this.dropTarget.removeEventListener("drop", this.onDrop);
         cancelAnimationFrame(this.animationFrame);
         clearTimeout(this.timer);
         this.resizeObserver.disconnect();
@@ -312,7 +401,8 @@ function label(slots, infos, rates) {
         const rate = rates?.find(r => r.productId === info.productId);
         const first = !seen.has(info.productId);
         seen.add(info.productId);
-        slot.label = first && rate ? `${info.name}  ${formatRate(rate.perMinute)} ${info.unit}/分` : info.name;
+        // 合流插槽疊在原插槽上，標籤留白才不會重疊
+        slot.label = !first ? " " : rate ? `${info.name}  ${formatRate(rate.perMinute)} ${info.unit}/分` : info.name;
     }
 }
 
@@ -326,10 +416,10 @@ export function downloadText(fileName, text) {
     URL.revokeObjectURL(url);
 }
 
-export function createEditor(canvasEl, dotnetRef, catalog, plan) {
+export function createEditor(canvasEl, dotnetRef, catalog, plan, maxImportBytes) {
     current?.dispose();
     registerNodeTypes(catalog);
-    current = new Editor(canvasEl, dotnetRef, catalog);
+    current = new Editor(canvasEl, dotnetRef, catalog, maxImportBytes);
     current.load(plan);
     return current;
 }

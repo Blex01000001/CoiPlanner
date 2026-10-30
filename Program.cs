@@ -4,9 +4,18 @@ using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 程序因未處理的例外結束時，主控台視窗可能直接關閉（例如 Visual Studio 停止偵錯時），看不到訊息；
+// 另外寫一份到 logs/crash.log，事後才查得到原因
+AppDomain.CurrentDomain.UnhandledException += (_, e) => CrashLog.Write(builder.Environment.ContentRootPath, e.ExceptionObject);
+TaskScheduler.UnobservedTaskException += (_, e) => CrashLog.Write(builder.Environment.ContentRootPath, e.Exception);
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment());
+
+// 預設單一 SignalR 訊息上限 32 KB；規劃稍大時，畫布送回 C# 的規劃、讀回的自動存檔、
+// 拖放匯入的檔案內容都會超過，超過時連線會直接中斷。放寬到與匯入上限（1 MB）相符
+builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 2 * 1024 * 1024);
 
 builder.Services.AddMudServices();
 
@@ -35,3 +44,20 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static class CrashLog
+{
+    public static void Write(string contentRoot, object exception)
+    {
+        try
+        {
+            var dir = Path.Combine(contentRoot, "logs");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, "crash.log"), $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {exception}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // 記錄失敗時不能再丟例外，否則會蓋掉原本的錯誤
+        }
+    }
+}

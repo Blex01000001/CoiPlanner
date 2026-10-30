@@ -8,19 +8,18 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       OnClick="@(() => _drawerOpen = !_drawerOpen)" />
-        <MudText Typo="Typo.h6" Class="ml-2">CoiPlanner 產線規劃</MudText>
-    </MudAppBar>
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1">
+    @* 不使用頂端 App Bar，讓畫面（尤其是產線規劃的畫布）佔滿整個視窗；選單由左上角的浮動按鈕開啟 *@
+    <MudIconButton Class="app-menu-button" Icon="@Icons.Material.Filled.Menu" Variant="Variant.Filled" Color="Color.Primary"
+                   Size="Size.Small" OnClick="@(() => _drawerOpen = true)" aria-label="開啟選單" />
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Temporary" Elevation="2">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">CoiPlanner</MudText>
+        </MudDrawerHeader>
         <NavMenu />
     </MudDrawer>
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="app-content py-4">
+        @Body
+    </MudContainer>
 </MudLayout>
 
 <div id="blazor-error-ui">
@@ -30,26 +29,16 @@
 </div>
 
 @code {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen;
 
-    protected override void OnInitialized()
-    {
-        _drawerOpen = !IsPlanner(Navigation.Uri);
-        Navigation.LocationChanged += OnLocationChanged;
-    }
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
 
-    // 產線規劃頁的畫布要佔滿視窗，進入時自動收起選單；需要時仍可用左上角按鈕打開
+    // 選單是浮在畫面上的抽屜，換頁後自動收起
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        if (IsPlanner(e.Location))
-        {
-            _drawerOpen = false;
-            InvokeAsync(StateHasChanged);
-        }
+        _drawerOpen = false;
+        InvokeAsync(StateHasChanged);
     }
-
-    private bool IsPlanner(string uri) =>
-        Navigation.ToBaseRelativePath(uri).StartsWith("planner", StringComparison.OrdinalIgnoreCase);
 
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 }

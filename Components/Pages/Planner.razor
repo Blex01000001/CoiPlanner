@@ -28,8 +28,8 @@
             <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panelOpen = false" aria-label="收合面板" />
         </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mb-3">
-            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；輸入接上線後會多出一個空插槽，可以再接其他來源合流。
-            選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
+            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
+            點連線中間可刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
         </MudText>
 
         <MudStack Row="true" Spacing="1" Class="mb-1">
@@ -44,7 +44,7 @@
             <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep"
                        OnClick="ClearAsync" Disabled="_editor is null || IsEmpty(_plan)">清空</MudButton>
         </MudStack>
-        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">修改會自動存在這個瀏覽器中。</MudText>
+        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">也可以把 .json 檔直接拖到畫布上匯入。修改會自動存在這個瀏覽器中。</MudText>
 
         <MudText Typo="Typo.subtitle2" Class="mb-1">物料平衡（每分鐘）</MudText>
         @if (_result is null || _result.Balances.Count == 0)
@@ -129,7 +129,7 @@
         // 加上檔案修改時間當版本號，JS 更新後瀏覽器才不會繼續用快取裡的舊模組
         var version = Env.WebRootFileProvider.GetFileInfo("js/graphEditor.js").LastModified.ToUnixTimeSeconds();
         _module = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/graphEditor.js?v={version}");
-        _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved);
+        _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved, MaxImportBytes);
         // 第一次 OnGraphChanged 可能比 createEditor 先回來，那時還沒有 _editor 可以顯示結果
         if (_result is not null)
             await _editor.InvokeVoidAsync("applyResult", _result);
@@ -182,26 +182,21 @@
         if (file is null || _editor is null)
             return;
 
-        ProductionPlan plan;
+        string text;
         try
         {
             using var reader = new StreamReader(file.OpenReadStream(MaxImportBytes));
-            plan = Serializer.Deserialize(await reader.ReadToEndAsync());
+            text = await reader.ReadToEndAsync();
         }
         catch (IOException)
         {
             Snackbar.Add($"檔案太大，上限為 {MaxImportBytes / 1024} KB。", Severity.Error);
             return;
         }
-        catch (GameDataException ex)
-        {
-            Snackbar.Add($"無法匯入 {file.Name}：{ex.Message}", Severity.Error);
-            return;
-        }
         catch (Exception ex)
         {
             // 任何未預期的錯誤都不能讓 circuit 中斷，記錄下來並提示使用者
-            Logger.LogError(ex, "匯入 {FileName} 失敗", file.Name);
+            Logger.LogError(ex, "讀取 {FileName} 失敗", file.Name);
             Snackbar.Add($"無法匯入 {file.Name}：{ex.GetType().Name}: {ex.Message}", Severity.Error);
             return;
         }
@@ -212,9 +207,35 @@
                 await _upload.ClearAsync();
         }
 
+        await ImportTextAsync(file.Name, text);
+    }
+
+    /// <summary>
+    /// 把 .json 檔拖到畫布上匯入。不會開啟檔案選擇視窗：
+    /// Visual Studio 偵錯時，部分瀏覽器關閉檔案選擇視窗後 VS 會誤判瀏覽器已關閉而停止偵錯。
+    /// </summary>
+    [JSInvokable]
+    public Task OnFileDropped(string fileName, string text) => ImportTextAsync(fileName, text);
+
+    private async Task ImportTextAsync(string fileName, string text)
+    {
+        if (_editor is null)
+            return;
+
+        ProductionPlan plan;
+        try
+        {
+            plan = Serializer.Deserialize(text);
+        }
+        catch (GameDataException ex)
+        {
+            Snackbar.Add($"無法匯入 {fileName}：{ex.Message}", Severity.Error);
+            return;
+        }
+
         _pendingLoad = plan;
         await _editor.InvokeVoidAsync("load", plan);
-        Snackbar.Add($"已匯入 {file.Name}。", Severity.Success);
+        Snackbar.Add($"已匯入 {fileName}。", Severity.Success);
     }
 
     private async Task ClearAsync()
