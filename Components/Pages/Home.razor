@@ -82,9 +82,10 @@
                 </MudTd>
                 <MudTd DataLabel="物品型態"><code>@context.Kind</code></MudTd>
                 <MudTd DataLabel="各級吞吐量（每分鐘）">
-                    @for (var i = 0; i < context.TiersPerMinute.Count; i++)
+                    @* 不能在 for 迴圈裡直接用 i：MudChip 的內容會在迴圈結束後才產生，那時 i 已經超出範圍 *@
+                    @foreach (var (capacity, tier) in context.TiersPerMinute.Select((c, i) => (c, i + 1)))
                     {
-                        <MudChip T="string" Size="Size.Small">@(i + 1) 級：@context.TiersPerMinute[i].ToString("0.##")</MudChip>
+                        <MudChip T="string" Size="Size.Small">@tier 級：@capacity.ToString("0.##")</MudChip>
                     }
                 </MudTd>
             </RowTemplate>

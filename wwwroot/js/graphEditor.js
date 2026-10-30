@@ -295,8 +295,23 @@ class Editor {
 
         const parent = canvasEl.parentElement;
         this.listenFileDrop(parent, maxImportBytes);
-        this.resizeObserver = new ResizeObserver(() => this.canvas.resize(parent.clientWidth, parent.clientHeight));
+        // 顯示比例不是 100% 時（Windows 125%、150% 或瀏覽器縮放），canvas 的像素大小要是 CSS 大小 × devicePixelRatio，
+        // 否則畫面模糊，背景也只畫到一部分。litegraph 只會自己放大背景層，節點所在的前景層要由這裡放大
+        // （設定 canvas 大小會重設繪圖狀態，所以每次改大小後都要重新設定）
+        this.fitCanvas = () => {
+            const dpr = window.devicePixelRatio || 1;
+            const [w, h] = [parent.clientWidth, parent.clientHeight];
+            const [pw, ph] = [Math.round(w * dpr), Math.round(h * dpr)];
+            canvasEl.style.width = `${w}px`;
+            canvasEl.style.height = `${h}px`;
+            if (canvasEl.width === pw && canvasEl.height === ph) return;
+            this.canvas.resize(pw, ph);
+            this.canvas.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        this.resizeObserver = new ResizeObserver(this.fitCanvas);
         this.resizeObserver.observe(parent);
+        // 瀏覽器縮放或把視窗拖到不同顯示比例的螢幕時，大小不變但 devicePixelRatio 會變
+        window.addEventListener("resize", this.fitCanvas);
     }
 
     /** 以 C# 的 ProductionPlan 重建畫布。 */
@@ -686,6 +701,7 @@ class Editor {
         cancelAnimationFrame(this.animationFrame);
         clearTimeout(this.timer);
         this.resizeObserver.disconnect();
+        window.removeEventListener("resize", this.fitCanvas);
         this.canvas.stopRendering();
         this.graph.clear();
         if (current === this) current = null;
