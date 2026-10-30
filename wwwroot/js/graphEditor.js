@@ -5,13 +5,10 @@ import { LiteGraph, LGraph, LGraphCanvas, LGraphNode, LinkMarkerShape } from "..
 const ISSUE_NODE_COLOR = "#7a2a2a";
 const ISSUE_NODE_BGCOLOR = "#3f1f1f";
 const ISSUE_LINK_COLOR = "#e05555";
-// 停擺（缺料或輸出堵塞）的機器節點用橘色醒目提示；規劃錯誤的紅色優先
-const STOPPED_NODE_COLOR = "#8a5a1a";
-const STOPPED_NODE_BGCOLOR = "#3d2e1a";
-// 節點上方的狀態標籤
+// 節點上方的狀態標籤：正常生產綠色、減產黃色；停擺、規劃或連線有問題的機器紅色（節點也標紅）
 const STATUS_FONT = "bold 12px Arial";
 const STATUS_COLORS = {
-    stopped: "#ff9f43",
+    stopped: "#ff6b6b",
     starting: "#5dade2",
     reduced: "#f4d03f",
     running: "#58d68d",
@@ -205,8 +202,9 @@ class Editor {
         this.edgeResults = new Map();
         // C# 模擬的節點狀態，key 是節點 id（字串）
         this.nodeStates = new Map();
-        // 規劃檢查有問題的節點 id
+        // 規劃檢查有問題的節點 id，以及接著有問題連線的機器節點 id
         this.badNodes = new Set();
+        this.badLinkNodes = new Set();
         // 每條連線箭頭目前的位移；速度隨流量改變，所以要逐幀累加而不是用時間直接算
         this.linkPhases = new Map();
         this.lastFrame = performance.now();
@@ -335,13 +333,21 @@ class Editor {
         const badLinks = new Set(result.issues
             .filter(i => i.edgeIndex != null)
             .map(i => this.edgeLinkIds[i.edgeIndex]));
+        // 有問題的連線兩端的機器（不含資源節點）也要標紅
+        this.badLinkNodes = new Set();
         for (const link of this.graph._links.values()) {
-            link.color = badLinks.has(link.id) ? ISSUE_LINK_COLOR : undefined;
+            const bad = badLinks.has(link.id);
+            link.color = bad ? ISSUE_LINK_COLOR : undefined;
+            if (!bad) continue;
+            for (const id of [link.origin_id, link.target_id]) {
+                if (this.graph.getNodeById(id)?.properties.kind !== "source")
+                    this.badLinkNodes.add(String(id));
+            }
         }
         this.applyNodeStyles();
     }
 
-    /** 顯示 C# ProductionSimulator 的狀態：插槽標上「實際/額定」速率，停擺的機器標成橘色。 */
+    /** 顯示 C# ProductionSimulator 的狀態：插槽標上「實際/額定」速率，停擺的機器標紅。 */
     applySimulation(sim) {
         this.nodeStates = new Map(sim.nodes.map(n => [n.nodeId, n]));
         this.edgeResults = new Map(sim.edges.map(e => [this.edgeLinkIds[e.edgeIndex], e]));
@@ -357,16 +363,22 @@ class Editor {
             // 標籤變長時只加寬不縮窄，避免使用者手動拉寬的節點被縮回去
             node.size[0] = Math.max(node.size[0], node.computeSize()[0]);
             // 設成 undefined 時會回到節點類型自己的顏色（資源節點是綠色）
-            const bad = this.badNodes.has(id);
-            const stopped = !bad && isMachineStopped(node, state);
-            node.color = bad ? ISSUE_NODE_COLOR : stopped ? STOPPED_NODE_COLOR : undefined;
-            node.bgcolor = bad ? ISSUE_NODE_BGCOLOR : stopped ? STOPPED_NODE_BGCOLOR : undefined;
+            const red = this.badNodes.has(id) || this.badLinkNodes.has(id) || isMachineStopped(node, state);
+            node.color = red ? ISSUE_NODE_COLOR : undefined;
+            node.bgcolor = red ? ISSUE_NODE_BGCOLOR : undefined;
         }
         this.canvas.setDirty(true, true);
     }
 
-    /** 節點上方的狀態文字與顏色；沒有模擬狀態（例如規劃有錯）時不顯示。 */
+    /** 節點上方的狀態文字與顏色；規劃或連線有問題時優先顯示，其他情況沒有模擬狀態就不顯示。 */
     statusOf(node, state) {
+        const id = String(node.id);
+        if (this.badNodes.has(id))
+            return { text: "規劃有誤", color: STATUS_COLORS.stopped };
+        if (this.badLinkNodes.has(id))
+            return { text: "連線有問題", color: STATUS_COLORS.stopped };
+        if (!state)
+            return null;
         const pct = `${Math.round(state.utilization * 100)}%`;
         if (node.properties.kind === "source")
             return { text: `供應 ${pct}`, color: STATUS_COLORS.source };
@@ -389,9 +401,9 @@ class Editor {
     drawStatus(ctx) {
         ctx.font = STATUS_FONT;
         for (const node of this.graph._nodes) {
-            const state = this.nodeStates.get(String(node.id));
-            if (!state) continue;
-            const { text, color } = this.statusOf(node, state);
+            const status = this.statusOf(node, this.nodeStates.get(String(node.id)));
+            if (!status) continue;
+            const { text, color } = status;
             const x = node.pos[0];
             const y = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT - 12;
             const w = ctx.measureText(text).width + 10;

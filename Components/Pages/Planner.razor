@@ -62,7 +62,7 @@
             <MudText Typo="Typo.body2" Class="ml-auto">@FormatTime(_snapshot?.TimeSeconds ?? 0)</MudText>
         </MudStack>
         <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">
-            每個節點獨立運作：輸入都有料後等 @Format(_sim.Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺（橘色）。
+            每個節點獨立運作：輸入都有料後等 @Format(_sim.Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
             暫存 @Format(_sim.Settings.BufferMinutes) 分鐘用量、運送 @Format(_sim.Settings.TransitSeconds) 秒；沒接線的輸出送進倉庫。
             數字為最近 @Format(_sim.Settings.AverageSeconds) 秒的平均。
         </MudText>
