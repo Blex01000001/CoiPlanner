@@ -30,6 +30,24 @@ const LINK_WIDTH_PER_DOUBLING = 1.5;
 const FIT_PADDING = 40;
 const FIT_MAX_SCALE = 1.5;
 const FIT_ANIMATION_MS = 350;
+// 註解節點
+const NOTE_TYPE = "其他/註解";
+const NOTE_COLOR = "#5a5328";
+const NOTE_BGCOLOR = "#3a3620";
+const NOTE_SIZE = [260, 120];
+const NOTE_FONT = "14px Arial";
+const NOTE_LINE_HEIGHT = 18;
+const NOTE_PADDING = 10;
+const NOTE_TEXT_COLOR = "#e8e0b0";
+const NOTE_PLACEHOLDER_COLOR = "#8a8466";
+// 新增群組時，沒有選取節點的預設大小，以及框住選取節點時四周留的邊距
+const GROUP_SIZE = [400, 300];
+const GROUP_PADDING = 20;
+// 右鍵選單「顏色」的中文名稱，對應 litegraph 內建的 LGraphCanvas.node_colors
+const COLOR_NAMES = {
+    red: "紅", brown: "棕", green: "綠", blue: "藍", pale_blue: "淺藍",
+    cyan: "青", purple: "紫", yellow: "黃", black: "黑",
+};
 const MIN_NODE_WIDTH = 260;
 const SOURCE_NODE_COLOR = "#2f5a44";
 const SOURCE_NODE_BGCOLOR = "#22352c";
@@ -221,6 +239,68 @@ function registerNodeTypes(catalog) {
         }
         LiteGraph.registerNodeType(sourceTypeName(p), SourceNode);
     }
+
+    LiteGraph.registerNodeType(NOTE_TYPE, NoteNode);
+}
+
+/** 文字註解：只用來整理畫面，不參與計算與模擬。內容在右鍵選單或連點兩下時編輯。 */
+class NoteNode extends LGraphNode {
+    static title = "註解";
+    static color = NOTE_COLOR;
+    static bgcolor = NOTE_BGCOLOR;
+
+    constructor(title) {
+        super(title ?? NoteNode.title);
+        // colorName 是 LGraphCanvas.node_colors 的名稱，null 代表預設顏色
+        this.properties = { kind: "note", text: "", colorName: null };
+        this.slotInfo = { inputs: [], outputs: [] };
+        this.size = [...NOTE_SIZE];
+    }
+
+    snapToGrid(snapTo) {
+        return snapNodeToGrid(this, snapTo);
+    }
+
+    setColorName(name) {
+        const c = name ? LGraphCanvas.node_colors[name] : null;
+        this.properties.colorName = c ? name : null;
+        this.color = c?.color ?? NOTE_COLOR;
+        this.bgcolor = c?.bgcolor ?? NOTE_BGCOLOR;
+    }
+
+    onDrawForeground(ctx) {
+        if (this.flags.collapsed) return;
+        const text = this.properties.text;
+        const width = this.size[0] - NOTE_PADDING * 2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, this.size[0], this.size[1]);
+        ctx.clip();
+        ctx.font = NOTE_FONT;
+        ctx.fillStyle = text ? NOTE_TEXT_COLOR : NOTE_PLACEHOLDER_COLOR;
+        ctx.textBaseline = "top";
+        const lines = text ? wrapText(ctx, text, width) : ["（連點兩下編輯內容）"];
+        lines.forEach((line, i) => ctx.fillText(line, NOTE_PADDING, NOTE_PADDING + i * NOTE_LINE_HEIGHT));
+        ctx.restore();
+    }
+}
+
+/** 依寬度斷行；中文沒有空白，所以逐字斷行，並保留使用者自己的換行。 */
+function wrapText(ctx, text, width) {
+    const lines = [];
+    for (const paragraph of text.split("\n")) {
+        let line = "";
+        for (const ch of paragraph) {
+            if (line && ctx.measureText(line + ch).width > width) {
+                lines.push(line);
+                line = ch;
+            } else {
+                line += ch;
+            }
+        }
+        lines.push(line);
+    }
+    return lines;
 }
 
 function formatRate(value) {
@@ -253,7 +333,16 @@ class Editor {
         this.canvas = new LGraphCanvas(canvasEl, this.graph);
         // 背景格線自己畫，間距才能和 Shift 對齊的間距一致（litegraph 內建的背景圖是 100px 一格）
         this.canvas.background_image = null;
-        this.canvas.onDrawBackground = (ctx, area) => this.drawGrid(ctx, area);
+        // 要在 onRenderBackground（群組之前）畫，用 onDrawBackground 會把群組蓋掉；回傳 true 讓 litegraph 不再畫底色
+        this.canvas.onRenderBackground = (_, ctx) => {
+            const dpr = window.devicePixelRatio || 1;
+            ctx.save();
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            this.canvas.ds.toCanvasContext(ctx);
+            this.drawGrid(ctx, this.canvas.visible_area);
+            ctx.restore();
+            return true;
+        };
         // litegraph 預設會在畫布座標原點畫一個藍色外框，fit view 時會被看到，關掉
         this.canvas.render_canvas_border = false;
         // 每條連線依運輸等級的吞吐量決定粗細：畫這條線時暫時換掉 litegraph 共用的線寬
@@ -270,9 +359,24 @@ class Editor {
         // 不畫連線中間的圓點（流向改由 drawFlow 的箭頭表示）；點連線中間仍可開啟連線選單
         this.canvas.linkMarkerShape = LinkMarkerShape.None;
         this.canvas.showLinkMenu = (segment, e) => this.showLinkMenu(segment, e);
+        // litegraph 內建的右鍵選單是英文，而且有很多這個工具用不到的項目；換成自己的中文選單
+        this.canvas.processContextMenu = (node, e) => this.showContextMenu(node, e);
+        this.canvas.onNodeDblClicked = node => {
+            if (node.properties.kind === "note") this.editNote(node);
+        };
+        // 連點兩下畫布開啟的搜尋框，標題改成中文
+        const showSearchBox = this.canvas.showSearchBox.bind(this.canvas);
+        this.canvas.showSearchBox = (...args) => {
+            const dialog = showSearchBox(...args);
+            const name = dialog?.querySelector?.(".name");
+            if (name) name.textContent = "搜尋";
+            return dialog;
+        };
         this.graph.onNodeAdded = () => this.changed();
         this.graph.onNodeRemoved = () => this.changed();
         this.canvas.onNodeMoved = () => this.changed();
+        // 群組的移動、調整大小沒有對應的事件；放開滑鼠時一律回報一次（會合併成一次更新）
+        canvasEl.addEventListener("pointerup", () => this.changed());
         this.canvas.onDrawForeground = ctx => this.drawFlow(ctx);
         // litegraph 只在畫面變動時重繪；流量動畫需要每一幀都重繪
         const animate = () => {
@@ -341,6 +445,22 @@ class Editor {
                 this.graph.add(node);
                 created.set(s.id, node);
             }
+            for (const n of plan.notes ?? []) {
+                const node = LiteGraph.createNode(NOTE_TYPE);
+                node.pos = [n.x, n.y];
+                node.title = n.title;
+                node.properties.text = n.text;
+                node.setColorName(n.color);
+                if (n.width > 0 && n.height > 0) node.size = [n.width, n.height];
+                this.graph.add(node);
+            }
+            for (const g of plan.groups ?? []) {
+                const group = new LiteGraph.LGraphGroup(g.title);
+                group.pos = [g.x, g.y];
+                group.size = [g.width, g.height];
+                if (g.color) group.color = g.color;
+                this.graph.add(group);
+            }
             for (const e of plan.edges) {
                 const source = created.get(e.sourceNodeId);
                 const target = created.get(e.targetNodeId);
@@ -370,7 +490,8 @@ class Editor {
     /** 目前畫布轉成 C# 的 ProductionPlan；連線順序記在 edgeLinkIds，讓 EdgeIndex 對得回 litegraph 的連線。 */
     snapshot() {
         const isSource = n => n.properties.kind === "source";
-        const nodes = this.graph._nodes.filter(n => !isSource(n)).map(n => ({
+        const isNote = n => n.properties.kind === "note";
+        const nodes = this.graph._nodes.filter(n => !isSource(n) && !isNote(n)).map(n => ({
             id: String(n.id),
             machineId: n.properties.machineId,
             recipeId: n.properties.recipeId,
@@ -399,7 +520,25 @@ class Editor {
                 tier: this.linkTiers.get(link.id) ?? 1,
             });
         }
-        return { nodes, sources, edges };
+        const notes = this.graph._nodes.filter(isNote).map(n => ({
+            id: String(n.id),
+            title: n.title,
+            text: n.properties.text,
+            x: n.pos[0],
+            y: n.pos[1],
+            width: n.size[0],
+            height: n.size[1],
+            color: n.properties.colorName,
+        }));
+        const groups = this.graph._groups.map(g => ({
+            title: g.title,
+            x: g.pos[0],
+            y: g.pos[1],
+            width: g.size[0],
+            height: g.size[1],
+            color: g.color ?? null,
+        }));
+        return { nodes, sources, edges, groups, notes };
     }
 
     /** 顯示 C# PlanCalculator 的檢查結果：有問題的節點與連線標紅。 */
@@ -431,6 +570,8 @@ class Editor {
 
     applyNodeStyles() {
         for (const node of this.graph._nodes) {
+            // 註解不參與模擬，顏色由使用者自己選
+            if (node.properties.kind === "note") continue;
             const id = String(node.id);
             const state = this.nodeStates.get(id);
             label(node.inputs, node.slotInfo.inputs, state?.inputs);
@@ -598,6 +739,156 @@ class Editor {
         ctx.textBaseline = "alphabetic";
     }
 
+    /** 右鍵選單：在節點上（含插槽）或在畫布空白處（含群組）各有不同項目。 */
+    showContextMenu(node, e) {
+        const items = node ? this.nodeMenu(node, e) : this.canvasMenu(e);
+        if (!items?.length) return;
+        new LiteGraph.ContextMenu(items, { event: e, title: node?.title });
+    }
+
+    canvasMenu(e) {
+        const pos = [e.canvasX, e.canvasY];
+        const selected = this.graph._nodes.filter(n => n.is_selected);
+        const items = [
+            { content: "新增節點", has_submenu: true, callback: LGraphCanvas.onMenuAdd },
+            { content: "新增註解", callback: () => this.addNote(pos) },
+            {
+                content: selected.length ? `新增群組（框住選取的 ${selected.length} 個節點）` : "新增群組",
+                callback: () => this.addGroup(pos, selected, e),
+            },
+        ];
+        const group = this.graph.getGroupOnPos(pos[0], pos[1]);
+        if (group) {
+            items.push(null, ...this.groupMenu(group, e));
+        }
+        return items;
+    }
+
+    groupMenu(group, e) {
+        return [
+            { content: `重新命名群組「${group.title}」`, callback: () => this.renameGroup(group, e) },
+            { content: "群組顏色", has_submenu: true, submenu: { title: "群組顏色", options: this.colorMenu((c) => group.color = c?.groupcolor) } },
+            { content: "刪除群組（保留裡面的節點）", callback: () => { this.graph.remove(group); this.changed(); } },
+        ];
+    }
+
+    nodeMenu(node, e) {
+        const slot = node.getSlotInPosition(e.canvasX, e.canvasY);
+        if (slot) return this.slotMenu(node, slot);
+
+        const items = [];
+        if (node.properties.kind === "note") {
+            items.push(
+                { content: "編輯內容", callback: () => this.editNote(node, e) },
+                { content: "重新命名", callback: () => this.renameNote(node, e) },
+                { content: "顏色", has_submenu: true, submenu: { title: "顏色", options: this.colorMenu((c, name) => node.setColorName(name)) } },
+                null);
+        }
+        items.push(
+            { content: "複製", callback: () => this.cloneNode(node) },
+            { content: "刪除", callback: () => this.graph.remove(node) });
+        return items;
+    }
+
+    /** 插槽上的選單：中斷這種物品的所有連線（輸入合流時一次中斷全部）。沒有連線時不顯示選單。 */
+    slotMenu(node, slot) {
+        const productId = (slot.input ?? slot.output).type;
+        if (slot.input) {
+            const linked = node.inputs.filter(s => s.type === productId && s.link != null);
+            if (!linked.length) return null;
+            return [{
+                content: linked.length > 1 ? `中斷全部 ${linked.length} 條連線` : "中斷連線",
+                callback: () => {
+                    for (const s of linked) node.disconnectInput(node.inputs.indexOf(s), true);
+                },
+            }];
+        }
+        if (!slot.output.links?.length) return null;
+        return [{
+            content: slot.output.links.length > 1 ? `中斷全部 ${slot.output.links.length} 條連線` : "中斷連線",
+            callback: () => node.disconnectOutput(slot.slot),
+        }];
+    }
+
+    /** 顏色選單；apply(顏色, 名稱) 收到 null 代表恢復預設顏色。 */
+    colorMenu(apply) {
+        const choose = (c, name) => () => {
+            apply(c, name);
+            this.canvas.setDirty(true, true);
+            this.changed();
+        };
+        return [
+            { content: "預設", callback: choose(null, null) },
+            null,
+            ...Object.entries(LGraphCanvas.node_colors).map(([name, c]) => ({ content: COLOR_NAMES[name] ?? name, callback: choose(c, name) })),
+        ];
+    }
+
+    /** 複製節點：機器數量、資源產量、註解內容一起帶過去，放在原節點右下方。 */
+    cloneNode(node) {
+        const copy = LiteGraph.createNode(node.type);
+        if (!copy) return;
+        const p = node.properties;
+        if (p.kind === "source") {
+            copy.properties.rate = p.rate;
+            copy.rateWidget.value = p.rate;
+        } else if (p.kind === "note") {
+            copy.title = node.title;
+            copy.properties.text = p.text;
+            copy.size = [...node.size];
+            copy.setColorName(p.colorName);
+        } else {
+            copy.properties.count = p.count;
+            copy.countWidget.value = p.count;
+        }
+        copy.pos = [node.pos[0] + 2 * GRID_SIZE, node.pos[1] + 2 * GRID_SIZE];
+        this.graph.add(copy);
+    }
+
+    addNote(pos) {
+        const node = LiteGraph.createNode(NOTE_TYPE);
+        node.pos = [pos[0], pos[1]];
+        this.graph.add(node);
+        this.editNote(node);
+    }
+
+    editNote(node, e) {
+        this.canvas.prompt("註解內容", node.properties.text, value => {
+            node.properties.text = value;
+            this.canvas.setDirty(true, true);
+            this.changed();
+        }, e, true);
+    }
+
+    renameNote(node, e) {
+        this.canvas.prompt("標題", node.title, value => {
+            if (value.trim()) node.title = value.trim();
+            this.changed();
+        }, e);
+    }
+
+    /** 有選取節點時建立剛好框住它們的群組，否則在點擊位置建立預設大小的群組；建立後立刻命名。 */
+    addGroup(pos, selected, e) {
+        const group = new LiteGraph.LGraphGroup("群組");
+        if (selected.length) {
+            group.resizeTo(selected, GROUP_PADDING);
+        } else {
+            group.pos = [pos[0], pos[1]];
+            group.size = [...GROUP_SIZE];
+        }
+        this.graph.add(group);
+        this.renameGroup(group, e);
+        this.changed();
+    }
+
+    renameGroup(group, e) {
+        this.canvas.prompt("群組名稱", group.title, value => {
+            if (value.trim()) group.title = value.trim();
+            this.canvas.setDirty(true, true);
+            this.changed();
+        }, e);
+    }
+
     /** 把 .json 檔拖到畫布上匯入；內容交給 C# 解析。 */
     listenFileDrop(el, maxBytes) {
         const hasFile = e => e.dataTransfer?.types.includes("Files");
@@ -660,10 +951,10 @@ class Editor {
      * 工作流會置中在剩下的區域裡。
      */
     fitView(rightInset = 0) {
-        const nodes = this.graph._nodes;
-        if (!nodes.length) return;
+        const items = [...this.graph._nodes, ...this.graph._groups];
+        if (!items.length) return;
         let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
-        for (const n of nodes) {
+        for (const n of items) {
             const [bx, by, bw, bh] = n.boundingRect;
             minX = Math.min(minX, bx);
             minY = Math.min(minY, by);

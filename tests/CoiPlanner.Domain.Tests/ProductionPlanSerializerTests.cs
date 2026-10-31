@@ -24,6 +24,46 @@ public class ProductionPlanSerializerTests
     }
 
     [Fact]
+    public void SerializeThenDeserialize_KeepsGroupsAndNotes()
+    {
+        var plan = new ProductionPlan
+        {
+            Groups = [new PlanGroup { Title = "煉鋼區", X = -20, Y = 40, Width = 600, Height = 300, Color = "#b58b2a" }],
+            Notes = [new PlanNote { Id = "9", Title = "待辦", Text = "第一行\n第二行", X = 10, Y = 20, Width = 260, Height = 120, Color = "yellow" }],
+        };
+
+        var restored = _serializer.Deserialize(_serializer.Serialize(plan));
+
+        Assert.Equal(plan.Groups, restored.Groups);
+        Assert.Equal(plan.Notes, restored.Notes);
+    }
+
+    [Fact]
+    public void Deserialize_OldPlanWithoutGroupsOrNotes_HasEmptyLists()
+    {
+        var plan = _serializer.Deserialize("""{ "nodes": [], "edges": [] }""");
+
+        Assert.Empty(plan.Groups);
+        Assert.Empty(plan.Notes);
+    }
+
+    [Fact]
+    public void Calculate_IgnoresGroupsAndNotes()
+    {
+        var plan = new ProductionPlan
+        {
+            Nodes = [Furnace()],
+            Groups = [new PlanGroup { Title = "G" }],
+            Notes = [new PlanNote { Id = "n" }],
+        };
+
+        var result = new PlanCalculator(Sample).Calculate(plan);
+
+        Assert.True(result.IsValid);
+        Assert.Single(result.Nodes);
+    }
+
+    [Fact]
     public void Serialize_UsesCamelCase()
     {
         var json = _serializer.Serialize(new ProductionPlan { Nodes = [Furnace()] });

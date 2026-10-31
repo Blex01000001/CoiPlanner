@@ -436,7 +436,8 @@
         Kind = _products[productId].Kind,
     };
 
-    private static bool IsEmpty(ProductionPlan plan) => plan.Nodes.Count == 0 && plan.Sources.Count == 0;
+    private static bool IsEmpty(ProductionPlan plan) =>
+        plan.Nodes.Count == 0 && plan.Sources.Count == 0 && plan.Groups.Count == 0 && plan.Notes.Count == 0;
 
     private string ProductName(string id) => _products.TryGetValue(id, out var p) ? p.Name : id;
 
