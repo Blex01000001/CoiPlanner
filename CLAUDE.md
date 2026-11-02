@@ -21,7 +21,8 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2 | **不可修改** |
 | `tests/CoiPlanner.Domain.Tests/` | xUnit。`TestData.cs` 與 `Fixtures/sample.json` 是虛構資料，**兩者數值須一致**；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
-| `README.md` | 「已改善」「尚待改善」清單 | 每次 commit 更新 |
+| `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
+| `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
 
 ## 修改後的驗證
 ```bash
@@ -85,9 +86,25 @@ dotnet run --urls http://localhost:5062   # 約 10 秒後可連；改畫面後�
 ## 工作方式（使用者訂定，不可刪改）
 - 每次只做一個階段，做完要能 build 通過並跑測試
 - 改動前先說明計畫
-- 每次 commit 時同步更新 README.md 的「已改善」與「尚待改善」清單，並在回報中列出
+
+## Git 規則（使用者訂定，不可刪改）
+- 每完成一個獨立的修改就 commit
+- commit 訊息第一行簡述改了什麼，需要時空一行補充原因
+- commit 訊息只描述本次修改，不要附上待辦清單
+- 需要了解過去的修改時，用 git log 查詢
 - commit 訊息一律使用英文
 
-## Git 與回報
-- commit 訊息格式：英文祈使句標題＋條列說明（與既有歷史一致）。回報用繁體中文。
-- 只推送到指定的工作分支；合併到 `feature/domain-model`（預設分支）要等使用者明確要求，並以 fast-forward 推送。
+## PROGRESS.md（使用者訂定，不可刪改）
+- 記錄已知限制與待辦，需要時再讀，不必每次 commit 都讀
+- 只在以下情況更新：完成待辦項目、發現新的已知限制或問題
+- 完成的待辦直接刪除，不要搬到「已完成」
+- 發現限制或問題解除時直接刪除
+
+## 完成任務後的回覆（使用者訂定，不可刪改）
+簡短列出：
+1. **本次修改**：做了什麼
+2. **尚待改善項目／問題、已知問題**：還沒做完的、發現但未處理的問題、已知限制（沒有就省略）
+3. **建議改善方向或功能**：之後可以考慮的改進或新功能，或是可以提高CLAUDE CODE效率的建議（沒有就省略）
+
+## 分支
+- 只推送到指定的工作分支；合併到 `feature/domain-model`（預設分支）要等使用者明確要求。`feature/domain-model` 有新 commit（例如使用者在 GitHub 上直接修改）時，先合併進工作分支再推送，不可 force push。回覆用繁體中文。
