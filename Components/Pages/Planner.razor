@@ -1,4 +1,10 @@
 @page "/planner"
+@*
+    產線規劃頁。畫布由 wwwroot/js/graphEditor.js 負責；這裡負責：
+    - 收到畫布的規劃（OnGraphChanged）→ PlanCalculator 檢查 → ProductionSimulator.Sync → 自動存檔
+    - 模擬迴圈（RunSimulationAsync）：每 100 ms 推進並把狀態送回畫布，面板每 PanelRefreshTicks 次重繪一次
+    - 右上的模擬控制列、右側按鈕與面板（SidePanel，一次只開一個）、匯入／匯出／清空
+*@
 @using CoiPlanner.Domain.Models
 @using CoiPlanner.Domain.Services
 @implements IAsyncDisposable

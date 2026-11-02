@@ -1,5 +1,11 @@
 // 包裝 @comfyorg/litegraph 的節點編輯器。
 // 這裡只負責畫面：使用者每次修改後把規劃送回 C#；檢查結果由 applyResult、模擬狀態由 applySimulation 傳回來顯示。
+//
+// wwwroot/lib/litegraph 保持原樣不修改，需要不同行為時在這裡覆寫：
+// - 節點子類：connectSlots（合流插槽）、computeSize（插槽數固定）、snapToGrid（對齊含標題的外框）
+// - canvas 實例：processContextMenu／showLinkMenu（中文選單）、renderLink（依等級的線寬）、
+//   onRenderBackground（格線，必須在群組之前畫）、showSearchBox（中文標題）、onNodeDblClicked（編輯註解）
+// - canvas 大小由 fitCanvas 依 devicePixelRatio 設定；Shift 對齊由 window 上的事件切換 LiteGraph.alwaysSnapToGrid
 import { LiteGraph, LGraph, LGraphCanvas, LGraphNode, LinkMarkerShape } from "../lib/litegraph/litegraph.es.js";
 
 const ISSUE_NODE_COLOR = "#7a2a2a";
