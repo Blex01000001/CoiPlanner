@@ -75,7 +75,6 @@ dotnet run --urls http://localhost:5062   # 約 10 秒後可連；改畫面後�
 ## 環境陷阱
 - 停止網站用 `pkill -x CoiPlanner`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。
 - 用 Playwright 點畫布時，避開下方中央的提示訊息；`text=` 選擇器也會選到工具提示文字。
-- `.vs/`、`CoiPlanner.csproj.user` 是使用者的 VS 檔案（已在 Git 中），不要 commit 對它們的修改。
 - 使用者在 Windows＋Visual Studio 開發，瀏覽器為 Brave／Chrome，顯示比例常不是 100%。
 
 ## 規則（使用者訂定，不可刪改）

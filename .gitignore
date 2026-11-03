@@ -1,3 +1,5 @@
 logs/
 bin/
 obj/
+.vs/
+*.csproj.user
