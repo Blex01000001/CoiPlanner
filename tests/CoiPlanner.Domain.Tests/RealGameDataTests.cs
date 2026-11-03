@@ -33,12 +33,27 @@ public class RealGameDataTests
         Assert.All(Data.Products, p => Assert.Contains(p.Kind!, kinds));
     }
 
+    // 以下檢查資料的結構，新增或刪除機器時不需要修改
+
     [Fact]
-    public void RemovedMachinesAndIronIngotAreGone()
+    public void EveryRecipeIsRunByAMachine()
+    {
+        var used = Data.Machines.SelectMany(m => m.RecipeIds).ToHashSet();
+        Assert.All(Data.Recipes, r => Assert.Contains(r.Id, used));
+    }
+
+    [Fact]
+    public void EveryProductAppearsInARecipe()
+    {
+        var used = Data.Recipes.SelectMany(r => r.Inputs.Concat(r.Outputs)).Select(i => i.ProductId).ToHashSet();
+        Assert.All(Data.Products, p => Assert.Contains(p.Id, used));
+    }
+
+    [Fact]
+    public void RemovedMachinesStayRemoved()
     {
         Assert.DoesNotContain(Data.Machines, m => m.Id is "iron_smelter" or "iron_caster");
         Assert.DoesNotContain(Data.Products, p => p.Id == "iron_ingot");
-        Assert.Equal(17, Data.Machines.Count);
     }
 
     [Fact]

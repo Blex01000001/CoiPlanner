@@ -38,7 +38,7 @@ dotnet run --urls http://localhost:5062   # 約 10 秒後可連；改畫面後�
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`，且該型態要有運輸方式。更新 `RealGameDataTests` 的機器數量與抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）。
+1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`，且該型態要有運輸方式。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `applySimulation`、`statusOf`。
