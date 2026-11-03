@@ -1,0 +1,2 @@
+# ripgrep（Claude Code 的搜尋）預設略過的路徑；需要時明確指定路徑仍可搜尋
+wwwroot/lib/
