@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    { "id": "1", "machineId": "crusher_large", "recipeId": "crush_iron_ore", "count": 1, "x": 320, "y": 60 },
+    { "id": "2", "machineId": "blast_furnace_2", "recipeId": "smelt_iron_blast", "count": 1, "x": 700, "y": 60 },
+    { "id": "3", "machineId": "air_separator", "recipeId": "separate_air", "count": 1, "x": 700, "y": 400 },
+    { "id": "4", "machineId": "oxygen_furnace_2", "recipeId": "make_steel", "count": 1, "x": 1100, "y": 200 },
+    { "id": "5", "machineId": "cooled_caster_2", "recipeId": "cast_steel_plate", "count": 1, "x": 1500, "y": 200 },
+    { "id": "6", "machineId": "assembly_4", "recipeId": "assemble_mechanical_parts", "count": 1, "x": 1900, "y": 200 },
+    { "id": "7", "machineId": "lime_quarry", "recipeId": "mine_lime", "count": 1, "x": 320, "y": 260 }
+  ],
+  "sources": [
+    { "id": "10", "productId": "iron_ore", "ratePerMinute": 48, "x": 0, "y": 60 },
+    { "id": "12", "productId": "coal", "ratePerMinute": 15, "x": 320, "y": 420 },
+    { "id": "13", "productId": "water", "ratePerMinute": 12, "x": 1100, "y": 460 }
+  ],
+  "edges": [
+    { "sourceNodeId": "10", "targetNodeId": "1", "productId": "iron_ore", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "1", "targetNodeId": "2", "productId": "crushed_iron_ore", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "7", "targetNodeId": "2", "productId": "lime", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "12", "targetNodeId": "2", "productId": "coal", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "2", "targetNodeId": "4", "productId": "molten_iron", "transport": "molten_channel", "tier": 1 },
+    { "sourceNodeId": "3", "targetNodeId": "4", "productId": "oxygen", "transport": "pipe", "tier": 1 },
+    { "sourceNodeId": "4", "targetNodeId": "5", "productId": "molten_steel", "transport": "molten_channel", "tier": 1 },
+    { "sourceNodeId": "13", "targetNodeId": "5", "productId": "water", "transport": "pipe", "tier": 1 },
+    { "sourceNodeId": "5", "targetNodeId": "6", "productId": "steel_plate", "transport": "belt", "tier": 1 }
+  ]
+}

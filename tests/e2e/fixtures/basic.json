@@ -1,0 +1,12 @@
+{
+  "nodes": [
+    { "id": "1", "machineId": "water_pump", "recipeId": "pump_water", "count": 1, "x": 40, "y": 100 },
+    { "id": "2", "machineId": "coal_mine", "recipeId": "mine_coal", "count": 2, "x": 40, "y": 260 },
+    { "id": "3", "machineId": "steam_boiler_coal", "recipeId": "boil_steam_coal", "count": 1, "x": 440, "y": 140 }
+  ],
+  "sources": [],
+  "edges": [
+    { "sourceNodeId": "1", "targetNodeId": "3", "productId": "water", "transport": "pipe", "tier": 1 },
+    { "sourceNodeId": "2", "targetNodeId": "3", "productId": "coal", "transport": "loose_belt", "tier": 1 }
+  ]
+}

@@ -3,3 +3,4 @@ bin/
 obj/
 .vs/
 *.csproj.user
+tests/e2e/.output/

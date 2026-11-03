@@ -20,6 +20,7 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `Program.cs` | DI、SignalR 上限、提示訊息位置、`logs/crash.log` | 很少改 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
+| `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
 | `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
 | `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
@@ -31,14 +32,15 @@ dotnet test     # 約 10 秒（含增量建置）；每次 commit 前必跑
 dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   # 只跑一個類別，約 2 秒
 ```
 ```bash
-node --check wwwroot/js/graphEditor.js    # 改 JS 後必跑（1 秒）；JS 沒有自動測試
-dotnet run --urls http://localhost:5062   # 約 10 秒後可連；改畫面後用瀏覽器（Playwright）實際操作確認
+node --check wwwroot/js/graphEditor.js    # 改 JS 後必跑（1 秒）
+node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
 ```
+- 冒煙測試自己在 5170 埠啟動網站；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
 - **測試全過才 commit，不可為了通過而跳過或刪除測試。**
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`，且該型態要有運輸方式。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）。
+1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`，且該型態要有運輸方式。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `applySimulation`、`statusOf`。
@@ -74,7 +76,6 @@ dotnet run --urls http://localhost:5062   # 約 10 秒後可連；改畫面後�
 
 ## 環境陷阱
 - 停止網站用 `pkill -x CoiPlanner`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。
-- 用 Playwright 點畫布時，避開下方中央的提示訊息；`text=` 選擇器也會選到工具提示文字。
 - 使用者在 Windows＋Visual Studio 開發，瀏覽器為 Brave／Chrome，顯示比例常不是 100%。
 
 ## 規則（使用者訂定，不可刪改）
