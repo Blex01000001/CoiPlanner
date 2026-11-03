@@ -20,7 +20,7 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `Program.cs` | DI、SignalR 上限、提示訊息位置、`logs/crash.log` | 很少改 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
-| `tests/CoiPlanner.Domain.Tests/` | xUnit。`TestData.cs` 與 `Fixtures/sample.json` 是虛構資料，**兩者數值須一致**；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
+| `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
 | `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
 

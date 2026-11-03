@@ -1,45 +1,13 @@
 using CoiPlanner.Domain.Models;
+using CoiPlanner.Domain.Services;
 
 namespace CoiPlanner.Domain.Tests;
 
-/// <summary>測試用的虛構資料，數值與 Fixtures/sample.json 相同。</summary>
+/// <summary>測試用的虛構資料，唯一來源是 Fixtures/sample.json；這裡只提供建立節點與連線的捷徑。</summary>
 internal static class TestData
 {
-    public static GameData Sample { get; } = new()
-    {
-        Products =
-        [
-            new Product { Id = "alpha_ore", Name = "Alpha Ore", Unit = "pcs", Kind = "unit" },
-            new Product { Id = "beta_ingot", Name = "Beta Ingot", Unit = "pcs", Kind = "unit" },
-            new Product { Id = "gamma_plate", Name = "Gamma Plate", Unit = "pcs", Kind = "unit" },
-            new Product { Id = "iron_ore", Name = "Iron Ore", Unit = "pcs", Kind = "unit" },
-        ],
-        Recipes =
-        [
-            new Recipe
-            {
-                Id = "smelt_beta", Name = "Smelt Beta Ingot", CycleSeconds = 10,
-                Inputs = [new ItemAmount { ProductId = "alpha_ore", Quantity = 2 }],
-                Outputs = [new ItemAmount { ProductId = "beta_ingot", Quantity = 1 }],
-            },
-            new Recipe
-            {
-                Id = "press_gamma", Name = "Press Gamma Plate", CycleSeconds = 20,
-                Inputs = [new ItemAmount { ProductId = "beta_ingot", Quantity = 3 }],
-                Outputs = [new ItemAmount { ProductId = "gamma_plate", Quantity = 2 }],
-            },
-        ],
-        Machines =
-        [
-            new Machine { Id = "demo_furnace", Name = "Demo Furnace", RecipeIds = ["smelt_beta"] },
-            new Machine { Id = "demo_press", Name = "Demo Press", RecipeIds = ["press_gamma"] },
-        ],
-        Transports =
-        [
-            new Transport { Id = "belt", Name = "Demo Belt", Kind = "unit", TiersPerMinute = [10, 100] },
-            new Transport { Id = "pipe", Name = "Demo Pipe", Kind = "fluid", TiersPerMinute = [50] },
-        ],
-    };
+    public static GameData Sample { get; } =
+        new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));
 
     public static Node Furnace(string id = "f", int count = 1) =>
         new() { Id = id, MachineId = "demo_furnace", RecipeId = "smelt_beta", Count = count };
