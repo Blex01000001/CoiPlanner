@@ -31,6 +31,14 @@ async function main() {
     try {
         page = await newPage(browser);
 
+        await step("/js/ 以 no-cache 提供（模組更新後瀏覽器不會用舊版）", async () => {
+            for (const file of ["graphEditor.js"]) {
+                const res = await fetch(`${BASE}/js/${file}`);
+                const cache = res.headers.get("cache-control");
+                assert(res.ok && cache?.includes("no-cache"), `/js/${file}：${res.status}，cache-control=${cache}`);
+            }
+        });
+
         await step("資料瀏覽：各分頁可切換且沒有錯誤", async () => {
             await page.goto(BASE);
             await page.waitForSelector(".mud-tab");

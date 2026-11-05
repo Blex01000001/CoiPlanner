@@ -39,7 +39,17 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+// /js/ 一律要求瀏覽器每次向伺服器確認有沒有更新（沒變就回 304，很便宜）。
+// graphEditor 由多個 ES 模組組成，子模組是用固定網址匯入的，沒辦法像單一檔案那樣在網址加版本號；
+// 不這樣做的話，改了其中一個模組後，瀏覽器可能繼續用快取裡的舊版
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.Context.Request.Path.StartsWithSegments("/js"))
+            ctx.Context.Response.Headers.CacheControl = "no-cache";
+    },
+});
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
