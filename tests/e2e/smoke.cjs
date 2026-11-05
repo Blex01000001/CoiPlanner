@@ -76,6 +76,15 @@ async function main() {
             await savedPlan(p => p.edges.length === 1);
         });
 
+        await step("點連線中間的標籤可改運輸等級", async () => {
+            // 煤礦場輸出 (300, 274) → 鍋爐煤礦輸入 (440, 174)，標籤在曲線中點
+            const items = await menuAt(370, 224, "left");
+            assertEqual(items, ["✓ 1 級（60/分）", "2 級（120/分）", "3 級（220/分）", "4 級（400/分）", "刪除連線"], "連線選單");
+            await clickMenu("2 級");
+            const edge = (await savedPlan(p => p.edges[0]?.tier === 2)).edges[0];
+            assertEqual([edge.productId, edge.transport], ["coal", "loose_belt"], "連線");
+        });
+
         await step("按住 Shift 拖動節點會對齊格線", async () => {
             await page.keyboard.down("Shift");
             await drag([130, 85], [167, 113]);
@@ -106,6 +115,31 @@ async function main() {
             assertEqual(plan.groups.map(g => g.title), ["能源區"], "群組名稱");
         });
 
+        await step("註解與群組的選單：重新命名、換色、刪除群組", async () => {
+            assertEqual(await menuAt(1000, 520), ["編輯內容", "重新命名", "顏色", "複製", "刪除"], "註解選單");
+            await clickMenu("重新命名");
+            await page.fill(".graphdialog input", "待辦");
+            await page.click(".graphdialog button");
+            await savedPlan(p => p.notes[0]?.title === "待辦");
+
+            await menuAt(1000, 520);
+            await clickMenu("顏色");
+            await clickMenu("黃");
+            await savedPlan(p => p.notes[0]?.color === "yellow");
+
+            // (700, 520) 在群組內、不在任何節點上
+            const items = await menuAt(700, 520);
+            assertEqual(items.slice(3), ["重新命名群組「能源區」", "群組顏色", "刪除群組（保留裡面的節點）"], "群組選單");
+            await clickMenu("群組顏色");
+            await clickMenu("綠");
+            await savedPlan(p => p.groups[0]?.color === "#8A8");
+
+            await menuAt(700, 520);
+            await clickMenu("刪除群組");
+            const plan = await savedPlan(p => p.groups.length === 0);
+            assert(plan.nodes.length === 4 && plan.notes.length === 1, "刪除群組時裡面的節點與註解要保留");
+        });
+
         await step("拖放匯入，模擬到穩定後機械零件每分鐘 48", async () => {
             await dropFile("steel.json");
             await page.click(".planner-sim-bar >> text=20×");
@@ -114,6 +148,13 @@ async function main() {
             const parts = await balanceOf("機械零件");
             assert(Math.abs(parts.supply - 48) < 0.5, `機械零件產出 ${parts.supply}`);
             await page.click('[aria-label="物料平衡面板"]');
+        });
+
+        await step("Fit view 按鈕可用，沒有瀏覽器錯誤", async () => {
+            const before = errors.length;
+            await page.click('[aria-label="Fit view"]');
+            await page.waitForTimeout(600);
+            assert(errors.length === before, `按下 Fit view 後出現錯誤：${errors.slice(before).join("; ")}`);
         });
 
         await step("暫停時時間不動，重置回到 00:00", async () => {
@@ -208,10 +249,10 @@ async function dropFile(fixture) {
     await page.waitForTimeout(800);
 }
 
-/** 在畫布座標按右鍵，回傳選單項目文字。 */
-async function menuAt(x, y) {
+/** 在畫布座標按右鍵（連線中間的標籤是按左鍵），回傳選單項目文字。 */
+async function menuAt(x, y, button = "right") {
     await page.keyboard.press("Escape");
-    await page.mouse.click(x, y, { button: "right" });
+    await page.mouse.click(x, y, { button });
     await page.waitForSelector(".litecontextmenu");
     return (await page.locator(".litecontextmenu .litemenu-entry").allInnerTexts()).map(t => t.trim()).filter(Boolean);
 }
