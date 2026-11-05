@@ -286,6 +286,9 @@ async function startServer() {
     throw new Error(`網站 60 秒內沒有在 ${BASE} 啟動`);
 }
 
+// 不論怎麼結束（包含輸出被 head 之類的指令截斷而中途退出），都要把網站關掉，否則下次會因為埠被佔用而無法執行
+process.on("exit", () => server?.kill());
+
 /** 關閉網站並等它真的結束（ASP.NET 收到 SIGTERM 後會花幾秒正常關閉），下一次執行才不會撞到同一個連接埠。 */
 async function stopServer() {
     if (!server || server.exitCode !== null) return;
