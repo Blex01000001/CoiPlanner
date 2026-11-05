@@ -23,7 +23,7 @@ dotnet test
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（規劃檢查、額定速率、運輸上限）、`ProductionSimulator`（逐步模擬）、`ProductionPlanSerializer`（規劃存取） |
 | `Components/Pages/Home.razor` | 資料瀏覽 |
 | `Components/Pages/Planner.razor` | 產線規劃（節點編輯器） |
-| `wwwroot/js/graphEditor.js` | litegraph 包裝；只負責畫面，計算一律在 C# |
+| `wwwroot/js/graphEditor.js`、`wwwroot/js/graphEditor/` | litegraph 包裝（入口與 ES 模組）；只負責畫面，計算一律在 C# |
 | `tests/CoiPlanner.Domain.Tests/Fixtures` | 測試專用的虛構資料，不會被網站載入 |
 
 ## 修改紀錄

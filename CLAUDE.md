@@ -13,7 +13,7 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `Domain/Services/GameDataLoader.cs` | 載入與跨檔驗證遊戲資料 | 新資料欄位的驗證 |
 | `Domain/Services/ProductionPlanSerializer.cs`、`JsonDefaults.cs` | 規劃 JSON（camelCase、允許註解與尾逗號） | 很少改 |
 | `Components/Pages/Planner.razor` | 產線規劃頁：interop、模擬迴圈、控制列、面板、匯入匯出、自動存檔 | 面板、控制項 |
-| `wwwroot/js/graphEditor.js` | litegraph 包裝：節點類型、選單、格線、標籤、箭頭、群組、註解、fit view | 畫布外觀與互動 |
+| `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
 | `Components/Pages/Home.razor` | 資料瀏覽（物品、配方、機器、運輸） | 顯示新資料欄位 |
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左上浮動選單按鈕＋抽屜 | 很少改 |
 | `Components/App.razor` | `<head>`、CSS 版本號（`Versioned`） | 新增 CSS |
@@ -32,7 +32,7 @@ dotnet test     # 約 10 秒（含增量建置）；每次 commit 前必跑
 dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   # 只跑一個類別，約 2 秒
 ```
 ```bash
-node --check wwwroot/js/graphEditor.js    # 改 JS 後必跑（1 秒）
+for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法，名稱或匯出寫錯要靠冒煙測試才會發現
 node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
 ```
 - 冒煙測試自己在 5170 埠啟動網站；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
@@ -41,20 +41,21 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 
 ## 常見任務
 1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`，且該型態要有運輸方式。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
-2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
+2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
-4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `applySimulation`、`statusOf`。
-5. **畫布互動、選單**：`graphEditor.js`，用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見該檔開頭）。
+4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
+5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／flow／viewport／menus.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
 6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`；單一訊息上限 2 MB。
 
 ## 架構決策（不要改回去）
-- **不修改 `wwwroot/lib/litegraph/`**：檔案原樣複製自 npm，才能直接升級；行為差異全在 `graphEditor.js` 覆寫。
+- **不修改 `wwwroot/lib/litegraph/`**：檔案原樣複製自 npm，才能直接升級；行為差異全在 `graphEditor/` 覆寫。
 - 插槽數固定為配方數；同一輸入的第二條以後連線接到疊在原插槽上的隱藏合流插槽（`mergeSlotFor`、`syncInputSlots`）。原因：使用者要求插槽數固定，而 litegraph 一個輸入只能接一條線。
 - 運輸方式由物品 `kind` 決定（一種型態只走一種運輸），使用者只選等級；`Edge.Transport` 仍存檔，供 C# 檢查。
 - `PlanCalculator` 只做檢查與額定值，實際數字一律來自 `ProductionSimulator`。原因：使用者選擇「只做模擬」。
 - 模擬規則皆為使用者決定：連續流量、依連線建立順序填滿、沒接線的輸入＝0（停擺）、沒接線的輸出送進倉庫。`SimulationSettings` 預設值（暫存 1 分鐘、運送 0.5 秒、啟動 0.5 秒）是使用者暫訂，**改動前先問**。
 - 模擬在 C# 以 100 ms 計時器推進、推給 JS；面板每 `PanelRefreshTicks` 次才重繪。原因：控制 SignalR 流量。
-- `graphEditor.js` 以 `?v=檔案時間` 載入，CSS 也加版本號。原因：瀏覽器曾沿用舊 CSS，畫布上方出現白條。
+- `/js/` 以 `Cache-Control: no-cache` 提供（`Program.cs`），CSS 網址加檔案時間版本號（`Versioned`）。原因：`graphEditor` 是多個 ES 模組，子模組的網址沒辦法加版本號；瀏覽器也曾沿用舊 CSS，畫布上方出現白條。冒煙測試會檢查這個標頭。
+- `Editor` 的方法分散在 `plan／status／flow／viewport／menus.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。
 - 畫布像素＝CSS 大小 × `devicePixelRatio`，並對前景 ctx `setTransform`（`fitCanvas`）。原因：Windows 顯示比例 125%／150% 時畫面模糊且只畫一部分。
 - 格線在 `onRenderBackground` 畫，不用 `onDrawBackground`。原因：後者會蓋掉群組。格線間距＝Shift 對齊間距 `GRID_SIZE`，對齊以含標題的外框為準。
 - Shift 在 `window` 追蹤並切換 `LiteGraph.alwaysSnapToGrid`。原因：litegraph 只在 canvas 有焦點時才知道 Shift。

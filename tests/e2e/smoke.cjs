@@ -32,7 +32,7 @@ async function main() {
         page = await newPage(browser);
 
         await step("/js/ 以 no-cache 提供（模組更新後瀏覽器不會用舊版）", async () => {
-            for (const file of ["graphEditor.js"]) {
+            for (const file of ["graphEditor.js", "graphEditor/editor.js"]) {
                 const res = await fetch(`${BASE}/js/${file}`);
                 const cache = res.headers.get("cache-control");
                 assert(res.ok && cache?.includes("no-cache"), `/js/${file}：${res.status}，cache-control=${cache}`);
