@@ -22,7 +22,8 @@ dotnet test
 | `Domain/Models` | Product、Recipe、Machine、Transport、Node、ResourceSource、Edge、ProductionPlan；`Simulation.cs` 為模擬參數與狀態 |
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（規劃檢查、額定速率、運輸上限）、`ProductionSimulator`（逐步模擬）、`ProductionPlanSerializer`（規劃存取） |
 | `Components/Pages/Home.razor` | 資料瀏覽 |
-| `Components/Pages/Planner.razor` | 產線規劃（節點編輯器） |
+| `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁（節點編輯器）：版面與程式碼 |
+| `Components/Planning/` | 規劃頁的畫面元件：模擬控制列、規劃面板、物料平衡面板 |
 | `wwwroot/js/graphEditor.js`、`wwwroot/js/graphEditor/` | litegraph 包裝（入口與 ES 模組）；只負責畫面，計算一律在 C# |
 | `tests/CoiPlanner.Domain.Tests/Fixtures` | 測試專用的虛構資料，不會被網站載入 |
 

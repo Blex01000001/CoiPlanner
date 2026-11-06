@@ -1,0 +1,61 @@
+@using CoiPlanner.Domain.Models
+@* 物料平衡面板：模擬中每種物品每分鐘的實際產出、消耗與差額（最近幾秒的平均）。 *@
+<MudPaper Class="planner-side pa-4" Elevation="4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h6">物料平衡</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => OnClose.InvokeAsync()" aria-label="收合面板" />
+    </MudStack>
+    <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
+        每分鐘的實際產出與消耗（最近 @Format(AverageSeconds) 秒平均）。
+    </MudText>
+    @if (Snapshot is null || Snapshot.Balances.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">尚無節點。</MudText>
+    }
+    else
+    {
+        <MudSimpleTable Dense="true" Elevation="0">
+            <thead>
+                <tr>
+                    <th>物品</th>
+                    <th style="text-align:right">產出</th>
+                    <th style="text-align:right">消耗</th>
+                    <th style="text-align:right">差額</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Snapshot.Balances)
+                {
+                    <tr>
+                        <td>@ProductName(b.ProductId)</td>
+                        <td style="text-align:right">@FormatRate(b.SupplyPerMinute)</td>
+                        <td style="text-align:right">@FormatRate(b.DemandPerMinute)</td>
+                        <td style="text-align:right">
+                            <MudText Typo="Typo.body2" Color="@NetColor(b.NetPerMinute)">@FormatRate(b.NetPerMinute)</MudText>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public SimulationSnapshot? Snapshot { get; set; }
+    [Parameter] public IReadOnlyDictionary<string, Product> Products { get; set; } = new Dictionary<string, Product>();
+    [Parameter] public double AverageSeconds { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // 模擬的速率是移動平均，會在整數附近小幅浮動；顯示到小數一位，差距在 0.05 以內視為平衡
+    private const double BalanceTolerance = 0.05;
+
+    private string ProductName(string id) => Products.TryGetValue(id, out var p) ? p.Name : id;
+
+    private static string Format(double value) => value.ToString("0.##");
+
+    private static string FormatRate(double value) =>
+        (Math.Abs(value) < BalanceTolerance ? 0 : value).ToString("0.#");
+
+    private static Color NetColor(double net) =>
+        net < -BalanceTolerance ? Color.Error : net > BalanceTolerance ? Color.Success : Color.Default;
+}

@@ -1,3 +1,4 @@
+using CoiPlanner.Components.Planning;
 using CoiPlanner.Domain.Models;
 using CoiPlanner.Domain.Services;
 using Microsoft.AspNetCore.Components;
@@ -12,14 +13,13 @@ public partial class Planner
 {
     private const string StorageKey = "coiplanner.plan";
     private const long MaxImportBytes = 1024 * 1024;
-    private static readonly int[] Speeds = [1, 5, 10, 20];
     // 每 100 毫秒推進一次模擬並把狀態送到畫布；1× 時正好是一步（0.1 秒）
     private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
     // 面板（模擬時間、物料平衡表）每幾次更新重繪一次，畫布則每次都更新
     private const int PanelRefreshTicks = 3;
 
     private ElementReference _canvas;
-    private MudFileUpload<IBrowserFile>? _upload;
+    private PlanPanel? _planPanel;
     private IJSObjectReference? _module;
     private IJSObjectReference? _editor;
     private DotNetObjectReference<Planner>? _dotnetRef;
@@ -205,8 +205,8 @@ public partial class Planner
         finally
         {
             // 清掉選取，否則再選同一個檔案不會觸發 FilesChanged
-            if (_upload is not null)
-                await _upload.ClearAsync();
+            if (_planPanel is not null)
+                await _planPanel.ClearSelectionAsync();
         }
 
         await ImportTextAsync(file.Name, text);
@@ -302,22 +302,6 @@ public partial class Planner
 
     private static bool IsEmpty(ProductionPlan plan) =>
         plan.Nodes.Count == 0 && plan.Sources.Count == 0 && plan.Groups.Count == 0 && plan.Notes.Count == 0;
-
-    private string ProductName(string id) => _products.TryGetValue(id, out var p) ? p.Name : id;
-
-    private static string Format(double value) => value.ToString("0.##");
-
-    private static string FormatTime(double seconds) =>
-        TimeSpan.FromSeconds(Math.Floor(seconds)).ToString(seconds >= 3600 ? @"h\:mm\:ss" : @"mm\:ss");
-
-    // 模擬的速率是移動平均，會在整數附近小幅浮動；顯示到小數一位，差距在 0.05 以內視為平衡
-    private const double BalanceTolerance = 0.05;
-
-    private static string FormatRate(double value) =>
-        (Math.Abs(value) < BalanceTolerance ? 0 : value).ToString("0.#");
-
-    private static Color NetColor(double net) =>
-        net < -BalanceTolerance ? Color.Error : net > BalanceTolerance ? Color.Success : Color.Default;
 
     public async ValueTask DisposeAsync()
     {

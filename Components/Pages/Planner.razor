@@ -3,9 +3,11 @@
     產線規劃頁。畫布由 wwwroot/js/graphEditor.js 負責；這裡負責：
     - 收到畫布的規劃（OnGraphChanged）→ PlanCalculator 檢查 → ProductionSimulator.Sync → 自動存檔
     - 模擬迴圈（RunSimulationAsync）：每 100 ms 推進並把狀態送回畫布，面板每 PanelRefreshTicks 次重繪一次
-    - 右上的模擬控制列、右側按鈕與面板（SidePanel，一次只開一個）、匯入／匯出／清空
-    這個檔案只有畫面標記；程式碼在 Planner.razor.cs（同一個 partial class）。
+    - 右側按鈕與面板（SidePanel，一次只開一個）、匯入／匯出／清空的流程
+    這個檔案只有版面；程式碼在 Planner.razor.cs（同一個 partial class），
+    模擬控制列、規劃面板、物料平衡面板是 Components/Planning/ 的元件（狀態都由這個頁面持有）。
 *@
+@using CoiPlanner.Components.Planning
 @using CoiPlanner.Domain.Models
 @using CoiPlanner.Domain.Services
 @implements IAsyncDisposable
@@ -28,24 +30,7 @@
     </MudTooltip>
 
     @* 右上角：模擬控制 *@
-    <MudPaper Class="planner-sim-bar" Elevation="4">
-        <MudTooltip Text="@(_running ? "暫停" : "播放")">
-            <MudIconButton Icon="@(_running ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)"
-                           Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small"
-                           OnClick="() => _running = !_running" aria-label="@(_running ? "暫停" : "播放")" />
-        </MudTooltip>
-        <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
-            @foreach (var speed in Speeds)
-            {
-                <MudButton Variant="@(_speed == speed ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
-                           OnClick="() => _speed = speed">@(speed)×</MudButton>
-            }
-        </MudButtonGroup>
-        <MudTooltip Text="重置模擬">
-            <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="ResetSimulation" aria-label="重置模擬" />
-        </MudTooltip>
-        <MudText Typo="Typo.body2" Class="planner-sim-clock">@FormatTime(_snapshot?.TimeSeconds ?? 0)</MudText>
-    </MudPaper>
+    <SimulationBar @bind-Running="_running" @bind-Speed="_speed" TimeSeconds="@(_snapshot?.TimeSeconds ?? 0)" OnReset="ResetSimulation" />
 
     @* 右側：面板切換按鈕；一次只開一個面板，再按一次收合 *@
     <div class="planner-side-buttons">
@@ -59,93 +44,13 @@
         </MudTooltip>
     </div>
 
-    @* 用 d-none 隱藏而不是不渲染：檔案上傳元件要一直存在，匯入才不會因為面板收合而失效 *@
-    <MudPaper Class="@($"planner-side pa-4 {(_panel == SidePanel.Plan ? "" : "d-none")}")" Elevation="4">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <MudText Typo="Typo.h6">產線規劃</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panel = SidePanel.None" aria-label="收合面板" />
-        </MudStack>
-        <MudText Typo="Typo.caption" Class="d-block mb-3">
-            在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
-            連線中間顯示「流量/上限」（每分鐘，同一來源有多條線時依建立順序填滿），達到上限時以紅色粗體標示；點它可以選擇運輸等級或刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
-            按住 Shift 移動或調整節點大小會對齊格線；右下角的按鈕可以把視野移到整個工作流。
-        </MudText>
-
-        <MudStack Row="true" Spacing="1" Class="mb-1">
-            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Download"
-                       OnClick="ExportAsync" Disabled="_editor is null">匯出</MudButton>
-            <MudFileUpload @ref="_upload" T="IBrowserFile" Accept=".json" FilesChanged="ImportAsync" Disabled="_editor is null">
-                <CustomContent>
-                    <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Upload"
-                               OnClick="@context.OpenFilePickerAsync" Disabled="_editor is null">匯入</MudButton>
-                </CustomContent>
-            </MudFileUpload>
-            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep"
-                       OnClick="ClearAsync" Disabled="_editor is null || IsEmpty(_plan)">清空</MudButton>
-        </MudStack>
-        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">也可以把 .json 檔直接拖到畫布上匯入。修改會自動存在這個瀏覽器中。</MudText>
-
-        <MudText Typo="Typo.subtitle2" Class="mb-1">模擬</MudText>
-        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">
-            右上角可以暫停、切換速度、重置。每個節點獨立運作：輸入都有料後等 @Format(_sim.Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
-            暫存 @Format(_sim.Settings.BufferMinutes) 分鐘用量、運送 @Format(_sim.Settings.TransitSeconds) 秒；沒接線的輸出送進倉庫。
-            數字為最近 @Format(_sim.Settings.AverageSeconds) 秒的平均。
-        </MudText>
-
-        <MudText Typo="Typo.subtitle2" Class="mb-1">問題</MudText>
-        @if (_result is null || _result.IsValid)
-        {
-            <MudText Typo="Typo.body2" Class="mud-text-secondary">沒有問題。</MudText>
-        }
-        else
-        {
-            @foreach (var issue in _result.Issues)
-            {
-                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-1">@issue.Message</MudAlert>
-            }
-        }
-    </MudPaper>
+    <PlanPanel @ref="_planPanel" Visible="@(_panel == SidePanel.Plan)" Enabled="@(_editor is not null)" CanClear="@(!IsEmpty(_plan))"
+               Result="_result" Settings="_sim.Settings" OnClose="() => _panel = SidePanel.None"
+               OnExport="ExportAsync" OnFileSelected="ImportAsync" OnClear="ClearAsync" />
 
     @if (_panel == SidePanel.Balance)
     {
-        <MudPaper Class="planner-side pa-4" Elevation="4">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                <MudText Typo="Typo.h6">物料平衡</MudText>
-                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => _panel = SidePanel.None" aria-label="收合面板" />
-            </MudStack>
-            <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
-                每分鐘的實際產出與消耗（最近 @Format(_sim.Settings.AverageSeconds) 秒平均）。
-            </MudText>
-            @if (_snapshot is null || _snapshot.Balances.Count == 0)
-            {
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">尚無節點。</MudText>
-            }
-            else
-            {
-                <MudSimpleTable Dense="true" Elevation="0">
-                    <thead>
-                        <tr>
-                            <th>物品</th>
-                            <th style="text-align:right">產出</th>
-                            <th style="text-align:right">消耗</th>
-                            <th style="text-align:right">差額</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var b in _snapshot.Balances)
-                        {
-                            <tr>
-                                <td>@ProductName(b.ProductId)</td>
-                                <td style="text-align:right">@FormatRate(b.SupplyPerMinute)</td>
-                                <td style="text-align:right">@FormatRate(b.DemandPerMinute)</td>
-                                <td style="text-align:right">
-                                    <MudText Typo="Typo.body2" Color="@NetColor(b.NetPerMinute)">@FormatRate(b.NetPerMinute)</MudText>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </MudSimpleTable>
-            }
-        </MudPaper>
+        <BalancePanel Snapshot="_snapshot" Products="_products" AverageSeconds="@_sim.Settings.AverageSeconds"
+                      OnClose="() => _panel = SidePanel.None" />
     }
 </div>

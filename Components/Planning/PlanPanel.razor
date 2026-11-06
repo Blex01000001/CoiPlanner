@@ -1,0 +1,73 @@
+@using CoiPlanner.Domain.Models
+@* 產線規劃面板：操作說明、匯出／匯入／清空、模擬規則說明與規劃問題清單。
+   用 d-none 隱藏而不是不渲染：檔案上傳元件要一直存在，匯入才不會因為面板收合而失效。
+   匯入的邏輯（讀檔、載入）在 Planner 頁，這裡只負責選檔的畫面。 *@
+<MudPaper Class="@($"planner-side pa-4 {(Visible ? "" : "d-none")}")" Elevation="4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h6">產線規劃</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => OnClose.InvokeAsync()" aria-label="收合面板" />
+    </MudStack>
+    <MudText Typo="Typo.caption" Class="d-block mb-3">
+        在畫布按右鍵 → Add Node，或連點兩下搜尋，新增機器或資源。拖動輸出插槽到同一物品的輸入插槽建立連線；同一個輸入可以接多條線合流。
+        連線中間顯示「流量/上限」（每分鐘，同一來源有多條線時依建立順序填滿），達到上限時以紅色粗體標示；點它可以選擇運輸等級或刪除連線。選取節點後按 Delete，或在節點上按右鍵 → Remove 刪除。
+        按住 Shift 移動或調整節點大小會對齊格線；右下角的按鈕可以把視野移到整個工作流。
+    </MudText>
+
+    <MudStack Row="true" Spacing="1" Class="mb-1">
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Download"
+                   OnClick="() => OnExport.InvokeAsync()" Disabled="!Enabled">匯出</MudButton>
+        <MudFileUpload @ref="_upload" T="IBrowserFile" Accept=".json" FilesChanged="OnFileSelected" Disabled="!Enabled">
+            <CustomContent>
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Upload"
+                           OnClick="@context.OpenFilePickerAsync" Disabled="!Enabled">匯入</MudButton>
+            </CustomContent>
+        </MudFileUpload>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep"
+                   OnClick="() => OnClear.InvokeAsync()" Disabled="!Enabled || !CanClear">清空</MudButton>
+    </MudStack>
+    <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">也可以把 .json 檔直接拖到畫布上匯入。修改會自動存在這個瀏覽器中。</MudText>
+
+    <MudText Typo="Typo.subtitle2" Class="mb-1">模擬</MudText>
+    <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">
+        右上角可以暫停、切換速度、重置。每個節點獨立運作：輸入都有料後等 @Format(Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
+        暫存 @Format(Settings.BufferMinutes) 分鐘用量、運送 @Format(Settings.TransitSeconds) 秒；沒接線的輸出送進倉庫。
+        數字為最近 @Format(Settings.AverageSeconds) 秒的平均。
+    </MudText>
+
+    <MudText Typo="Typo.subtitle2" Class="mb-1">問題</MudText>
+    @if (Result is null || Result.IsValid)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">沒有問題。</MudText>
+    }
+    else
+    {
+        @foreach (var issue in Result.Issues)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-1">@issue.Message</MudAlert>
+        }
+    }
+</MudPaper>
+
+@code {
+    private MudFileUpload<IBrowserFile>? _upload;
+
+    [Parameter] public bool Visible { get; set; }
+
+    /// <summary>畫布還沒準備好時，匯出、匯入、清空都不能用。</summary>
+    [Parameter] public bool Enabled { get; set; }
+
+    /// <summary>目前的規劃有內容時才能清空。</summary>
+    [Parameter] public bool CanClear { get; set; }
+
+    [Parameter] public PlanResult? Result { get; set; }
+    [Parameter] public SimulationSettings Settings { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnExport { get; set; }
+    [Parameter] public EventCallback<IBrowserFile?> OnFileSelected { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+
+    /// <summary>清掉選取，否則再選同一個檔案不會觸發 FilesChanged。</summary>
+    public Task ClearSelectionAsync() => _upload?.ClearAsync() ?? Task.CompletedTask;
+
+    private static string Format(double value) => value.ToString("0.##");
+}

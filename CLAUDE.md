@@ -12,7 +12,8 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `Domain/Services/ProductionSimulator.cs` | 逐步模擬：實際流量、稼動率、狀態、物料平衡 | 模擬行為 |
 | `Domain/Services/GameDataLoader.cs` | 載入與跨檔驗證遊戲資料 | 新資料欄位的驗證 |
 | `Domain/Services/ProductionPlanSerializer.cs`、`JsonDefaults.cs` | 規劃 JSON（camelCase、允許註解與尾逗號） | 很少改 |
-| `Components/Pages/Planner.razor` | 產線規劃頁：interop、模擬迴圈、控制列、面板、匯入匯出、自動存檔 | 面板、控制項 |
+| `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁：`.razor` 只有版面，`.razor.cs` 是 interop、模擬迴圈、面板切換、匯入匯出、自動存檔；**所有狀態都在這裡** | 流程、新的狀態或呼叫 |
+| `Components/Planning/` | 規劃頁的畫面元件，只顯示並回報操作：`SimulationBar` 模擬控制列、`PlanPanel` 規劃面板（說明、匯出入、問題）、`BalancePanel` 物料平衡 | 面板與控制項的外觀 |
 | `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
 | `Components/Pages/Home.razor` | 資料瀏覽（物品、配方、機器、運輸） | 顯示新資料欄位 |
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左上浮動選單按鈕＋抽屜 | 很少改 |
@@ -61,7 +62,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - Shift 在 `window` 追蹤並切換 `LiteGraph.alwaysSnapToGrid`。原因：litegraph 只在 canvas 有焦點時才知道 Shift。
 - 保留拖放 .json 匯入（`OnFileDropped`）。原因：VS 偵錯時開檔案選擇視窗可能讓偵錯中斷。
 - SignalR `MaximumReceiveMessageSize` 2 MB。原因：預設 32 KB，規劃稍大就斷線。
-- 產線規劃面板用 `d-none` 隱藏而非不渲染。原因：`MudFileUpload` 必須一直存在。
+- `PlanPanel` 用 `d-none` 隱藏而非不渲染。原因：`MudFileUpload` 必須一直存在。
 - Razor 迴圈中不要在子元件內容使用 `for` 的迴圈變數，改用 `foreach` 的區域變數。原因：子內容延後渲染，曾在 `Home.razor` 造成索引越界。
 - 沒有頂端 App Bar、提示訊息放在下方中央。原因：畫布滿版，右上是模擬控制列。
 

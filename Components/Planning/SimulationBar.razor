@@ -1,0 +1,33 @@
+@* 右上角的模擬控制列：播放／暫停、速度、重置、模擬時間。狀態由 Planner 頁持有，這裡只顯示並回報操作。 *@
+<MudPaper Class="planner-sim-bar" Elevation="4">
+    <MudTooltip Text="@(Running ? "暫停" : "播放")">
+        <MudIconButton Icon="@(Running ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)"
+                       Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small"
+                       OnClick="() => RunningChanged.InvokeAsync(!Running)" aria-label="@(Running ? "暫停" : "播放")" />
+    </MudTooltip>
+    <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+        @foreach (var speed in Speeds)
+        {
+            <MudButton Variant="@(Speed == speed ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
+                       OnClick="() => SpeedChanged.InvokeAsync(speed)">@(speed)×</MudButton>
+        }
+    </MudButtonGroup>
+    <MudTooltip Text="重置模擬">
+        <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="() => OnReset.InvokeAsync()" aria-label="重置模擬" />
+    </MudTooltip>
+    <MudText Typo="Typo.body2" Class="planner-sim-clock">@FormatTime(TimeSeconds)</MudText>
+</MudPaper>
+
+@code {
+    private static readonly int[] Speeds = [1, 5, 10, 20];
+
+    [Parameter] public bool Running { get; set; }
+    [Parameter] public EventCallback<bool> RunningChanged { get; set; }
+    [Parameter] public int Speed { get; set; }
+    [Parameter] public EventCallback<int> SpeedChanged { get; set; }
+    [Parameter] public double TimeSeconds { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+
+    private static string FormatTime(double seconds) =>
+        TimeSpan.FromSeconds(Math.Floor(seconds)).ToString(seconds >= 3600 ? @"h\:mm\:ss" : @"mm\:ss");
+}
