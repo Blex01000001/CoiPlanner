@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    { "id": "1", "machineId": "steam_boiler_coal", "recipeId": "boil_steam_coal", "count": 1, "x": 440, "y": 140 }
+  ],
+  "sources": [
+    { "id": "11", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 100 },
+    { "id": "12", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 260 },
+    { "id": "13", "productId": "water", "ratePerMinute": 20, "x": 40, "y": 420 }
+  ],
+  "edges": [
+    { "sourceNodeId": "11", "targetNodeId": "1", "productId": "coal", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "12", "targetNodeId": "1", "productId": "coal", "transport": "loose_belt", "tier": 1 },
+    { "sourceNodeId": "13", "targetNodeId": "1", "productId": "water", "transport": "pipe", "tier": 1 }
+  ]
+}

@@ -150,6 +150,20 @@ async function main() {
             await page.click('[aria-label="物料平衡面板"]');
         });
 
+        await step("兩個來源合流到同一個輸入，兩條連線都保留且都有流量", async () => {
+            await dropFile("merge.json");
+            const plan = await savedPlan(p => p.edges.length === 3);
+            const coal = plan.edges.filter(e => e.productId === "coal");
+            assert(coal.length === 2 && coal[0].targetNodeId === coal[1].targetNodeId
+                && coal[0].sourceNodeId !== coal[1].sourceNodeId, `煤礦連線：${JSON.stringify(coal)}`);
+            await page.click(".planner-sim-bar >> text=20×");
+            await waitForClock(120);
+            await page.click('[aria-label="物料平衡面板"]');
+            const coalBalance = await balanceOf("煤礦");
+            assert(Math.abs(coalBalance.demand - 20) < 0.5, `煤礦消耗 ${coalBalance.demand}（兩條都有流量應為 20）`);
+            await page.click('[aria-label="物料平衡面板"]');
+        });
+
         await step("Fit view 按鈕可用，沒有瀏覽器錯誤", async () => {
             const before = errors.length;
             await page.click('[aria-label="Fit view"]');
