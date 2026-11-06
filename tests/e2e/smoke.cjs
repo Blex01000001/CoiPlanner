@@ -183,6 +183,76 @@ async function main() {
             assertEqual(await clockText(), "00:00", "重置後的時間");
         });
 
+        await step("匯出下載規劃檔，內容與目前規劃一致", async () => {
+            await closePanels();
+            await page.click('[aria-label="產線規劃面板"]');
+            const [download] = await Promise.all([
+                page.waitForEvent("download"),
+                page.click('.planner-side:not(.d-none) button:has-text("匯出")'),
+            ]);
+            assert(/^coiplanner-plan-\d{8}-\d{4}\.json$/.test(download.suggestedFilename()), `檔名 ${download.suggestedFilename()}`);
+            const exported = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
+            const saved = await savedPlan();
+            const counts = p => [p.nodes.length, p.sources.length, p.edges.length];
+            assertEqual(counts(exported), counts(saved), "匯出與自動存檔的節點／資源／連線數");
+        });
+
+        await step("問題清單：有問題的連線會列出錯誤，沒問題時顯示「沒有問題」", async () => {
+            await closePanels();
+            await dropFile("issue.json");
+            await page.click('[aria-label="產線規劃面板"]');
+            await page.waitForSelector(".planner-side:not(.d-none) .mud-alert");
+            const alerts = await page.locator(".planner-side:not(.d-none) .mud-alert").allInnerTexts();
+            assert(alerts.length === 1 && alerts[0].includes("沒有 9 級"), `錯誤清單：${JSON.stringify(alerts)}`);
+
+            await dropFile("basic.json");
+            await page.waitForSelector(".planner-side:not(.d-none) .mud-alert", { state: "detached" });
+            assert((await page.locator(".planner-side:not(.d-none)").innerText()).includes("沒有問題。"), "沒有顯示「沒有問題。」");
+        });
+
+        await step("速度按鈕：選中的速度反白，模擬速度跟著變", async () => {
+            await closePanels();
+            const bar = page.locator(".planner-sim-bar");
+            // 前一步把模擬暫停了，先繼續播放
+            if (await bar.locator('[aria-label="播放"]').count()) await bar.locator('[aria-label="播放"]').click();
+            for (const speed of ["1×", "5×", "10×", "20×"]) {
+                await bar.locator(`button:has-text("${speed}")`).click();
+                const filled = await eventually(
+                    async () => (await bar.locator("button.mud-button-filled:not(.mud-icon-button)").allInnerTexts()).map(t => t.trim()),
+                    v => v.length === 1 && v[0] === speed);
+                assertEqual(filled, [speed], "反白的速度按鈕");
+            }
+            const simSeconds = async () => { const [m, s] = (await clockText()).split(":").map(Number); return m * 60 + s; };
+            const rate = async speed => {
+                await bar.locator(`button:has-text("${speed}")`).click();
+                // 時間顯示每 300 ms 才更新，等它反映新的速度再開始量
+                await page.waitForTimeout(800);
+                const t0 = await simSeconds();
+                await page.waitForTimeout(2000);
+                return (await simSeconds() - t0) / 2;
+            };
+            const slow = await rate("1×");
+            const fast = await rate("10×");
+            assert(slow > 0.5 && slow < 1.6 && fast > 6 && fast < 14, `每秒模擬秒數：1× ${slow}、10× ${fast}`);
+        });
+
+        await step("清空：取消不會動到規劃，確認才會清掉", async () => {
+            await closePanels();
+            const before = await savedPlan();
+            assert(before.nodes.length > 0, "測試前提：目前要有內容可清");
+            await page.click('[aria-label="產線規劃面板"]');
+            await page.click('.planner-side:not(.d-none) button:has-text("清空")');
+            await page.click('.mud-dialog button:has-text("取消")');
+            await page.waitForSelector(".mud-dialog", { state: "detached" });
+            assertEqual((await savedPlan()).nodes.length, before.nodes.length, "取消後的節點數");
+
+            await page.click('.planner-side:not(.d-none) button:has-text("清空")');
+            await page.click('.mud-dialog button:has-text("清空")');
+            const plan = await savedPlan(p => p.nodes.length === 0);
+            assertEqual([plan.nodes.length, plan.sources.length, plan.edges.length, plan.groups.length, plan.notes.length], [0, 0, 0, 0, 0], "清空後");
+            assert(await page.locator('.planner-side:not(.d-none) button:has-text("清空")').isDisabled(), "沒有內容時「清空」應停用");
+        });
+
         await step("顯示比例 125% 時畫布解析度跟著放大", async () => {
             const scaled = await newPage(browser, 1.25);
             await scaled.goto(`${BASE}/planner`);
@@ -292,6 +362,27 @@ async function savedPlan(until = () => true, timeoutMs = 3000) {
         if (Date.now() > deadline) throw new Error(`自動存檔沒有達到預期狀態：${JSON.stringify(plan)?.slice(0, 300)}`);
         await page.waitForTimeout(100);
     }
+}
+
+/** 重複讀取直到條件成立（畫面更新有延遲）；逾時就回傳最後一次的值，讓呼叫端用斷言報出實際內容。 */
+async function eventually(read, ok, timeoutMs = 3000) {
+    const deadline = Date.now() + timeoutMs;
+    for (; ;) {
+        const value = await read();
+        if (ok(value) || Date.now() > deadline) return value;
+        await page.waitForTimeout(100);
+    }
+}
+
+/** 關掉開著的側邊面板（一次只會開一個），並等它真的消失。 */
+async function closePanels() {
+    const open = page.locator(".planner-side:not(.d-none)");
+    if ((await open.count()) === 0) return;
+    // 滑鼠移開：剛按過的側邊按鈕會顯示提示文字，蓋在關閉鈕上面
+    await page.mouse.move(700, 700);
+    await page.waitForTimeout(500);
+    await open.locator('[aria-label="收合面板"]').click();
+    await page.waitForSelector(".planner-side:not(.d-none)", { state: "detached" });
 }
 
 async function clockText() {

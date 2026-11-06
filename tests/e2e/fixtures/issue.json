@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    { "id": "1", "machineId": "steam_boiler_coal", "recipeId": "boil_steam_coal", "count": 1, "x": 440, "y": 140 }
+  ],
+  "sources": [
+    { "id": "11", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 100 }
+  ],
+  "edges": [
+    { "sourceNodeId": "11", "targetNodeId": "1", "productId": "coal", "transport": "loose_belt", "tier": 9 }
+  ]
+}
