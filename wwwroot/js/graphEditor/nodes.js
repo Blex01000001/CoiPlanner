@@ -16,30 +16,43 @@ const SOURCE_NODE_COLOR = "#2f5a44";
 const SOURCE_NODE_BGCOLOR = "#22352c";
 
 /**
- * 輸入插槽已有連線時，把新的連線改接到同一位置上的合流插槽（見 CoiNode.mergeSlotFor）。
- * litegraph 拖曳連線時直接呼叫輸出端節點的 connectSlots，所以要覆寫在輸出端。
+ * 畫布上所有自訂節點（機器、資源來源、註解）的共同行為：按住 Shift 拖動節點時對齊格線。
+ * litegraph 預設對齊節點本體的左上角（標題列下方），改成對齊含標題列的外框，節點的上緣才會落在格線上；
+ * 調整大小時 litegraph 本來就是對齊外框。
  */
-function connectSlotsWithMerge(node, output, inputNode, input, afterRerouteId) {
-    if (input?.link != null && inputNode.mergeSlotFor)
-        input = inputNode.mergeSlotFor(input);
-    return LGraphNode.prototype.connectSlots.call(node, output, inputNode, input, afterRerouteId);
+class PlanNode extends LGraphNode {
+    snapToGrid(snapTo) {
+        if (this.pinned || !snapTo) return false;
+        const title = LiteGraph.NODE_TITLE_HEIGHT;
+        this.pos[0] = Math.round(this.pos[0] / snapTo) * snapTo;
+        this.pos[1] = Math.round((this.pos[1] - title) / snapTo) * snapTo + title;
+        return true;
+    }
 }
 
 /**
- * 按住 Shift 拖動節點時對齊格線。litegraph 預設對齊節點本體的左上角（標題列下方），
- * 改成對齊含標題列的外框，節點的上緣才會落在格線上；調整大小時 litegraph 本來就是對齊外框。
+ * 會接上連線的節點（機器、資源來源）。註解不繼承這一層：註解沒有連線，也可以縮得比 MIN_NODE_WIDTH 窄。
+ * - 節點至少 MIN_NODE_WIDTH 寬。
+ * - 輸入插槽已有連線時，把新的連線改接到同一位置上的合流插槽（見 CoiNode.mergeSlotFor）。
+ *   litegraph 拖曳連線時直接呼叫輸出端節點的 connectSlots，所以要覆寫在輸出端。
  */
-function snapNodeToGrid(node, snapTo) {
-    if (node.pinned || !snapTo) return false;
-    const title = LiteGraph.NODE_TITLE_HEIGHT;
-    node.pos[0] = Math.round(node.pos[0] / snapTo) * snapTo;
-    node.pos[1] = Math.round((node.pos[1] - title) / snapTo) * snapTo + title;
-    return true;
+class LinkedNode extends PlanNode {
+    computeSize(out) {
+        const size = super.computeSize(out);
+        size[0] = Math.max(size[0], MIN_NODE_WIDTH);
+        return size;
+    }
+
+    connectSlots(output, inputNode, input, afterRerouteId) {
+        if (input?.link != null && inputNode.mergeSlotFor)
+            input = inputNode.mergeSlotFor(input);
+        return super.connectSlots(output, inputNode, input, afterRerouteId);
+    }
 }
 
 export function registerNodeTypes(catalog) {
     for (const t of catalog.nodeTypes) {
-        class CoiNode extends LGraphNode {
+        class CoiNode extends LinkedNode {
             static title = `${t.machineName} · ${t.recipeName}`;
 
             constructor(title) {
@@ -60,20 +73,11 @@ export function registerNodeTypes(catalog) {
 
             computeSize(out) {
                 const size = super.computeSize(out);
-                size[0] = Math.max(size[0], MIN_NODE_WIDTH);
                 // 合流插槽疊在原插槽上，不佔高度；節點高度只依配方的輸入／輸出數量
                 const rows = Math.max(this.inputs.length, this.outputs.length, 1);
                 const fixedRows = Math.max(t.inputs.length, t.outputs.length, 1);
                 size[1] -= (rows - fixedRows) * LiteGraph.NODE_SLOT_HEIGHT;
                 return size;
-            }
-
-            connectSlots(output, inputNode, input, afterRerouteId) {
-                return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
-            }
-
-            snapToGrid(snapTo) {
-                return snapNodeToGrid(this, snapTo);
             }
 
             /**
@@ -137,7 +141,7 @@ export function registerNodeTypes(catalog) {
 
     for (const p of catalog.products) {
         // 資源來源：只有一個輸出，每分鐘產量由使用者輸入
-        class SourceNode extends LGraphNode {
+        class SourceNode extends LinkedNode {
             static title = `資源 · ${p.name}`;
             static color = SOURCE_NODE_COLOR;
             static bgcolor = SOURCE_NODE_BGCOLOR;
@@ -156,20 +160,6 @@ export function registerNodeTypes(catalog) {
                 this.size = this.computeSize();
             }
 
-            computeSize(out) {
-                const size = super.computeSize(out);
-                size[0] = Math.max(size[0], MIN_NODE_WIDTH);
-                return size;
-            }
-
-            connectSlots(output, inputNode, input, afterRerouteId) {
-                return connectSlotsWithMerge(this, output, inputNode, input, afterRerouteId);
-            }
-
-            snapToGrid(snapTo) {
-                return snapNodeToGrid(this, snapTo);
-            }
-
             onConnectionsChange() {
                 state.editor?.changed();
             }
@@ -181,7 +171,7 @@ export function registerNodeTypes(catalog) {
 }
 
 /** 文字註解：只用來整理畫面，不參與計算與模擬。內容在右鍵選單或連點兩下時編輯。 */
-class NoteNode extends LGraphNode {
+class NoteNode extends PlanNode {
     static title = "註解";
     static color = NOTE_COLOR;
     static bgcolor = NOTE_BGCOLOR;
@@ -192,10 +182,6 @@ class NoteNode extends LGraphNode {
         this.properties = { kind: "note", text: "", colorName: null };
         this.slotInfo = { inputs: [], outputs: [] };
         this.size = [...NOTE_SIZE];
-    }
-
-    snapToGrid(snapTo) {
-        return snapNodeToGrid(this, snapTo);
     }
 
     setColorName(name) {
