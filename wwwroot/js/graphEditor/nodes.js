@@ -1,5 +1,6 @@
 // 節點類型：機器節點、資源來源節點、註解節點，由 registerNodeTypes 註冊到 litegraph。
 import { LiteGraph, LGraphCanvas, LGraphNode } from "../../lib/litegraph/litegraph.es.js";
+import { nodeColors } from "./colors.js";
 import { NOTE_TYPE, sourceTypeName, state, typeName } from "./shared.js";
 
 // 註解節點
@@ -12,8 +13,6 @@ const NOTE_PADDING = 10;
 const NOTE_TEXT_COLOR = "#e8e0b0";
 const NOTE_PLACEHOLDER_COLOR = "#8a8466";
 const MIN_NODE_WIDTH = 260;
-const SOURCE_NODE_COLOR = "#2f5a44";
-const SOURCE_NODE_BGCOLOR = "#22352c";
 
 /**
  * 畫布上所有自訂節點（機器、資源來源、註解）的共同行為：按住 Shift 拖動節點時對齊格線。
@@ -59,6 +58,8 @@ export function registerNodeTypes(catalog) {
     for (const t of catalog.nodeTypes) {
         class CoiNode extends LinkedNode {
             static title = `${t.machineName} · ${t.recipeName}`;
+            static color = nodeColors((t.outputs[0] ?? t.inputs[0])?.productId).color;
+            static bgcolor = nodeColors((t.outputs[0] ?? t.inputs[0])?.productId).bgcolor;
 
             constructor(title) {
                 super(title ?? CoiNode.title);
@@ -148,8 +149,8 @@ export function registerNodeTypes(catalog) {
         // 資源來源：只有一個輸出，每分鐘產量由使用者輸入
         class SourceNode extends LinkedNode {
             static title = `資源 · ${p.name}`;
-            static color = SOURCE_NODE_COLOR;
-            static bgcolor = SOURCE_NODE_BGCOLOR;
+            static color = nodeColors(p.productId).color;
+            static bgcolor = nodeColors(p.productId).bgcolor;
 
             constructor(title) {
                 super(title ?? SourceNode.title);

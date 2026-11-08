@@ -1,5 +1,6 @@
 // Editor 顯示 C# 傳回的結果：規劃檢查（標紅）、模擬狀態（插槽速率、節點狀態標籤與顏色）。
 import { LiteGraph } from "../../lib/litegraph/litegraph.es.js";
+import { nodeColors, primaryProductId } from "./colors.js";
 import { FLOW_LABEL_BGCOLOR, formatRate, round1 } from "./shared.js";
 
 const ISSUE_NODE_COLOR = "#7a2a2a";
@@ -26,7 +27,7 @@ export class StatusMethods {
         this.badLinkNodes = new Set();
         for (const link of this.graph._links.values()) {
             const bad = badLinks.has(link.id);
-            link.color = bad ? ISSUE_LINK_COLOR : undefined;
+            link.color = bad ? ISSUE_LINK_COLOR : undefined; // undefined 時用物品顏色
             if (!bad) continue;
             for (const id of [link.origin_id, link.target_id]) {
                 if (this.graph.getNodeById(id)?.properties.kind !== "source")
@@ -53,10 +54,11 @@ export class StatusMethods {
             label(node.outputs, node.slotInfo.outputs, state?.outputs);
             // 標籤變長時只加寬不縮窄，避免使用者手動拉寬的節點被縮回去
             node.size[0] = Math.max(node.size[0], node.computeSize()[0]);
-            // 設成 undefined 時會回到節點類型自己的顏色（資源節點是綠色）
+            // 平常依主要物品上色，有問題或停擺時標紅
             const red = this.badNodes.has(id) || this.badLinkNodes.has(id) || isMachineStopped(node, state);
-            node.color = red ? ISSUE_NODE_COLOR : undefined;
-            node.bgcolor = red ? ISSUE_NODE_BGCOLOR : undefined;
+            const own = nodeColors(primaryProductId(node));
+            node.color = red ? ISSUE_NODE_COLOR : own.color;
+            node.bgcolor = red ? ISSUE_NODE_BGCOLOR : own.bgcolor;
         }
         this.canvas.setDirty(true, true);
     }

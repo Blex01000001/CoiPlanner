@@ -1,5 +1,5 @@
 // Editor 的連線外觀：依運輸等級的線寬、沿連線移動的箭頭、連線中點的流量標籤。
-import { LiteGraph } from "../../lib/litegraph/litegraph.es.js";
+import { LiteGraph, LGraphCanvas } from "../../lib/litegraph/litegraph.es.js";
 import { FLOW_LABEL_BGCOLOR, formatRate, round1 } from "./shared.js";
 
 // 連線粗細依運輸等級的吞吐量：每加倍粗 LINK_WIDTH_PER_DOUBLING（60/分 為 LINK_BASE_WIDTH）
@@ -46,7 +46,7 @@ export class FlowMethods {
             const offset = ((this.linkPhases.get(link.id) ?? 0) + speed * dt) % FLOW_ARROW_SPACING;
             this.linkPhases.set(link.id, offset);
 
-            ctx.fillStyle = link.color ?? this.canvas.default_link_color;
+            ctx.fillStyle = link.color ?? LGraphCanvas.link_type_colors[link.type] ?? this.canvas.default_link_color;
             ctx.globalAlpha = ratio > 0 ? 1 : FLOW_ARROW_IDLE_ALPHA;
             for (let d = offset; d < length; d += FLOW_ARROW_SPACING) {
                 const t = d / length;
@@ -90,7 +90,7 @@ export class FlowMethods {
         const w = ctx.measureText(text).width + 10;
         const h = 18;
         ctx.fillStyle = FLOW_LABEL_BGCOLOR;
-        ctx.strokeStyle = full ? FLOW_LABEL_FULL_COLOR : link.color ?? this.canvas.default_link_color;
+        ctx.strokeStyle = full ? FLOW_LABEL_FULL_COLOR : link.color ?? LGraphCanvas.link_type_colors[link.type] ?? this.canvas.default_link_color;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect(x - w / 2, y - h / 2, w, h, 4);
