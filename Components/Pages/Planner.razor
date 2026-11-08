@@ -30,7 +30,7 @@
     </MudTooltip>
 
     @* 右上角：模擬控制 *@
-    <SimulationBar @bind-Running="_running" @bind-Speed="_speed" TimeSeconds="@(_snapshot?.TimeSeconds ?? 0)" OnReset="ResetSimulation" />
+    <SimulationBar @bind-Running="_running" @bind-Speed="_speed" FlowDots="_flowDots" FlowDotsChanged="SetFlowDotsAsync" TimeSeconds="@(_snapshot?.TimeSeconds ?? 0)" OnReset="ResetSimulation" />
 
     @* 右側：面板切換按鈕；一次只開一個面板，再按一次收合 *@
     <div class="planner-side-buttons">

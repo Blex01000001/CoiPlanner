@@ -31,6 +31,8 @@ export class Editor {
         this.badLinkNodes = new Set();
         // 每條連線箭頭目前的位移；速度隨流量改變，所以要逐幀累加而不是用時間直接算
         this.linkPhases = new Map();
+        // 流動效果用圓點（true）或箭頭（false）
+        this.flowDots = false;
         this.lastFrame = performance.now();
         this.loading = false;
         this.timer = null;

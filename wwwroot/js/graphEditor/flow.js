@@ -20,7 +20,13 @@ const FLOW_LABEL_COLOR = "#ddd";
 const FLOW_LABEL_FULL_COLOR = "#ff6b6b";
 
 export class FlowMethods {
-    /** 在每條連線上畫出沿方向移動的箭頭，速度隨模擬的流量改變；沒有流量的連線箭頭不動並變淡。 */
+    /** 切換流動效果的樣式：圓點或箭頭。 */
+    setFlowStyle(dots) {
+        this.flowDots = !!dots;
+        this.canvas.setDirty(true, true);
+    }
+
+    /** 在每條連線上畫出沿方向移動的箭頭（或圓點，見 setFlowStyle），速度隨模擬的流量改變；沒有流量的連線箭頭不動並變淡。 */
     drawFlow(ctx) {
         const now = performance.now();
         const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
@@ -52,12 +58,18 @@ export class FlowMethods {
                 const t = d / length;
                 const [x, y] = this.canvas.computeConnectionPoint(a, b, t);
                 if (hidden(x, y)) continue;
+                // 箭頭和連線同色，線越粗箭頭（圓點）也要越大才看得到
+                const s = Math.max(FLOW_ARROW_SIZE, this.linkWidth(link) * 0.6 + 2);
+                if (this.flowDots) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, s * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    continue;
+                }
                 // 箭頭方向取曲線在這一點附近的切線
                 const [nx, ny] = this.canvas.computeConnectionPoint(a, b, Math.min(t + 0.01, 1));
                 const [px, py] = this.canvas.computeConnectionPoint(a, b, Math.max(t - 0.01, 0));
                 const angle = Math.atan2(ny - py, nx - px);
-                // 箭頭和連線同色，線越粗箭頭也要越大才看得到
-                const s = Math.max(FLOW_ARROW_SIZE, this.linkWidth(link) * 0.6 + 2);
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angle);

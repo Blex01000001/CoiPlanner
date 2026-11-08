@@ -189,6 +189,20 @@ async function main() {
             assert(errors.length === before, `按下 Fit view 後出現錯誤：${errors.slice(before).join("; ")}`);
         });
 
+        await step("切換流動效果：箭頭／圓點可來回切換，沒有瀏覽器錯誤", async () => {
+            const before = errors.length;
+            const button = page.locator('[aria-label="切換流動效果"]');
+            const icon = () => button.locator("svg path").first().getAttribute("d");
+            const arrow = await icon();
+            await button.click();
+            await page.waitForTimeout(300);
+            assert((await icon()) !== arrow, "按下後圖示應該換成圓點");
+            await button.click();
+            await page.waitForTimeout(300);
+            assertEqual(await icon(), arrow, "再按一次應回到箭頭圖示");
+            assert(errors.length === before, `切換流動效果後出現錯誤：${errors.slice(before).join("; ")}`);
+        });
+
         await step("暫停時時間不動，重置回到 00:00", async () => {
             await page.click('[aria-label="暫停"]');
             // 時間每 300 ms 才更新一次顯示，等它反映暫停當下的時間

@@ -1,13 +1,12 @@
 // 物品顏色：連線、插槽與節點依物品上色。顏色來自 Data/game.json 物品的 color 欄位，沒有的物品用 FALLBACK_COLOR。
-// 節點取「主要產出物」（沒有輸出時取第一個輸入）的顏色，標題與底色由它調暗而來。
+// 節點底色取「主要產出物」（沒有輸出時取第一個輸入）的顏色調暗而來；標題色維持 litegraph／節點類型原本的顏色，標題才看得清楚。
 import { LGraphCanvas } from "../../lib/litegraph/litegraph.es.js";
 
 const FALLBACK_COLOR = "#9aa0a6";
 // 物品 id → 顏色，由 setProductColors 依目錄填入
 const productColors = new Map();
 
-// 節點標題／底色與物品色混合時，物品色所佔的比例（底色要淡：暫存長條是淡藍色，底色太藍會和它混淆）
-const TITLE_MIX = 0.55;
+// 節點底色與物品色混合時，物品色所佔的比例（要淡：暫存長條是淡藍色，底色太藍會和它混淆）
 const BODY_MIX = 0.08;
 const NODE_BASE = [30, 30, 30];
 
@@ -20,10 +19,9 @@ export function productColor(productId) {
     return productColors.get(productId) ?? FALLBACK_COLOR;
 }
 
-/** 節點的標題色與底色（物品色調暗）。 */
-export function nodeColors(productId) {
-    const rgb = parse(productColor(productId));
-    return { color: mix(rgb, TITLE_MIX), bgcolor: mix(rgb, BODY_MIX) };
+/** 節點的底色（物品色調暗）。 */
+export function nodeBgColor(productId) {
+    return mix(parse(productColor(productId)), BODY_MIX);
 }
 
 /** 節點的主要物品：資源取其物品，機器取第一個輸出，沒有輸出取第一個輸入。 */

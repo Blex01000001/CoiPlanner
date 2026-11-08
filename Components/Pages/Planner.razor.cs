@@ -36,6 +36,7 @@ public partial class Planner
     private SimulationSnapshot? _snapshot;
     private bool _running = true;
     private int _speed = 1;
+    private bool _flowDots;
     private int _tick;
     private readonly CancellationTokenSource _loopCts = new();
     // 匯入或清空後，下一次收到畫布的規劃時讓模擬從頭開始
@@ -119,6 +120,13 @@ public partial class Planner
 
     // 沒開啟的面板按鈕用淺色底，在深色畫布上才看得到
     private string IdleClass(SidePanel panel) => _panel == panel ? "" : "planner-side-button-idle";
+
+    private async Task SetFlowDotsAsync(bool dots)
+    {
+        _flowDots = dots;
+        if (_editor is not null)
+            await _editor.InvokeVoidAsync("setFlowStyle", dots);
+    }
 
     private async Task FitViewAsync()
     {

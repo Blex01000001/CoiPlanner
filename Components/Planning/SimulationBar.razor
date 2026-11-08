@@ -15,6 +15,10 @@
     <MudTooltip Text="重置模擬">
         <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="() => OnReset.InvokeAsync()" aria-label="重置模擬" />
     </MudTooltip>
+    <MudTooltip Text="@(FlowDots ? "流動效果：圓點（按一下改成箭頭）" : "流動效果：箭頭（按一下改成圓點）")">
+        <MudIconButton Icon="@(FlowDots ? Icons.Material.Filled.FiberManualRecord : Icons.Material.Filled.ArrowForward)" Size="Size.Small"
+                       OnClick="() => FlowDotsChanged.InvokeAsync(!FlowDots)" aria-label="切換流動效果" />
+    </MudTooltip>
     <MudText Typo="Typo.body2" Class="planner-sim-clock">@FormatTime(TimeSeconds)</MudText>
 </MudPaper>
 
@@ -27,6 +31,8 @@
     [Parameter] public EventCallback<int> SpeedChanged { get; set; }
     [Parameter] public double TimeSeconds { get; set; }
     [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public bool FlowDots { get; set; }
+    [Parameter] public EventCallback<bool> FlowDotsChanged { get; set; }
 
     private static string FormatTime(double seconds) =>
         TimeSpan.FromSeconds(Math.Floor(seconds)).ToString(seconds >= 3600 ? @"h\:mm\:ss" : @"mm\:ss");
