@@ -80,6 +80,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 ## 環境陷阱
 - 停止網站用 `pkill -x CoiPlanner`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。
 - 使用者在 Windows＋Visual Studio 開發，瀏覽器為 Brave／Chrome，顯示比例常不是 100%。
+- 使用者的 Windows 會保留一些埠（Hyper-V／WSL／Docker 的 NAT），綁定時出現「存取權限不足」（10013）。ASP.NET 範本預設的 7xxx HTTPS 埠就曾在保留範圍內，所以 HTTPS 開發埠用 5443（`launchSettings.json`）。可用 `netsh interface ipv4 show excludedportrange protocol=tcp` 查；新增埠時避開保留範圍。
 
 ## 規則（使用者訂定，不可刪改）
 - 速率單位統一為「每分鐘」
