@@ -11,4 +11,7 @@ public sealed record Product
 
     /// <summary>物品型態，例如流體、散裝；決定連線要用哪一種 <see cref="Transport"/>。</summary>
     public string? Kind { get; init; }
+
+    /// <summary>畫布上連線與節點的顏色，格式 <c>#rrggbb</c>；省略時畫面用預設灰色。</summary>
+    public string? Color { get; init; }
 }

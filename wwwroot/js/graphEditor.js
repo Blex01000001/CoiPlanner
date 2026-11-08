@@ -1,6 +1,7 @@
 // 包裝 @comfyorg/litegraph 的節點編輯器（入口）。實作拆在 graphEditor/ 資料夾的 ES 模組：
 //   editor.js    Editor 核心：建立畫布並覆寫 litegraph 行為、事件、拖放匯入、釋放
 //   plan.js      存檔與載入（畫布 ⇄ ProductionPlan）：load、snapshot
+//   colors.js    物品顏色：連線、插槽、節點依物品上色
 //   status.js    顯示 C# 的結果：applyResult、applySimulation、節點狀態標籤與顏色
 //   stock.js     暫存長條：插槽文字後面的填色，表示暫存的填滿程度
 //   flow.js      連線外觀：線寬、移動的箭頭、流量標籤

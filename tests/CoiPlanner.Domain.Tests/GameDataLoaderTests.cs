@@ -60,6 +60,26 @@ public class GameDataLoaderTests
     }
 
     [Fact]
+    public void Parse_ProductColor_IsLoaded()
+    {
+        var data = _loader.Parse("""{ "products": [ { "id": "a", "name": "A", "unit": "pcs", "color": "#4fc3f7" } ] }""");
+
+        Assert.Equal("#4fc3f7", Assert.Single(data.Products).Color);
+    }
+
+    [Theory]
+    [InlineData("blue")]
+    [InlineData("#abc")]
+    [InlineData("4fc3f7")]
+    public void Parse_InvalidProductColor_ThrowsGameDataException(string color)
+    {
+        var ex = Assert.Throws<GameDataException>(() =>
+            _loader.Parse($$"""{ "products": [ { "id": "a", "name": "A", "unit": "pcs", "color": "{{color}}" } ] }"""));
+
+        Assert.Contains("color", ex.Message);
+    }
+
+    [Fact]
     public void Parse_MalformedJson_ThrowsGameDataException()
     {
         Assert.Throws<GameDataException>(() => _loader.Parse("{ \"products\": [ "));

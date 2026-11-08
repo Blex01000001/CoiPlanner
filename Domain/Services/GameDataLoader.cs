@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using CoiPlanner.Domain.Models;
 
@@ -74,6 +75,8 @@ public sealed class GameDataLoader
         return data ?? throw new GameDataException("JSON 內容為空。");
     }
 
+    private static readonly Regex HexColor = new("^#[0-9a-fA-F]{6}$");
+
     private static void Validate(GameData data)
     {
         var errors = new List<string>();
@@ -96,6 +99,9 @@ public sealed class GameDataLoader
 
         foreach (var product in data.Products.Where(p => p.Kind is not null && !kinds.Contains(p.Kind)))
             errors.Add($"product '{product.Id}' 的型態 '{product.Kind}' 沒有對應的運輸方式。");
+
+        foreach (var product in data.Products.Where(p => p.Color is not null && !HexColor.IsMatch(p.Color)))
+            errors.Add($"product '{product.Id}' 的 color '{product.Color}' 格式必須是 #rrggbb。");
 
         foreach (var recipe in data.Recipes)
         {

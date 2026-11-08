@@ -1,6 +1,7 @@
 // Editor：把 litegraph 畫布、C# 互動與各功能模組組在一起。
 // 這裡有建立畫布時對 litegraph 的覆寫、事件、拖放匯入與釋放；其餘方法在 plan／status／flow／viewport／menus.js。
 import { LiteGraph, LGraph, LGraphCanvas, LinkMarkerShape } from "../../lib/litegraph/litegraph.es.js";
+import { registerProductColors } from "./colors.js";
 import { FlowMethods } from "./flow.js";
 import { MenuMethods } from "./menus.js";
 import { PlanMethods } from "./plan.js";
@@ -37,6 +38,7 @@ export class Editor {
 
         this.graph = new LGraph();
         this.canvas = new LGraphCanvas(canvasEl, this.graph);
+        registerProductColors(this.canvas, catalog.products.map(p => p.productId));
         // 背景格線自己畫，間距才能和 Shift 對齊的間距一致（litegraph 內建的背景圖是 100px 一格）
         this.canvas.background_image = null;
         // 要在 onRenderBackground（群組之前）畫，用 onDrawBackground 會把群組蓋掉；回傳 true 讓 litegraph 不再畫底色
