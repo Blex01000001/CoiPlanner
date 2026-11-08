@@ -164,6 +164,24 @@ async function main() {
             await page.click('[aria-label="物料平衡面板"]');
         });
 
+        await step("暫存長條：暫存堆滿的插槽那一行會填上藍色，空的時候不會", async () => {
+            // 先用 1× 讓模擬慢慢開始，才量得到「還是空的」那一刻
+            await page.click(".planner-sim-bar >> text=1×");
+            await dropFile("stock.json");
+            await savedPlan(p => p.nodes.length === 2);
+            // 水泵（節點在 40,100）輸出那一行的右半，和鍋爐（節點在 440,140）水輸入那一行的左半。
+            // 取長條最上緣（插槽中心往上 8px）：那裡沒有文字，量到的不是底色就是長條
+            const pumpOutput = [240, 106];
+            const boilerWaterInput = [480, 146];
+            const before = [await blueness(...pumpOutput), await blueness(...boilerWaterInput)];
+            assert(before[0] < 15 && before[1] < 15, `一開始暫存是空的，不該有藍色：${before}`);
+
+            await page.click(".planner-sim-bar >> text=20×");
+            await waitForClock(150);
+            const after = [await blueness(...pumpOutput), await blueness(...boilerWaterInput)];
+            assert(after[0] > 35 && after[1] > 35, `暫存堆滿後應該有藍色（水泵輸出、鍋爐水輸入）：${after}`);
+        });
+
         await step("Fit view 按鈕可用，沒有瀏覽器錯誤", async () => {
             const before = errors.length;
             await page.click('[aria-label="Fit view"]');
@@ -362,6 +380,14 @@ async function savedPlan(until = () => true, timeoutMs = 3000) {
         if (Date.now() > deadline) throw new Error(`自動存檔沒有達到預期狀態：${JSON.stringify(plan)?.slice(0, 300)}`);
         await page.waitForTimeout(100);
     }
+}
+
+/** 畫布上某一點的「藍度」（藍 − 紅）。暫存長條是淡藍色，填色的地方比節點底色藍。 */
+async function blueness(x, y) {
+    return page.evaluate(([x, y]) => {
+        const [r, , b] = document.querySelector(".planner canvas").getContext("2d").getImageData(x, y, 1, 1).data;
+        return b - r;
+    }, [x, y]);
 }
 
 /** 重複讀取直到條件成立（畫面更新有延遲）；逾時就回傳最後一次的值，讓呼叫端用斷言報出實際內容。 */

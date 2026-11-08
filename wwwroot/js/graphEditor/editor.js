@@ -6,6 +6,7 @@ import { MenuMethods } from "./menus.js";
 import { PlanMethods } from "./plan.js";
 import { GRID_SIZE, state } from "./shared.js";
 import { StatusMethods } from "./status.js";
+import { StockMethods } from "./stock.js";
 import { ViewportMethods } from "./viewport.js";
 
 const CHANGE_DEBOUNCE_MS = 80;
@@ -193,4 +194,4 @@ function mixin(target, ...sources) {
     }
 }
 
-mixin(Editor, PlanMethods, StatusMethods, FlowMethods, ViewportMethods, MenuMethods);
+mixin(Editor, PlanMethods, StatusMethods, StockMethods, FlowMethods, ViewportMethods, MenuMethods);

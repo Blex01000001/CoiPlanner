@@ -31,6 +31,7 @@
     <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-4">
         右上角可以暫停、切換速度、重置。每個節點獨立運作：輸入都有料後等 @Format(Settings.StartupSeconds) 秒才開始生產，缺料或輸出堵塞就停擺。正常生產為綠色、減產為黃色，停擺或連線有問題的機器標紅。
         暫存 @Format(Settings.BufferMinutes) 分鐘用量、運送 @Format(Settings.TransitSeconds) 秒；沒接線的輸出送進倉庫。
+        插槽文字後面的藍色長條是暫存的填滿程度（輸入從左往右、輸出從右往左；沒接線的輸出不顯示）。
         數字為最近 @Format(Settings.AverageSeconds) 秒的平均。
     </MudText>
 

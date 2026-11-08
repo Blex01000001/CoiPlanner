@@ -48,6 +48,11 @@ class LinkedNode extends PlanNode {
             input = inputNode.mergeSlotFor(input);
         return super.connectSlots(output, inputNode, input, afterRerouteId);
     }
+
+    // 暫存長條（stock.js）畫在插槽文字後面：litegraph 先畫節點本體與這個背景，再畫插槽文字
+    onDrawBackground(ctx) {
+        state.editor?.drawStockBars(this, ctx);
+    }
 }
 
 export function registerNodeTypes(catalog) {

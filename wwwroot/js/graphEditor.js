@@ -2,12 +2,13 @@
 //   editor.js    Editor 核心：建立畫布並覆寫 litegraph 行為、事件、拖放匯入、釋放
 //   plan.js      存檔與載入（畫布 ⇄ ProductionPlan）：load、snapshot
 //   status.js    顯示 C# 的結果：applyResult、applySimulation、節點狀態標籤與顏色
+//   stock.js     暫存長條：插槽文字後面的填色，表示暫存的填滿程度
 //   flow.js      連線外觀：線寬、移動的箭頭、流量標籤
 //   viewport.js  背景格線、fit view
 //   menus.js     右鍵選單、連線選單與其動作（複製、註解、群組）
 //   nodes.js     節點類型：機器、資源來源、註解
 //   shared.js    共用的狀態、格式化與常數
-// Editor 的方法分散在 plan／status／flow／viewport／menus.js，由 editor.js 的 mixin() 併入。
+// Editor 的方法分散在 plan／status／stock／flow／viewport／menus.js，由 editor.js 的 mixin() 併入。
 //
 // 這裡只負責畫面：使用者每次修改後把規劃送回 C#；檢查結果由 applyResult、模擬狀態由 applySimulation 傳回來顯示。
 //
