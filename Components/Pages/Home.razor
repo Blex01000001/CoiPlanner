@@ -17,12 +17,20 @@
                 <MudTh>名稱</MudTh>
                 <MudTh>單位</MudTh>
                 <MudTh>運輸方式</MudTh>
+                <MudTh>顏色</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Id"><code>@context.Id</code></MudTd>
                 <MudTd DataLabel="名稱">@context.Name</MudTd>
                 <MudTd DataLabel="單位">@context.Unit</MudTd>
                 <MudTd DataLabel="運輸方式">@TransportName(context.Kind)</MudTd>
+                <MudTd DataLabel="顏色">
+                    @if (context.Color is not null)
+                    {
+                        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:middle;background:@context.Color"></span>
+                        <code>@context.Color</code>
+                    }
+                </MudTd>
             </RowTemplate>
         </MudTable>
     </MudTabPanel>

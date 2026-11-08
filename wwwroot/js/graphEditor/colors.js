@@ -1,43 +1,23 @@
-// 物品顏色：連線、插槽與節點依物品上色。顏色表依物品 id，沒列到的物品用 FALLBACK_COLOR。
+// 物品顏色：連線、插槽與節點依物品上色。顏色來自 Data/game.json 物品的 color 欄位，沒有的物品用 FALLBACK_COLOR。
 // 節點取「主要產出物」（沒有輸出時取第一個輸入）的顏色，標題與底色由它調暗而來。
 import { LGraphCanvas } from "../../lib/litegraph/litegraph.es.js";
 
 const FALLBACK_COLOR = "#9aa0a6";
-const PRODUCT_COLORS = {
-    water: "#4fc3f7",            // 水藍
-    steam_high: "#e6eaec",       // 灰白
-    sour_water: "#7cb342",       // 橄欖綠
-    exhaust: "#8a8f94",          // 煙灰
-    carbon_dioxide: "#b39ddb",   // 淡紫
-    oxygen: "#80deea",           // 青
-    nitrogen: "#7986cb",         // 靛藍
-    coal: "#7a7570",             // 深灰褐
-    iron_ore: "#b5651d",         // 鐵鏽褐
-    crushed_iron_ore: "#d08a4e", // 淺鏽褐
-    lime: "#e8e4c9",             // 米白
-    slag: "#8e6e53",             // 灰褐
-    cement: "#bdb7a8",           // 水泥灰
-    molten_iron: "#ff7043",      // 橘紅
-    molten_steel: "#ffb300",     // 琥珀
-    iron_plate: "#bcaaa4",       // 灰粉褐
-    steel_plate: "#6fa8b5",      // 鋼青
-    mechanical_parts: "#c5b358", // 黃銅
-    crude_oil: "#8b5e3c",
-    heavy_oil: "#a0522d",
-    medium_oil: "#cd853f",
-    light_oil: "#e0b25a",
-    diesel: "#c9a227",
-    naphtha: "#f0a868",
-    fuel_gas: "#f4e04d",
-};
+// 物品 id → 顏色，由 setProductColors 依目錄填入
+const productColors = new Map();
 
 // 節點標題／底色與物品色混合時，物品色所佔的比例（底色要淡：暫存長條是淡藍色，底色太藍會和它混淆）
 const TITLE_MIX = 0.55;
 const BODY_MIX = 0.08;
 const NODE_BASE = [30, 30, 30];
 
+export function setProductColors(products) {
+    productColors.clear();
+    for (const p of products) if (p.color) productColors.set(p.productId, p.color);
+}
+
 export function productColor(productId) {
-    return PRODUCT_COLORS[productId] ?? FALLBACK_COLOR;
+    return productColors.get(productId) ?? FALLBACK_COLOR;
 }
 
 /** 節點的標題色與底色（物品色調暗）。 */

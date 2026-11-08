@@ -1,6 +1,6 @@
 // 節點類型：機器節點、資源來源節點、註解節點，由 registerNodeTypes 註冊到 litegraph。
 import { LiteGraph, LGraphCanvas, LGraphNode } from "../../lib/litegraph/litegraph.es.js";
-import { nodeColors } from "./colors.js";
+import { nodeColors, setProductColors } from "./colors.js";
 import { NOTE_TYPE, sourceTypeName, state, typeName } from "./shared.js";
 
 // 註解節點
@@ -55,6 +55,8 @@ class LinkedNode extends PlanNode {
 }
 
 export function registerNodeTypes(catalog) {
+    // 節點類別的預設顏色在定義時就要用到，所以先設定好物品顏色
+    setProductColors(catalog.products);
     for (const t of catalog.nodeTypes) {
         class CoiNode extends LinkedNode {
             static title = `${t.machineName} · ${t.recipeName}`;

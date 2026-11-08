@@ -33,6 +33,14 @@ public class RealGameDataTests
         Assert.All(Data.Products, p => Assert.Contains(p.Kind!, kinds));
     }
 
+    [Fact]
+    public void EveryProductHasADistinctColor()
+    {
+        Assert.All(Data.Products, p => Assert.False(string.IsNullOrEmpty(p.Color), $"{p.Id} 沒有 color"));
+        var duplicates = Data.Products.GroupBy(p => p.Color!.ToLowerInvariant()).Where(g => g.Count() > 1);
+        Assert.Empty(duplicates.Select(g => $"{g.Key}: {string.Join(", ", g.Select(p => p.Id))}"));
+    }
+
     // 以下檢查資料的結構，新增或刪除機器時不需要修改
 
     [Fact]

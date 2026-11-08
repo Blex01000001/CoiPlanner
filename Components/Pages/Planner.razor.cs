@@ -298,6 +298,7 @@ public partial class Planner
         Name = _products[productId].Name,
         Unit = _products[productId].Unit,
         Kind = _products[productId].Kind,
+        Color = _products[productId].Color,
     };
 
     private static bool IsEmpty(ProductionPlan plan) =>
