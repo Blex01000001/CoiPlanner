@@ -21,6 +21,7 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `Program.cs` | DI、SignalR 上限、提示訊息位置、`logs/crash.log` | 很少改 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
+| `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
 | `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
 | `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
@@ -33,7 +34,8 @@ dotnet test     # 約 10 秒（含增量建置）；每次 commit 前必跑
 dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   # 只跑一個類別，約 2 秒
 ```
 ```bash
-for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法，名稱或匯出寫錯要靠冒煙測試才會發現
+for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法
+tsc -p tsconfig.check.json | grep -E "^wwwroot/js/.*TS(2304|2305|2307|2459|2460|2614|2724|2552)"   # 改 JS 後必跑（2 秒）；列出找不到的名稱或匯出，沒有輸出＝沒問題（需要 tsc，雲端容器內建）
 node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
 ```
 - 冒煙測試自己在 5170 埠啟動網站；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。

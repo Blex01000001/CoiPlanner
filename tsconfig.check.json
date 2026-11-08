@@ -1,0 +1,11 @@
+// 只用來找 wwwroot/js 裡「找不到的名稱或匯出」（拆檔或改名後最容易寫錯，node --check 查不到）。
+// 用法見 CLAUDE.md 的「修改後的驗證」。型別推斷的錯誤大多是雜訊（litegraph 沒有型別），不要去修。
+{
+  "compilerOptions": {
+    "allowJs": true, "checkJs": true, "noEmit": true,
+    "target": "ES2022", "module": "ES2022", "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"], "skipLibCheck": true,
+    "strict": false, "noImplicitAny": false, "maxNodeModuleJsDepth": 0
+  },
+  "include": ["wwwroot/js/**/*.js"]
+}
