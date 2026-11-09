@@ -5,7 +5,7 @@
   "sources": [
     { "id": "11", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 100 },
     { "id": "12", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 260 },
-    { "id": "13", "productId": "water", "ratePerMinute": 20, "x": 40, "y": 420 }
+    { "id": "13", "productId": "water", "ratePerMinute": 48, "x": 40, "y": 420 }
   ],
   "edges": [
     { "sourceNodeId": "11", "targetNodeId": "1", "productId": "coal", "transport": "loose_belt", "tier": 1 },

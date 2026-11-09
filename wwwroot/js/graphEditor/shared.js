@@ -13,7 +13,7 @@ export const NOTE_TYPE = "其他/註解";
 export const FLOW_LABEL_BGCOLOR = "rgba(24, 24, 24, 0.9)";
 
 export function typeName(t) {
-    return `${t.machineName}/${t.recipeName}`;
+    return `${t.machineCategory}/${t.machineName}/${t.recipeName}`;
 }
 
 export function sourceTypeName(p) {
