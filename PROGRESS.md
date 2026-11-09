@@ -9,7 +9,7 @@
 - 機器以連續流量生產，沒有模擬遊戲中一批一批（週期）的產出
 - 模擬狀態不會存檔，重新整理頁面後從 0 開始
 - 把已存在的連線拖到別的輸入時，等級會回到一級
-- 遊戲資料目前 17 種機器，其他產線尚未輸入
+- 遊戲資料目前 21 種機器，其他產線尚未輸入
 - 節點標題過長時會被截斷
 - 冒煙測試用固定座標操作節點（預設 1:1 視野）；節點的預設尺寸或位置改變時，`tests/e2e/smoke.cjs` 裡的座標要一起改
 - Windows 保留埠（Hyper-V／WSL／Docker）可能在重開機或更新後改變，HTTPS 開發埠 5443 不保證永遠可用；遇到「存取權限不足」時用 `netsh interface ipv4 show excludedportrange protocol=tcp` 查，再換埠。也可以用系統管理員身分把 5443 登記為自己保留：`netsh int ipv4 add excludedportrange protocol=tcp startport=5443 numberofports=1`

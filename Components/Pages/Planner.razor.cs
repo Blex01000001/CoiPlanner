@@ -290,6 +290,7 @@ public partial class Planner
             {
                 MachineId = x.Machine.Id,
                 MachineName = x.Machine.Name,
+                MachineCategory = x.Machine.Category,
                 RecipeId = x.Recipe.Id,
                 RecipeName = x.Recipe.Name,
                 Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),

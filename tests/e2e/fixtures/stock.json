@@ -4,7 +4,7 @@
     { "id": "2", "machineId": "steam_boiler_coal", "recipeId": "boil_steam_coal", "count": 1, "x": 440, "y": 140 }
   ],
   "sources": [
-    { "id": "3", "productId": "coal", "ratePerMinute": 20, "x": 40, "y": 300 }
+    { "id": "3", "productId": "coal", "ratePerMinute": 10, "x": 40, "y": 300 }
   ],
   "edges": [
     { "sourceNodeId": "1", "targetNodeId": "2", "productId": "water", "transport": "pipe", "tier": 1 },

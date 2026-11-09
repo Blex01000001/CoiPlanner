@@ -90,4 +90,42 @@ public class RealGameDataTests
         Assert.Equal(60, Amounts(RecipeOf("lime_quarry").Outputs)["lime"]);
         Assert.Empty(RecipeOf("air_separator").Inputs);
     }
+
+    private static Recipe Recipe(string id) => Data.Recipes.Single(r => r.Id == id);
+
+    [Fact]
+    public void EveryMachineHasACategory()
+    {
+        Assert.All(Data.Machines, m => Assert.False(string.IsNullOrWhiteSpace(m.Category), $"{m.Id} 沒有 category"));
+        Assert.NotEqual("其他", Data.Machines.Single(m => m.Id == "thermal_desalinator").Category);
+    }
+
+    [Fact]
+    public void SeawaterAndDesalinator_MatchUserData()
+    {
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108 }, Amounts(RecipeOf("seawater_pump").Outputs));
+        var d = RecipeOf("thermal_desalinator");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_high"] = 12 }, Amounts(d.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 78, ["brine"] = 42 }, Amounts(d.Outputs));
+    }
+
+    [Fact]
+    public void Boilers_MatchUserData()
+    {
+        Assert.Equal("鍋爐", Data.Machines.Single(m => m.Id == "steam_boiler_coal").Name);
+        Assert.Equal(4, Data.Machines.Single(m => m.Id == "steam_boiler_coal").RecipeIds.Count);
+        Assert.Equal(7, Data.Machines.Single(m => m.Id == "boiler_gas").RecipeIds.Count);
+
+        var coal = Recipe("boil_steam_coal");
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 48, ["coal"] = 30 }, Amounts(coal.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["steam_high"] = 48, ["exhaust"] = 60 }, Amounts(coal.Outputs));
+
+        var hydrogen = Recipe("boil_steam_hydrogen");
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 48, ["hydrogen"] = 72 }, Amounts(hydrogen.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["steam_high"] = 48, ["spent_gas"] = 36 }, Amounts(hydrogen.Outputs));
+
+        var electric = RecipeOf("boiler_electric");
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 12 }, Amounts(electric.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["steam_high"] = 12 }, Amounts(electric.Outputs));
+    }
 }

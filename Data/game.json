@@ -25,6 +25,14 @@
     { "id": "naphtha", "name": "石腦油", "unit": "單位", "kind": "fluid", "color": "#f0a868" },
     { "id": "fuel_gas", "name": "燃氣", "unit": "單位", "kind": "fluid", "color": "#f4e04d" },
     { "id": "carbon_dioxide", "name": "二氧化碳", "unit": "單位", "kind": "fluid", "color": "#b39ddb" },
+    { "id": "seawater", "name": "海水", "unit": "單位", "kind": "fluid", "color": "#0277bd" },
+    { "id": "brine", "name": "鹽水", "unit": "單位", "kind": "fluid", "color": "#00897b" },
+    { "id": "wood_chips", "name": "木屑", "unit": "單位", "kind": "loose", "color": "#c8a26b" },
+    { "id": "biomass", "name": "生物質", "unit": "單位", "kind": "loose", "color": "#9ccc65" },
+    { "id": "animal_feed", "name": "動物飼料", "unit": "單位", "kind": "loose", "color": "#d7a86e" },
+    { "id": "ethanol", "name": "乙醇", "unit": "單位", "kind": "fluid", "color": "#f48fb1" },
+    { "id": "hydrogen", "name": "氫氣", "unit": "單位", "kind": "fluid", "color": "#e0f7fa" },
+    { "id": "spent_gas", "name": "乏氣", "unit": "單位", "kind": "fluid", "color": "#a1887f" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -45,11 +53,99 @@
     {
       "id": "boil_steam_coal",
       "name": "燃煤產生蒸氣",
-      "inputs": [
-        { "productId": "water", "quantity": 20 },
-        { "productId": "coal", "quantity": 20 }
-      ],
-      "outputs": [ { "productId": "steam_high", "quantity": 60 } ],
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "coal", "quantity": 30 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_wood_chips",
+      "name": "燃木屑產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "wood_chips", "quantity": 48 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_biomass",
+      "name": "燃生物質產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "biomass", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_animal_feed",
+      "name": "燃動物飼料產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "animal_feed", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_light_oil",
+      "name": "燃輕油產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "light_oil", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_naphtha",
+      "name": "燃石腦油產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "naphtha", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_ethanol",
+      "name": "燃乙醇產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "ethanol", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "carbon_dioxide", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_fuel_gas",
+      "name": "燃燃氣產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "fuel_gas", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "carbon_dioxide", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_hydrogen",
+      "name": "燃氫氣產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "hydrogen", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "spent_gas", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_heavy_oil",
+      "name": "燃重油產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "heavy_oil", "quantity": 36 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 90 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_medium_oil",
+      "name": "燃中油產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "medium_oil", "quantity": 42 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 90 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_electric",
+      "name": "電力產生蒸氣",
+      "inputs": [ { "productId": "water", "quantity": 12 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "pump_seawater",
+      "name": "抽海水",
+      "inputs": [],
+      "outputs": [ { "productId": "seawater", "quantity": 108 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "desalinate",
+      "name": "熱脫鹽",
+      "inputs": [ { "productId": "seawater", "quantity": 108 }, { "productId": "steam_high", "quantity": 12 } ],
+      "outputs": [ { "productId": "water", "quantity": 78 }, { "productId": "brine", "quantity": 42 } ],
       "cycleSeconds": 60
     },
     {
@@ -197,23 +293,27 @@
     }
   ],
   "machines": [
-    { "id": "water_pump", "name": "抽水機", "recipeIds": [ "pump_water" ] },
-    { "id": "coal_mine", "name": "煤礦場", "recipeIds": [ "mine_coal" ] },
-    { "id": "steam_boiler_coal", "name": "蒸氣鍋爐(煤)", "recipeIds": [ "boil_steam_coal" ] },
-    { "id": "iron_ore_mine", "name": "鐵礦場", "recipeIds": [ "mine_iron_ore" ] },
-    { "id": "lime_quarry", "name": "石灰場", "recipeIds": [ "mine_lime" ] },
-    { "id": "crusher_large", "name": "粉碎機(大型)", "recipeIds": [ "crush_iron_ore" ] },
-    { "id": "blast_furnace_2", "name": "高爐II", "recipeIds": [ "smelt_iron_blast" ] },
-    { "id": "air_separator", "name": "空氣分離器", "recipeIds": [ "separate_air" ] },
-    { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "recipeIds": [ "make_steel" ] },
-    { "id": "cooled_caster_2", "name": "水冷鑄造機II", "recipeIds": [ "cast_steel_plate" ] },
-    { "id": "metal_caster_2", "name": "金屬鑄造機II", "recipeIds": [ "cast_iron_plate" ] },
-    { "id": "assembly_4", "name": "組裝機IV", "recipeIds": [ "assemble_mechanical_parts" ] },
-    { "id": "oil_well", "name": "油田", "recipeIds": [ "pump_crude_oil" ] },
-    { "id": "distillation_1", "name": "蒸餾塔I", "recipeIds": [ "distill_crude_oil" ] },
-    { "id": "distillation_2", "name": "蒸餾塔II", "recipeIds": [ "distill_medium_oil" ] },
-    { "id": "distillation_3", "name": "蒸餾塔III", "recipeIds": [ "distill_light_oil" ] },
-    { "id": "rotary_kiln", "name": "迴轉窯", "recipeIds": [ "make_cement" ] }
+    { "id": "water_pump", "name": "抽水機", "category": "採集", "recipeIds": [ "pump_water" ] },
+    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "recipeIds": [ "pump_seawater" ] },
+    { "id": "coal_mine", "name": "煤礦場", "category": "採集", "recipeIds": [ "mine_coal" ] },
+    { "id": "steam_boiler_coal", "name": "鍋爐", "category": "蒸氣", "recipeIds": [ "boil_steam_coal", "boil_steam_wood_chips", "boil_steam_biomass", "boil_steam_animal_feed" ] },
+    { "id": "boiler_gas", "name": "鍋爐(燃氣)", "category": "蒸氣", "recipeIds": [ "boil_steam_light_oil", "boil_steam_naphtha", "boil_steam_ethanol", "boil_steam_fuel_gas", "boil_steam_hydrogen", "boil_steam_heavy_oil", "boil_steam_medium_oil" ] },
+    { "id": "boiler_electric", "name": "鍋爐(電)", "category": "蒸氣", "recipeIds": [ "boil_steam_electric" ] },
+    { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
+    { "id": "lime_quarry", "name": "石灰場", "category": "採集", "recipeIds": [ "mine_lime" ] },
+    { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "recipeIds": [ "crush_iron_ore" ] },
+    { "id": "blast_furnace_2", "name": "高爐II", "category": "冶金", "recipeIds": [ "smelt_iron_blast" ] },
+    { "id": "air_separator", "name": "空氣分離器", "category": "加工", "recipeIds": [ "separate_air" ] },
+    { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "category": "冶金", "recipeIds": [ "make_steel" ] },
+    { "id": "cooled_caster_2", "name": "水冷鑄造機II", "category": "冶金", "recipeIds": [ "cast_steel_plate" ] },
+    { "id": "metal_caster_2", "name": "金屬鑄造機II", "category": "冶金", "recipeIds": [ "cast_iron_plate" ] },
+    { "id": "assembly_4", "name": "組裝機IV", "category": "加工", "recipeIds": [ "assemble_mechanical_parts" ] },
+    { "id": "oil_well", "name": "油田", "category": "採集", "recipeIds": [ "pump_crude_oil" ] },
+    { "id": "distillation_1", "name": "蒸餾塔I", "category": "石化", "recipeIds": [ "distill_crude_oil" ] },
+    { "id": "distillation_2", "name": "蒸餾塔II", "category": "石化", "recipeIds": [ "distill_medium_oil" ] },
+    { "id": "distillation_3", "name": "蒸餾塔III", "category": "石化", "recipeIds": [ "distill_light_oil" ] },
+    { "id": "rotary_kiln", "name": "迴轉窯", "category": "加工", "recipeIds": [ "make_cement" ] },
+    { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "recipeIds": [ "desalinate" ] }
   ],
   "transports": [
     { "id": "pipe", "name": "管線", "kind": "fluid", "tiersPerMinute": [ 60, 120, 200, 400, 900 ] },
