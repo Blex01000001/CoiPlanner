@@ -19,11 +19,27 @@
       "inputs": [ { "productId": "beta_ingot", "quantity": 3 } ],
       "outputs": [ { "productId": "gamma_plate", "quantity": 2 } ],
       "cycleSeconds": 20
+    },
+    {
+      "id": "mine_alpha",
+      "name": "Mine Alpha Ore",
+      "inputs": [],
+      "outputs": [ { "productId": "alpha_ore", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "burn_alpha",
+      "name": "Burn Alpha Ore",
+      "inputs": [ { "productId": "alpha_ore", "quantity": 6 } ],
+      "outputs": [],
+      "cycleSeconds": 60
     }
   ],
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
-    { "id": "demo_press", "name": "Demo Press", "recipeIds": [ "press_gamma" ] }
+    { "id": "demo_press", "name": "Demo Press", "recipeIds": [ "press_gamma" ] },
+    { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha" ] },
+    { "id": "demo_generator", "name": "Demo Generator", "powerGenerationKw": 200, "recipeIds": [ "burn_alpha" ] }
   ],
   "transports": [
     { "id": "belt", "name": "Demo Belt", "kind": "unit", "tiersPerMinute": [ 10, 100 ] },

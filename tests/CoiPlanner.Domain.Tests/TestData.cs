@@ -15,6 +15,12 @@ internal static class TestData
     public static Node Press(string id = "p", int count = 1) =>
         new() { Id = id, MachineId = "demo_press", RecipeId = "press_gamma", Count = count };
 
+    public static Node Drill(string id = "d", int count = 1) =>
+        new() { Id = id, MachineId = "demo_drill", RecipeId = "mine_alpha", Count = count };
+
+    public static Node Generator(string id = "g", int count = 1) =>
+        new() { Id = id, MachineId = "demo_generator", RecipeId = "burn_alpha", Count = count };
+
     public static ResourceSource Source(string id, string productId, double ratePerMinute) =>
         new() { Id = id, ProductId = productId, RatePerMinute = ratePerMinute };
 

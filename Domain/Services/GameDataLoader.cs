@@ -119,6 +119,8 @@ public sealed class GameDataLoader
 
         foreach (var machine in data.Machines)
         {
+            if (machine.PowerUseKw < 0 || machine.PowerGenerationKw < 0)
+                errors.Add($"machine '{machine.Id}' 的 powerUseKw 與 powerGenerationKw 不能是負數。");
             foreach (var recipeId in machine.RecipeIds.Where(id => !recipeIds.Contains(id)))
                 errors.Add($"machine '{machine.Id}' 引用了不存在的 recipe '{recipeId}'。");
         }

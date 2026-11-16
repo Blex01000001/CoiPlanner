@@ -43,10 +43,13 @@ public sealed class PlanCalculator
 
             produces[node.Id] = recipe.Outputs.Select(o => o.ProductId).ToHashSet();
             consumes[node.Id] = recipe.Inputs.Select(i => i.ProductId).ToHashSet();
+            var machine = _machines[node.MachineId];
             nodeResults.Add(new NodeResult(
                 node.Id,
                 recipe.Inputs.Select(i => new ProductRate(i.ProductId, recipe.InputPerMinute(i.ProductId) * node.Count)).ToList(),
-                recipe.Outputs.Select(o => new ProductRate(o.ProductId, recipe.OutputPerMinute(o.ProductId) * node.Count)).ToList()));
+                recipe.Outputs.Select(o => new ProductRate(o.ProductId, recipe.OutputPerMinute(o.ProductId) * node.Count)).ToList(),
+                machine.PowerUseKw * node.Count,
+                machine.PowerGenerationKw * node.Count));
         }
 
         foreach (var source in plan.Sources)
@@ -68,6 +71,12 @@ public sealed class PlanCalculator
         var capacities = new double?[plan.Edges.Count];
         for (var i = 0; i < plan.Edges.Count; i++)
             capacities[i] = CheckEdge(plan.Edges[i], i, ids, produces, consumes, issues);
+
+        // 電力是全域的，不屬於單一節點，所以這個問題沒有 NodeId
+        var powerUse = nodeResults.Sum(n => n.PowerUseKw);
+        var powerGeneration = nodeResults.Sum(n => n.PowerGenerationKw);
+        if (powerUse > powerGeneration + 1e-9)
+            issues.Add(new($"電力不足：機器共耗電 {powerUse:0.##} kW，發電只有 {powerGeneration:0.##} kW。"));
 
         return new PlanResult(nodeResults, issues, capacities);
     }
