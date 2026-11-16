@@ -8,6 +8,31 @@
     <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
         每分鐘的實際產出與消耗（最近 @Format(AverageSeconds) 秒平均）。
     </MudText>
+    @if (Snapshot is { Power.DemandKw: > 0 } or { Power.SupplyKw: > 0 })
+    {
+        <MudText Typo="Typo.subtitle2" Class="mb-1">電力（kW）</MudText>
+        <MudSimpleTable Dense="true" Elevation="0" Class="mb-3">
+            <thead>
+                <tr>
+                    <th style="text-align:right">發電</th>
+                    <th style="text-align:right">需求</th>
+                    <th style="text-align:right">供電比例</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align:right">@FormatRate(Snapshot.Power.SupplyKw)</td>
+                    <td style="text-align:right">@FormatRate(Snapshot.Power.DemandKw)</td>
+                    <td style="text-align:right">
+                        <MudText Typo="Typo.body2" Color="@(Snapshot.Power.Satisfaction < 0.999 ? Color.Error : Color.Success)">
+                            @((Snapshot.Power.Satisfaction * 100).ToString("0"))%
+                        </MudText>
+                    </td>
+                </tr>
+            </tbody>
+        </MudSimpleTable>
+        <MudText Typo="Typo.subtitle2" Class="mb-1">物料</MudText>
+    }
     @if (Snapshot is null || Snapshot.Balances.Count == 0)
     {
         <MudText Typo="Typo.body2" Class="mud-text-secondary">尚無節點。</MudText>

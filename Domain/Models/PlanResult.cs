@@ -4,7 +4,12 @@ namespace CoiPlanner.Domain.Models;
 public sealed record ProductRate(string ProductId, double PerMinute);
 
 /// <summary>單一節點（Count 台機器合計）全速運轉時每分鐘的額定消耗與產出。</summary>
-public sealed record NodeResult(string NodeId, IReadOnlyList<ProductRate> Inputs, IReadOnlyList<ProductRate> Outputs);
+public sealed record NodeResult(
+    string NodeId,
+    IReadOnlyList<ProductRate> Inputs,
+    IReadOnlyList<ProductRate> Outputs,
+    double PowerUseKw = 0,
+    double PowerGenerationKw = 0);
 
 /// <summary>規劃中的問題；NodeId 或 EdgeIndex 指出問題所在位置。</summary>
 public sealed record PlanIssue(string Message, string? NodeId = null, int? EdgeIndex = null);
@@ -18,5 +23,11 @@ public sealed record PlanResult(
     IReadOnlyList<PlanIssue> Issues,
     IReadOnlyList<double?> EdgeCapacities)
 {
+    /// <summary>全部機器額定耗電（kW）。</summary>
+    public double PowerUseKw => Nodes.Sum(n => n.PowerUseKw);
+
+    /// <summary>全部發電機額定發電量（kW）。</summary>
+    public double PowerGenerationKw => Nodes.Sum(n => n.PowerGenerationKw);
+
     public bool IsValid => Issues.Count == 0;
 }

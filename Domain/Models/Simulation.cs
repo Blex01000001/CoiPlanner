@@ -69,8 +69,15 @@ public sealed record ProductBalance(string ProductId, double SupplyPerMinute, do
     public double NetPerMinute => SupplyPerMinute - DemandPerMinute;
 }
 
+/// <summary>
+/// 電力供需（kW，最近幾秒平均）。DemandKw 是全部機器的額定耗電；Satisfaction 是供電比例（0～1），
+/// 耗電機器的稼動率不會超過它。沒有任何耗電機器時為 1。
+/// </summary>
+public sealed record PowerBalance(double SupplyKw, double DemandKw, double Satisfaction);
+
 public sealed record SimulationSnapshot(
     double TimeSeconds,
     IReadOnlyList<NodeState> Nodes,
     IReadOnlyList<EdgeState> Edges,
-    IReadOnlyList<ProductBalance> Balances);
+    IReadOnlyList<ProductBalance> Balances,
+    PowerBalance Power);

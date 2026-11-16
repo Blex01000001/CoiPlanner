@@ -14,8 +14,8 @@ public class GameDataLoaderTests
         var data = _loader.LoadFromFile(SamplePath);
 
         Assert.Equal(4, data.Products.Count);
-        Assert.Equal(2, data.Recipes.Count);
-        Assert.Equal(2, data.Machines.Count);
+        Assert.Equal(4, data.Recipes.Count);
+        Assert.Equal(4, data.Machines.Count);
     }
 
     [Fact]
@@ -31,6 +31,16 @@ public class GameDataLoaderTests
         var output = Assert.Single(recipe.Outputs);
         Assert.Equal("beta_ingot", output.ProductId);
         Assert.Equal(1, output.Quantity);
+    }
+
+    [Fact]
+    public void LoadFromFile_SampleJson_MapsPower()
+    {
+        var data = new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));
+
+        Assert.Equal(150, data.Machines.Single(m => m.Id == "demo_drill").PowerUseKw);
+        Assert.Equal(200, data.Machines.Single(m => m.Id == "demo_generator").PowerGenerationKw);
+        Assert.Equal(0, data.Machines.Single(m => m.Id == "demo_press").PowerUseKw);
     }
 
     [Fact]

@@ -10,6 +10,8 @@ namespace CoiPlanner.Domain.Services;
 /// <item>沒接線的輸出視為直接送進倉庫，不會堵塞。</item>
 /// <item>連線依建立順序填滿：每一步每條線最多運送「來源暫存量、運輸上限、目標剩餘空間」中最小的量，經過運送時間後送達。</item>
 /// </list>
+/// 電力是全域的供需平衡：耗電機器的需求取額定耗電，供給是發電機上一步的實際稼動率乘以額定發電量；
+/// 供給不足時，所有耗電機器同比例減產（供電比例 = 供給 / 需求，最高 1）。發電機本身不耗電時不受影響。
 /// 節點與連線是否有效由 <see cref="PlanCalculator"/> 決定；有問題的節點與連線不參與模擬。
 /// </summary>
 public sealed class ProductionSimulator
@@ -22,11 +24,16 @@ public sealed class ProductionSimulator
     private List<SimEdge> _edges = new();
     private ProductionPlan _plan = new();
     private PlanResult _check = new([], [], []);
+    private RateMeter _supplyKw;
+    private RateMeter _demandKw;
+    private double _powerRatio = 1;
 
     public ProductionSimulator(SimulationSettings? settings = null)
     {
         _settings = settings ?? new SimulationSettings();
         _windowSteps = Math.Max(1, (int)Math.Round(_settings.AverageSeconds / _settings.StepSeconds));
+        _supplyKw = new RateMeter(_windowSteps);
+        _demandKw = new RateMeter(_windowSteps);
     }
 
     public SimulationSettings Settings => _settings;
@@ -92,6 +99,9 @@ public sealed class ProductionSimulator
     {
         _nodes = new();
         _edges = new();
+        _supplyKw = new RateMeter(_windowSteps);
+        _demandKw = new RateMeter(_windowSteps);
+        _powerRatio = 1;
         TimeSeconds = 0;
         Sync(_plan, _check);
     }
@@ -108,6 +118,7 @@ public sealed class ProductionSimulator
     {
         var dt = _settings.StepSeconds;
         Deliver();
+        UpdatePower();
         foreach (var node in _nodes.Values)
         {
             if (node.IsSource)
@@ -141,7 +152,18 @@ public sealed class ProductionSimulator
                 _nodes.Values.SelectMany(n => n.Inputs).Where(s => s.ProductId == id).Sum(s => PerMinute(s.Meter))))
             .ToList();
 
-        return new SimulationSnapshot(TimeSeconds, nodes, edges, balances);
+        var power = new PowerBalance(_supplyKw.Average, _demandKw.Average, _powerRatio);
+        return new SimulationSnapshot(TimeSeconds, nodes, edges, balances, power);
+    }
+
+    /// <summary>依上一步發電機的稼動率算出這一步的供電比例。</summary>
+    private void UpdatePower()
+    {
+        var demand = _nodes.Values.Sum(n => n.PowerUseKw);
+        var supply = _nodes.Values.Sum(n => n.PowerGenerationKw * n.LastUtilization);
+        _powerRatio = demand > Epsilon ? Math.Min(1, supply / demand) : 1;
+        _supplyKw.Add(supply);
+        _demandKw.Add(demand);
     }
 
     private SlotState SlotSnapshot(SimSlot s) =>
@@ -154,6 +176,8 @@ public sealed class ProductionSimulator
         if (!_nodes.TryGetValue(id, out var node) || node.Key != key)
             node = new SimNode(id, key, isSource, _settings.StartupSeconds, _windowSteps);
 
+        node.PowerUseKw = rated.PowerUseKw;
+        node.PowerGenerationKw = rated.PowerGenerationKw;
         node.Inputs = Slots(node, node.Inputs, rated.Inputs);
         node.Outputs = Slots(node, node.Outputs, rated.Outputs);
         return node;
@@ -209,6 +233,12 @@ public sealed class ProductionSimulator
             node.Status = NodeStatus.Starved;
             node.StartupRemaining = _settings.StartupSeconds;
         }
+        else if (node.PowerUseKw > 0 && _powerRatio <= Epsilon)
+        {
+            // 完全沒有電：和缺料一樣停擺（沒有缺的物品），恢復供電後要重新等啟動延遲
+            node.Status = NodeStatus.Starved;
+            node.StartupRemaining = _settings.StartupSeconds;
+        }
         else if (node.StartupRemaining > Epsilon)
         {
             node.Status = NodeStatus.Starting;
@@ -222,6 +252,9 @@ public sealed class ProductionSimulator
             foreach (var s in node.Outputs.Where(s => s.Connected))
                 f = Math.Min(f, (s.Capacity - s.Stock) / (s.RatedPerMinute * dt / 60));
             f = Math.Max(0, f);
+
+            if (node.PowerUseKw > 0)
+                f = Math.Min(f, _powerRatio);
 
             if (f <= Epsilon)
             {
@@ -250,6 +283,7 @@ public sealed class ProductionSimulator
             s.Meter.Add(made);
         }
         node.Utilization.Add(f);
+        node.LastUtilization = f;
     }
 
     private void Transfer(double dt)
@@ -283,6 +317,13 @@ public sealed class ProductionSimulator
         public double StartupRemaining { get; set; } = startupSeconds;
         public IReadOnlyList<string> Missing { get; set; } = [];
         public RateMeter Utilization { get; } = new(windowSteps);
+
+        /// <summary>全部 Count 台機器的額定耗電與發電量（kW）。</summary>
+        public double PowerUseKw { get; set; }
+        public double PowerGenerationKw { get; set; }
+
+        /// <summary>上一步的稼動率（不是平均），發電機的供給依它計算。</summary>
+        public double LastUtilization { get; set; }
     }
 
     private sealed class SimSlot(SimNode owner, string productId, int windowSteps)
