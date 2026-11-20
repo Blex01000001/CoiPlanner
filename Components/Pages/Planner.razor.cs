@@ -296,8 +296,8 @@ public partial class Planner
                 Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),
                 Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId)),
             }),
-        // 每個物品都可以放一個資源來源節點
-        Products = Data.Products.Select(p => Slot(p.Id)),
+        // 每個物品（背景統計值除外）都可以放一個資源來源節點
+        Products = Data.Products.Where(p => !p.Background).Select(p => Slot(p.Id)),
         Transports = Data.Transports.Select(t => new { t.Id, t.Name, t.Kind, t.TiersPerMinute }),
     };
 

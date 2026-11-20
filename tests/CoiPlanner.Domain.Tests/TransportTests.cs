@@ -19,7 +19,7 @@ public class TransportLoaderTests
         var belt = Assert.Single(data.Transports, t => t.Id == "belt");
         Assert.Equal("unit", belt.Kind);
         Assert.Equal([10, 100], belt.TiersPerMinute);
-        Assert.All(data.Products, p => Assert.Equal("unit", p.Kind));
+        Assert.All(data.Products.Where(p => !p.Background), p => Assert.Equal("unit", p.Kind));
     }
 
     [Fact]

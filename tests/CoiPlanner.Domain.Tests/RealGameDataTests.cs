@@ -30,7 +30,7 @@ public class RealGameDataTests
     public void EveryProductHasATransport()
     {
         var kinds = Data.Transports.Select(t => t.Kind).ToHashSet();
-        Assert.All(Data.Products, p => Assert.Contains(p.Kind!, kinds));
+        Assert.All(Data.Products.Where(p => !p.Background), p => Assert.Contains(p.Kind!, kinds));
     }
 
     [Fact]
@@ -127,5 +127,21 @@ public class RealGameDataTests
         var electric = RecipeOf("boiler_electric");
         Assert.Equal(new Dictionary<string, double> { ["water"] = 12 }, Amounts(electric.Inputs));
         Assert.Equal(new Dictionary<string, double> { ["steam_high"] = 12 }, Amounts(electric.Outputs));
+    }
+
+    [Fact]
+    public void DieselGenerators_MatchUserData()
+    {
+        var g1 = Data.Machines.Single(m => m.Id == "diesel_generator_1");
+        Assert.Equal(800, g1.PowerGenerationKw);
+        Assert.Equal(new Dictionary<string, double> { ["diesel"] = 3 }, Amounts(RecipeOf("diesel_generator_1").Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["air_pollution"] = 3 }, Amounts(RecipeOf("diesel_generator_1").Outputs));
+
+        var g2 = Data.Machines.Single(m => m.Id == "diesel_generator_2");
+        Assert.Equal(5000, g2.PowerGenerationKw);
+        Assert.Equal(new Dictionary<string, double> { ["diesel"] = 18 }, Amounts(RecipeOf("diesel_generator_2").Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["exhaust"] = 24 }, Amounts(RecipeOf("diesel_generator_2").Outputs));
+
+        Assert.True(Data.Products.Single(p => p.Id == "air_pollution").Background);
     }
 }
