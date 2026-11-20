@@ -103,6 +103,9 @@ public sealed class GameDataLoader
         foreach (var product in data.Products.Where(p => p.Color is not null && !HexColor.IsMatch(p.Color)))
             errors.Add($"product '{product.Id}' 的 color '{product.Color}' 格式必須是 #rrggbb。");
 
+        foreach (var product in data.Products.Where(p => p.Background && p.Kind is not null))
+            errors.Add($"product '{product.Id}' 是背景統計值（background），不能有物品型態 '{product.Kind}'。");
+
         foreach (var recipe in data.Recipes)
         {
             if (recipe.CycleSeconds <= 0)

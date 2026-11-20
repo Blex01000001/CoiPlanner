@@ -3,7 +3,8 @@
     { "id": "alpha_ore", "name": "Alpha Ore", "unit": "pcs", "kind": "unit" },
     { "id": "beta_ingot", "name": "Beta Ingot", "unit": "pcs", "kind": "unit" },
     { "id": "gamma_plate", "name": "Gamma Plate", "unit": "pcs", "kind": "unit" },
-    { "id": "iron_ore", "name": "Iron Ore", "unit": "pcs", "kind": "unit" }
+    { "id": "iron_ore", "name": "Iron Ore", "unit": "pcs", "kind": "unit" },
+    { "id": "smog", "name": "Smog", "unit": "pcs", "background": true }
   ],
   "recipes": [
     {
@@ -31,7 +32,7 @@
       "id": "burn_alpha",
       "name": "Burn Alpha Ore",
       "inputs": [ { "productId": "alpha_ore", "quantity": 6 } ],
-      "outputs": [],
+      "outputs": [ { "productId": "smog", "quantity": 3 } ],
       "cycleSeconds": 60
     }
   ],

@@ -156,6 +156,11 @@ public sealed class PlanCalculator
     {
         if (!_products.TryGetValue(edge.ProductId, out var product))
             return null;
+        if (product.Background)
+        {
+            issues.Add(new($"連線 #{index}：'{product.Name}' 是背景統計值，不能連線。", EdgeIndex: index));
+            return null;
+        }
         if (product.Kind is null || !_transportsByKind.TryGetValue(product.Kind, out var transport))
         {
             issues.Add(new($"連線 #{index}：物品 '{product.Name}' 沒有對應的運輸方式。", EdgeIndex: index));

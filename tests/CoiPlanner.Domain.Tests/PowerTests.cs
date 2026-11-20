@@ -111,4 +111,24 @@ public class PowerTests
         Assert.Equal(1, power.Satisfaction);
         Assert.Equal(0, power.DemandKw);
     }
+
+    [Fact]
+    public void BackgroundProduct_AppearsInBalance_AndCannotBeLinked()
+    {
+        var sim = Simulate(Plan(generators: 1, drills: 1));
+        sim.Run(30);
+
+        // 發電機全速燃燒 6 個 alpha_ore、產出 3 個 smog 的背景統計，沒有連線也不堵塞
+        var smog = sim.Snapshot().Balances.Single(b => b.ProductId == "smog");
+        Near(3, smog.SupplyPerMinute, 0.2);
+        Assert.Equal(0, smog.DemandPerMinute);
+
+        var plan = new ProductionPlan
+        {
+            Nodes = [Generator("g"), Furnace("f")],
+            Edges = [Link("g", "f", "smog")],
+        };
+        var issue = Assert.Single(Check(plan).Issues, i => i.EdgeIndex == 0 && i.Message.Contains("背景統計值"));
+        Assert.Contains("Smog", issue.Message);
+    }
 }
