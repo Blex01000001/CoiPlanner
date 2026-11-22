@@ -12,6 +12,8 @@
 - 遊戲資料目前 23 種機器，其他產線尚未輸入
 - 電力（kW，全域供需）已有機制，但 `Data/game.json` 的機器還沒填 `powerUseKw`／`powerGenerationKw`（預設 0），目前只有兩種柴油發電機有發電量，其他發電機等使用者提供數字
 - 電力模擬：耗電機器吃額定耗電、全部同比例降速；若發電機的燃料要靠耗電機器生產，起始沒電時會互相等待而停擺（遊戲裡有初始存量，這裡沒有）。電鍋爐目前不耗電
+- 機器的工人（`workers`）與維修（`maintenanceType`、`maintenancePerMinute`）目前只記錄資料並顯示在資料瀏覽頁，沒有納入規劃檢查或模擬；維修種類還不是物品，海水泵以外的機器也還沒填
+- 暫存容量目前所有建築統一為 1/3 分鐘用量（向上取整），遊戲中各建築比例不同，等使用者提供每個建築的數字再改成各自的資料
 - 節點標題過長時會被截斷
 - 冒煙測試用固定座標操作節點（預設 1:1 視野）；節點的預設尺寸或位置改變時，`tests/e2e/smoke.cjs` 裡的座標要一起改
 - Windows 保留埠（Hyper-V／WSL／Docker）可能在重開機或更新後改變，HTTPS 開發埠 5443 不保證永遠可用；遇到「存取權限不足」時用 `netsh interface ipv4 show excludedportrange protocol=tcp` 查，再換埠。也可以用系統管理員身分把 5443 登記為自己保留：`netsh int ipv4 add excludedportrange protocol=tcp startport=5443 numberofports=1`

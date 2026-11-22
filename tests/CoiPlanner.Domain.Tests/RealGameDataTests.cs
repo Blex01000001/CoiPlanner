@@ -144,4 +144,15 @@ public class RealGameDataTests
 
         Assert.True(Data.Products.Single(p => p.Id == "air_pollution").Background);
     }
+
+    [Fact]
+    public void SeawaterPump_WorkersMaintenanceAndPower_MatchUserData()
+    {
+        var pump = Data.Machines.Single(m => m.Id == "seawater_pump");
+
+        Assert.Equal(1, pump.Workers);
+        Assert.Equal("維修I", pump.MaintenanceType);
+        Assert.Equal(0.2, pump.MaintenancePerMinute);
+        Assert.Equal(100, pump.PowerUseKw);
+    }
 }

@@ -44,6 +44,19 @@ public class GameDataLoaderTests
     }
 
     [Fact]
+    public void LoadFromFile_SampleJson_MapsWorkersAndMaintenance()
+    {
+        var data = new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));
+
+        var press = data.Machines.Single(m => m.Id == "demo_press");
+        Assert.Equal(2, press.Workers);
+        Assert.Equal("M1", press.MaintenanceType);
+        Assert.Equal(0.5, press.MaintenancePerMinute);
+        Assert.Equal(0, data.Machines.Single(m => m.Id == "demo_furnace").Workers);
+        Assert.Null(data.Machines.Single(m => m.Id == "demo_furnace").MaintenanceType);
+    }
+
+    [Fact]
     public void LoadFromFile_SampleJson_MapsMachineRecipes()
     {
         var data = _loader.LoadFromFile(SamplePath);
@@ -87,6 +100,18 @@ public class GameDataLoaderTests
             _loader.Parse($$"""{ "products": [ { "id": "a", "name": "A", "unit": "pcs", "color": "{{color}}" } ] }"""));
 
         Assert.Contains("color", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("\"workers\": -1")]
+    [InlineData("\"maintenanceType\": \"M1\", \"maintenancePerMinute\": -0.1")]
+    [InlineData("\"maintenancePerMinute\": 0.2")]
+    public void Parse_InvalidWorkersOrMaintenance_ThrowsGameDataException(string fields)
+    {
+        var ex = Assert.Throws<GameDataException>(() =>
+            _loader.Parse($$"""{ "machines": [ { "id": "m", "name": "M", {{fields}} } ] }"""));
+
+        Assert.Contains("machine 'm'", ex.Message);
     }
 
     [Fact]

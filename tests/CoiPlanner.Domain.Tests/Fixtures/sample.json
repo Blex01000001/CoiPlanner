@@ -38,7 +38,7 @@
   ],
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
-    { "id": "demo_press", "name": "Demo Press", "recipeIds": [ "press_gamma" ] },
+    { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma" ] },
     { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha" ] },
     { "id": "demo_generator", "name": "Demo Generator", "powerGenerationKw": 200, "recipeIds": [ "burn_alpha" ] }
   ],

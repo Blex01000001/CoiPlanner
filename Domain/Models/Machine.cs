@@ -13,6 +13,15 @@ public sealed record Machine
     /// <summary>單台機器全速運轉時的發電量（kW）。</summary>
     public double PowerGenerationKw { get; init; }
 
+    /// <summary>單台機器需要的工人數。目前只記錄資料，還沒有納入檢查或模擬。</summary>
+    public double Workers { get; init; }
+
+    /// <summary>單台機器使用的維修種類，例如「維修I」；不需要維修時為空。</summary>
+    public string? MaintenanceType { get; init; }
+
+    /// <summary>單台機器每分鐘消耗的維修量（種類見 <see cref="MaintenanceType"/>）。目前只記錄資料。</summary>
+    public double MaintenancePerMinute { get; init; }
+
     public IReadOnlyList<string> RecipeIds { get; init; } = [];
 
     public bool CanRun(string recipeId) => RecipeIds.Contains(recipeId);

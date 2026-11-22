@@ -309,7 +309,7 @@
   ],
   "machines": [
     { "id": "water_pump", "name": "抽水機", "category": "採集", "recipeIds": [ "pump_water" ] },
-    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "recipeIds": [ "pump_seawater" ] },
+    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "powerUseKw": 100, "workers": 1, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "pump_seawater" ] },
     { "id": "coal_mine", "name": "煤礦場", "category": "採集", "recipeIds": [ "mine_coal" ] },
     { "id": "steam_boiler_coal", "name": "鍋爐", "category": "蒸氣", "recipeIds": [ "boil_steam_coal", "boil_steam_wood_chips", "boil_steam_biomass", "boil_steam_animal_feed" ] },
     { "id": "boiler_gas", "name": "鍋爐(燃氣)", "category": "蒸氣", "recipeIds": [ "boil_steam_light_oil", "boil_steam_naphtha", "boil_steam_ethanol", "boil_steam_fuel_gas", "boil_steam_hydrogen", "boil_steam_heavy_oil", "boil_steam_medium_oil" ] },
