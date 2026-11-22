@@ -134,7 +134,7 @@ public class ProductionSimulatorTests
     [Fact]
     public void FillInOrder_SecondLinkGetsSurplusAfterFirstBufferFills()
     {
-        // 來源 30/分先送給第一台熔爐（用 12/分）：它的 1 分鐘暫存（12）每分鐘多 18，約 40 秒才滿；
+        // 來源 30/分先送給第一台熔爐（用 12/分）：它的暫存（12 的 1/3＝4）每分鐘多 18，約 13 秒才滿；
         // 在那之前第二台熔爐分不到料，之後才拿到剩下的 18/分
         var sim = Simulate(
             [Furnace("f1"), Furnace("f2")],
@@ -142,7 +142,7 @@ public class ProductionSimulatorTests
             Link("s", "f1", "alpha_ore"),
             Link("s", "f2", "alpha_ore"));
 
-        sim.Run(35);
+        sim.Run(5);
         Assert.Equal(NodeStatus.Starved, Node(sim, "f2").Status);
 
         sim.Run(60);
@@ -153,14 +153,14 @@ public class ProductionSimulatorTests
     [Fact]
     public void Source_BlocksWhenItsBufferIsFull()
     {
-        // 來源 30/分只被拿走 12/分，1 分鐘的暫存（30）滿了以後只能跟著需求生產
+        // 來源 30/分只被拿走 12/分，暫存（30 的 1/3＝10）滿了以後只能跟著需求生產
         var sim = Simulate([Furnace("f")], [Source("s", "alpha_ore", 30)], Link("s", "f", "alpha_ore"));
 
         sim.Run(10 * 60);
 
         var s = Node(sim, "s");
         Near(12, s.Outputs[0].ActualPerMinute, 0.1);
-        Near(30, s.Outputs[0].Stock, 0.5);
+        Near(10, s.Outputs[0].Stock, 0.5);
     }
 
     [Fact]
@@ -214,7 +214,8 @@ public class ProductionSimulatorTests
         Assert.Equal(before, Node(sim, "s").Outputs[0].Stock);
         var f = Node(sim, "f");
         Assert.Equal(NodeStatus.Running, f.Status);
-        Assert.Equal(24, f.Inputs[0].Capacity);
+        // 每台輸入 12/分，暫存 12 的 1/3＝4，兩台相加 8
+        Assert.Equal(8, f.Inputs[0].Capacity);
     }
 
     [Fact]
@@ -259,5 +260,19 @@ public class ProductionSimulatorTests
         Assert.DoesNotContain(snapshot.Nodes, n => n.NodeId == "bad");
         Assert.Empty(snapshot.Edges);
         Assert.Equal(NodeStatus.Starved, Node(sim, "f").Status);
+    }
+
+    [Fact]
+    public void BufferCapacity_IsOneThirdPerMachineRoundedUp()
+    {
+        // 熔爐輸入 12/分、輸出 6/分；每台暫存為 1/3 分鐘用量並向上取整：4、2，三台相加
+        var sim = Simulate([Furnace("f", count: 3)], [Source("s", "alpha_ore", 10)], Link("s", "f", "alpha_ore"));
+
+        var f = Node(sim, "f");
+        Assert.Equal(12, f.Inputs[0].Capacity);
+        Assert.Equal(6, f.Outputs[0].Capacity);
+
+        // 來源 10/分：10/3 向上取整為 4
+        Assert.Equal(4, Node(sim, "s").Outputs[0].Capacity);
     }
 }

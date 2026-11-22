@@ -55,7 +55,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - 插槽數固定為配方數；同一輸入的第二條以後連線接到疊在原插槽上的隱藏合流插槽（`mergeSlotFor`、`syncInputSlots`）。原因：使用者要求插槽數固定，而 litegraph 一個輸入只能接一條線。
 - 運輸方式由物品 `kind` 決定（一種型態只走一種運輸），使用者只選等級；`Edge.Transport` 仍存檔，供 C# 檢查。
 - `PlanCalculator` 只做檢查與額定值，實際數字一律來自 `ProductionSimulator`。原因：使用者選擇「只做模擬」。
-- 模擬規則皆為使用者決定：連續流量、依連線建立順序填滿、沒接線的輸入＝0（停擺）、沒接線的輸出送進倉庫。`SimulationSettings` 預設值（暫存 1 分鐘、運送 0.5 秒、啟動 0.5 秒）是使用者暫訂，**改動前先問**。
+- 模擬規則皆為使用者決定：連續流量、依連線建立順序填滿、沒接線的輸入＝0（停擺）、沒接線的輸出送進倉庫。`SimulationSettings` 預設值（暫存每台 1/3 分鐘向上取整、運送 0.5 秒、啟動 0.5 秒）是使用者暫訂，**改動前先問**。
 - 模擬在 C# 以 100 ms 計時器推進、推給 JS；面板每 `PanelRefreshTicks` 次才重繪。原因：控制 SignalR 流量。
 - `/js/` 以 `Cache-Control: no-cache` 提供（`Program.cs`），CSS 網址加檔案時間版本號（`Versioned`）。原因：`graphEditor` 是多個 ES 模組，子模組的網址沒辦法加版本號；瀏覽器也曾沿用舊 CSS，畫布上方出現白條。冒煙測試會檢查這個標頭。
 - `Editor` 的方法分散在 `plan／status／stock／flow／viewport／menus.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。

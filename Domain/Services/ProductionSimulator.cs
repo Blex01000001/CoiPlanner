@@ -55,12 +55,12 @@ public sealed class ProductionSimulator
         foreach (var n in plan.Nodes)
         {
             if (rated.TryGetValue(n.Id, out var r))
-                nodes[n.Id] = Reuse(n.Id, $"m|{n.MachineId}|{n.RecipeId}", isSource: false, r);
+                nodes[n.Id] = Reuse(n.Id, $"m|{n.MachineId}|{n.RecipeId}", isSource: false, r, n.Count);
         }
         foreach (var s in plan.Sources)
         {
             if (rated.TryGetValue(s.Id, out var r))
-                nodes[s.Id] = Reuse(s.Id, $"s|{s.ProductId}", isSource: true, r);
+                nodes[s.Id] = Reuse(s.Id, $"s|{s.ProductId}", isSource: true, r, 1);
         }
 
         var oldEdges = _edges.ToDictionary(e => e.Key);
@@ -171,25 +171,28 @@ public sealed class ProductionSimulator
 
     private double PerMinute(RateMeter meter) => meter.Average / _settings.StepSeconds * 60;
 
-    private SimNode Reuse(string id, string key, bool isSource, NodeResult rated)
+    private SimNode Reuse(string id, string key, bool isSource, NodeResult rated, int count)
     {
         if (!_nodes.TryGetValue(id, out var node) || node.Key != key)
             node = new SimNode(id, key, isSource, _settings.StartupSeconds, _windowSteps);
 
         node.PowerUseKw = rated.PowerUseKw;
         node.PowerGenerationKw = rated.PowerGenerationKw;
-        node.Inputs = Slots(node, node.Inputs, rated.Inputs);
-        node.Outputs = Slots(node, node.Outputs, rated.Outputs);
+        node.Inputs = Slots(node, node.Inputs, rated.Inputs, count);
+        node.Outputs = Slots(node, node.Outputs, rated.Outputs, count);
         return node;
     }
 
-    /// <summary>依額定速率（機器數量可能改變）更新暫存容量，沿用原本的暫存量。</summary>
-    private List<SimSlot> Slots(SimNode owner, List<SimSlot> old, IReadOnlyList<ProductRate> rates) =>
+    /// <summary>
+    /// 依額定速率（機器數量可能改變）更新暫存容量，沿用原本的暫存量。
+    /// 每台機器的容量向上取整數，Count 台的容量相加。
+    /// </summary>
+    private List<SimSlot> Slots(SimNode owner, List<SimSlot> old, IReadOnlyList<ProductRate> rates, int count) =>
         rates.Select(r =>
         {
             var slot = old.Find(s => s.ProductId == r.ProductId) ?? new SimSlot(owner, r.ProductId, _windowSteps);
             slot.RatedPerMinute = r.PerMinute;
-            slot.Capacity = r.PerMinute * _settings.BufferMinutes;
+            slot.Capacity = Math.Ceiling(r.PerMinute / count * _settings.BufferMinutes - 1e-9) * count;
             slot.Stock = Math.Min(slot.Stock, slot.Capacity);
             return slot;
         }).ToList();
