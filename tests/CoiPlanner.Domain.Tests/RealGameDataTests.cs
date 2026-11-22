@@ -217,4 +217,18 @@ public class RealGameDataTests
         Assert.Equal(new Dictionary<string, double> { ["ammonia"] = 48 }, Amounts(ammonia.Inputs));
         Assert.Equal(new Dictionary<string, double> { ["nitrogen"] = 96, ["hydrogen"] = 48 }, Amounts(ammonia.Outputs));
     }
+
+    [Theory]
+    [InlineData("distillation_1", 6, 1.4)]
+    [InlineData("distillation_2", 8, 1.9)]
+    [InlineData("distillation_3", 8, 2.8)]
+    public void Distillation_WorkersAndMaintenance_MatchUserData(string id, double workers, double maintenance)
+    {
+        var machine = Data.Machines.Single(m => m.Id == id);
+
+        Assert.Equal(workers, machine.Workers);
+        Assert.Equal("維修I", machine.MaintenanceType);
+        Assert.Equal(maintenance, machine.MaintenancePerMinute);
+        Assert.Equal(0, machine.PowerUseKw);
+    }
 }
