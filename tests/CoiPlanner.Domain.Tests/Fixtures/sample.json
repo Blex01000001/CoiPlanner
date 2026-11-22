@@ -22,6 +22,14 @@
       "cycleSeconds": 20
     },
     {
+      "id": "mine_alpha_fast",
+      "name": "Mine Alpha Ore Fast",
+      "inputs": [],
+      "outputs": [ { "productId": "alpha_ore", "quantity": 12 } ],
+      "cycleSeconds": 60,
+      "powerMultiplier": 4
+    },
+    {
       "id": "mine_alpha",
       "name": "Mine Alpha Ore",
       "inputs": [],
@@ -39,7 +47,7 @@
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
     { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma" ] },
-    { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha" ] },
+    { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha", "mine_alpha_fast" ] },
     { "id": "demo_generator", "name": "Demo Generator", "powerGenerationKw": 200, "recipeIds": [ "burn_alpha" ] }
   ],
   "transports": [

@@ -108,6 +108,8 @@ public sealed class GameDataLoader
 
         foreach (var recipe in data.Recipes)
         {
+            if (recipe.PowerMultiplier < 0)
+                errors.Add($"recipe '{recipe.Id}' 的 powerMultiplier 不能是負數。");
             if (recipe.CycleSeconds <= 0)
                 errors.Add($"recipe '{recipe.Id}' 的 cycleSeconds 必須大於 0。");
 

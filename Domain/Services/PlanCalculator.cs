@@ -48,7 +48,7 @@ public sealed class PlanCalculator
                 node.Id,
                 recipe.Inputs.Select(i => new ProductRate(i.ProductId, recipe.InputPerMinute(i.ProductId) * node.Count)).ToList(),
                 recipe.Outputs.Select(o => new ProductRate(o.ProductId, recipe.OutputPerMinute(o.ProductId) * node.Count)).ToList(),
-                machine.PowerUseKw * node.Count,
+                machine.PowerUseKw * recipe.PowerMultiplier * node.Count,
                 machine.PowerGenerationKw * node.Count,
                 machine.Workers * node.Count,
                 machine.MaintenanceType,
