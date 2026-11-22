@@ -122,6 +122,10 @@ public sealed class GameDataLoader
 
         foreach (var machine in data.Machines)
         {
+            if (machine.Workers < 0 || machine.MaintenancePerMinute < 0)
+                errors.Add($"machine '{machine.Id}' 的 workers 與 maintenancePerMinute 不能是負數。");
+            if (machine.MaintenancePerMinute > 0 && string.IsNullOrWhiteSpace(machine.MaintenanceType))
+                errors.Add($"machine '{machine.Id}' 有 maintenancePerMinute，必須指定 maintenanceType。");
             if (machine.PowerUseKw < 0 || machine.PowerGenerationKw < 0)
                 errors.Add($"machine '{machine.Id}' 的 powerUseKw 與 powerGenerationKw 不能是負數。");
             foreach (var recipeId in machine.RecipeIds.Where(id => !recipeIds.Contains(id)))

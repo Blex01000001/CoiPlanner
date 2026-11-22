@@ -60,6 +60,9 @@
             <HeaderContent>
                 <MudTh>名稱</MudTh>
                 <MudTh>可執行配方</MudTh>
+                <MudTh>耗電／發電 (kW)</MudTh>
+                <MudTh>工人</MudTh>
+                <MudTh>維修（每分鐘）</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="名稱">
@@ -71,6 +74,14 @@
                     {
                         <MudChip T="string" Size="Size.Small">@RecipeName(recipeId)</MudChip>
                     }
+                </MudTd>
+                <MudTd DataLabel="耗電／發電 (kW)">
+                    @if (context.PowerUseKw > 0) { <span>耗 @context.PowerUseKw.ToString("0.##")</span> }
+                    @if (context.PowerGenerationKw > 0) { <span>發 @context.PowerGenerationKw.ToString("0.##")</span> }
+                </MudTd>
+                <MudTd DataLabel="工人">@(context.Workers > 0 ? context.Workers.ToString("0.##") : "")</MudTd>
+                <MudTd DataLabel="維修（每分鐘）">
+                    @if (context.MaintenancePerMinute > 0) { <span>@context.MaintenanceType @context.MaintenancePerMinute.ToString("0.##")</span> }
                 </MudTd>
             </RowTemplate>
         </MudTable>

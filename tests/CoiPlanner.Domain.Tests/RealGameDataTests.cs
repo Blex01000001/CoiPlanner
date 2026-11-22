@@ -104,16 +104,38 @@ public class RealGameDataTests
     public void SeawaterAndDesalinator_MatchUserData()
     {
         Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108 }, Amounts(RecipeOf("seawater_pump").Outputs));
-        var d = RecipeOf("thermal_desalinator");
-        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_high"] = 12 }, Amounts(d.Inputs));
-        Assert.Equal(new Dictionary<string, double> { ["water"] = 78, ["brine"] = 42 }, Amounts(d.Outputs));
+
+        var machine = Data.Machines.Single(m => m.Id == "thermal_desalinator");
+        Assert.Equal(3, machine.RecipeIds.Count);
+        Assert.Equal(400, machine.PowerUseKw);
+        Assert.Equal(4, machine.Workers);
+        Assert.Equal("維修I", machine.MaintenanceType);
+        Assert.Equal(0.2, machine.MaintenancePerMinute);
+
+        // 三種蒸汽各一種配方：超高壓 6、高壓 12、低壓 24
+        var ultra = Recipe("desalinate_ultra_steam");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_ultra_high"] = 6 }, Amounts(ultra.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 72, ["brine"] = 42 }, Amounts(ultra.Outputs));
+
+        var high = Recipe("desalinate");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_high"] = 12 }, Amounts(high.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 78, ["brine"] = 42 }, Amounts(high.Outputs));
+
+        var low = Recipe("desalinate_low_steam");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 72, ["low_steam"] = 24 }, Amounts(low.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 72, ["brine"] = 24 }, Amounts(low.Outputs));
+        Assert.Equal("乏汽", Data.Products.Single(p => p.Id == "spent_gas").Name);
     }
 
     [Fact]
     public void Boilers_MatchUserData()
     {
         Assert.Equal("鍋爐", Data.Machines.Single(m => m.Id == "steam_boiler_coal").Name);
-        Assert.Equal(4, Data.Machines.Single(m => m.Id == "steam_boiler_coal").RecipeIds.Count);
+        var boiler = Data.Machines.Single(m => m.Id == "steam_boiler_coal");
+        Assert.Equal(4, boiler.RecipeIds.Count);
+        Assert.Equal(4, boiler.Workers);
+        Assert.Equal(0, boiler.PowerUseKw);
+        Assert.Equal(0, boiler.MaintenancePerMinute);
         Assert.Equal(7, Data.Machines.Single(m => m.Id == "boiler_gas").RecipeIds.Count);
 
         var coal = Recipe("boil_steam_coal");
@@ -143,5 +165,16 @@ public class RealGameDataTests
         Assert.Equal(new Dictionary<string, double> { ["exhaust"] = 24 }, Amounts(RecipeOf("diesel_generator_2").Outputs));
 
         Assert.True(Data.Products.Single(p => p.Id == "air_pollution").Background);
+    }
+
+    [Fact]
+    public void SeawaterPump_WorkersMaintenanceAndPower_MatchUserData()
+    {
+        var pump = Data.Machines.Single(m => m.Id == "seawater_pump");
+
+        Assert.Equal(1, pump.Workers);
+        Assert.Equal("維修I", pump.MaintenanceType);
+        Assert.Equal(0.2, pump.MaintenancePerMinute);
+        Assert.Equal(100, pump.PowerUseKw);
     }
 }

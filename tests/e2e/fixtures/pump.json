@@ -1,0 +1,7 @@
+{
+  "nodes": [
+    { "id": "1", "machineId": "seawater_pump", "recipeId": "pump_seawater", "count": 3, "x": 40, "y": 100 }
+  ],
+  "sources": [],
+  "edges": []
+}

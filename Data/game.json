@@ -3,7 +3,7 @@
   "products": [
     { "id": "water", "name": "水", "unit": "單位", "kind": "fluid", "color": "#4fc3f7" },
     { "id": "coal", "name": "煤礦", "unit": "單位", "kind": "loose", "color": "#7a7570" },
-    { "id": "steam_high", "name": "蒸氣(高壓)", "unit": "單位", "kind": "fluid", "color": "#e6eaec" },
+    { "id": "steam_high", "name": "蒸汽(高壓)", "unit": "單位", "kind": "fluid", "color": "#e6eaec" },
     { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose", "color": "#b5651d" },
     { "id": "molten_iron", "name": "鐵水", "unit": "單位", "kind": "molten", "color": "#ff7043" },
     { "id": "crushed_iron_ore", "name": "碎鐵礦石", "unit": "單位", "kind": "loose", "color": "#d08a4e" },
@@ -32,8 +32,10 @@
     { "id": "animal_feed", "name": "動物飼料", "unit": "單位", "kind": "loose", "color": "#d7a86e" },
     { "id": "ethanol", "name": "乙醇", "unit": "單位", "kind": "fluid", "color": "#f48fb1" },
     { "id": "hydrogen", "name": "氫氣", "unit": "單位", "kind": "fluid", "color": "#e0f7fa" },
-    { "id": "spent_gas", "name": "乏氣", "unit": "單位", "kind": "fluid", "color": "#a1887f" },
+    { "id": "spent_gas", "name": "乏汽", "unit": "單位", "kind": "fluid", "color": "#a1887f" },
     { "id": "air_pollution", "name": "空氣汙染", "unit": "單位", "background": true, "color": "#6b4f4a" },
+    { "id": "steam_ultra_high", "name": "蒸汽(超高壓)", "unit": "單位", "kind": "fluid", "color": "#fff3e0" },
+    { "id": "low_steam", "name": "蒸汽(低壓)", "unit": "單位", "kind": "fluid", "color": "#b0bec5" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -143,10 +145,24 @@
       "cycleSeconds": 60
     },
     {
+      "id": "desalinate_ultra_steam",
+      "name": "熱脫鹽(超高壓蒸汽)",
+      "inputs": [ { "productId": "seawater", "quantity": 108 }, { "productId": "steam_ultra_high", "quantity": 6 } ],
+      "outputs": [ { "productId": "water", "quantity": 72 }, { "productId": "brine", "quantity": 42 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "desalinate",
-      "name": "熱脫鹽",
+      "name": "熱脫鹽(高壓蒸汽)",
       "inputs": [ { "productId": "seawater", "quantity": 108 }, { "productId": "steam_high", "quantity": 12 } ],
       "outputs": [ { "productId": "water", "quantity": 78 }, { "productId": "brine", "quantity": 42 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "desalinate_low_steam",
+      "name": "熱脫鹽(低壓蒸汽)",
+      "inputs": [ { "productId": "seawater", "quantity": 72 }, { "productId": "low_steam", "quantity": 24 } ],
+      "outputs": [ { "productId": "water", "quantity": 72 }, { "productId": "brine", "quantity": 24 } ],
       "cycleSeconds": 60
     },
     {
@@ -309,9 +325,9 @@
   ],
   "machines": [
     { "id": "water_pump", "name": "抽水機", "category": "採集", "recipeIds": [ "pump_water" ] },
-    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "recipeIds": [ "pump_seawater" ] },
+    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "powerUseKw": 100, "workers": 1, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "pump_seawater" ] },
     { "id": "coal_mine", "name": "煤礦場", "category": "採集", "recipeIds": [ "mine_coal" ] },
-    { "id": "steam_boiler_coal", "name": "鍋爐", "category": "蒸氣", "recipeIds": [ "boil_steam_coal", "boil_steam_wood_chips", "boil_steam_biomass", "boil_steam_animal_feed" ] },
+    { "id": "steam_boiler_coal", "name": "鍋爐", "category": "蒸氣", "workers": 4, "recipeIds": [ "boil_steam_coal", "boil_steam_wood_chips", "boil_steam_biomass", "boil_steam_animal_feed" ] },
     { "id": "boiler_gas", "name": "鍋爐(燃氣)", "category": "蒸氣", "recipeIds": [ "boil_steam_light_oil", "boil_steam_naphtha", "boil_steam_ethanol", "boil_steam_fuel_gas", "boil_steam_hydrogen", "boil_steam_heavy_oil", "boil_steam_medium_oil" ] },
     { "id": "boiler_electric", "name": "鍋爐(電)", "category": "蒸氣", "recipeIds": [ "boil_steam_electric" ] },
     { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
@@ -330,7 +346,7 @@
     { "id": "rotary_kiln", "name": "迴轉窯", "category": "加工", "recipeIds": [ "make_cement" ] },
     { "id": "diesel_generator_1", "name": "柴油發電機1", "category": "電力", "powerGenerationKw": 800, "recipeIds": [ "generate_diesel_1" ] },
     { "id": "diesel_generator_2", "name": "柴油發電機2", "category": "電力", "powerGenerationKw": 5000, "recipeIds": [ "generate_diesel_2" ] },
-    { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "recipeIds": [ "desalinate" ] }
+    { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "powerUseKw": 400, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "desalinate_ultra_steam", "desalinate", "desalinate_low_steam" ] }
   ],
   "transports": [
     { "id": "pipe", "name": "管線", "kind": "fluid", "tiersPerMinute": [ 60, 120, 200, 400, 900 ] },

@@ -50,7 +50,7 @@
 
     @if (_panel == SidePanel.Balance)
     {
-        <BalancePanel Snapshot="_snapshot" Products="_products" AverageSeconds="@_sim.Settings.AverageSeconds"
+        <BalancePanel Result="_result" Snapshot="_snapshot" Products="_products" AverageSeconds="@_sim.Settings.AverageSeconds"
                       OnClose="() => _panel = SidePanel.None" />
     }
 </div>

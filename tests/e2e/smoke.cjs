@@ -164,6 +164,18 @@ async function main() {
             await page.click('[aria-label="物料平衡面板"]');
         });
 
+        await step("物料平衡面板顯示工人與維修的合計（3 台海水泵：3 工人、維修I 0.6）", async () => {
+            await dropFile("pump.json");
+            await savedPlan(p => p.nodes.length === 1 && p.nodes[0].count === 3);
+            await page.click('[aria-label="物料平衡面板"]');
+            const panel = page.locator(".planner-side:not(.d-none)");
+            await panel.getByText("人力與維修").waitFor();
+            const text = await panel.innerText();
+            assert(/工人\s*3\b/.test(text), `工人合計：${text}`);
+            assert(/維修I（每分鐘）\s*0\.6\b/.test(text), `維修合計：${text}`);
+            await page.click('[aria-label="物料平衡面板"]');
+        });
+
         await step("暫存長條：暫存堆滿的插槽那一行會填上藍色，空的時候不會", async () => {
             // 先用 1× 讓模擬慢慢開始，才量得到「還是空的」那一刻
             await page.click(".planner-sim-bar >> text=1×");

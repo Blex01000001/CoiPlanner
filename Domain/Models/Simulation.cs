@@ -4,15 +4,18 @@ namespace CoiPlanner.Domain.Models;
 
 /// <summary>
 /// 模擬參數。這些是使用者暫訂的模擬設定，不是遊戲資料：
-/// 暫存容量為 1 分鐘的額定用量、運送 0.5 秒、輸入齊了 0.5 秒後開始生產（讓啟動過程看得出先後順序）。
+/// 暫存容量為每台機器 1/3 分鐘額定用量（向上取整）、運送 0.5 秒、輸入齊了 0.5 秒後開始生產（讓啟動過程看得出先後順序）。
 /// </summary>
 public sealed record SimulationSettings
 {
     /// <summary>每一步模擬的秒數。</summary>
     public double StepSeconds { get; init; } = 0.1;
 
-    /// <summary>每個輸入／輸出暫存區可存放幾分鐘的額定用量。</summary>
-    public double BufferMinutes { get; init; } = 1;
+    /// <summary>
+    /// 每台機器每個輸入／輸出暫存區可存放幾分鐘的額定用量，結果向上取整數（多台機器的容量相加）。
+    /// 使用者暫訂為 1/3 分鐘；遊戲中各建築的容量比例不同，之後會改成每個建築自己的資料。
+    /// </summary>
+    public double BufferMinutes { get; init; } = 1.0 / 3;
 
     /// <summary>物品在連線上運送的秒數。</summary>
     public double TransitSeconds { get; init; } = 0.5;
