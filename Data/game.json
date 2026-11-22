@@ -7,7 +7,7 @@
     { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose", "color": "#b5651d" },
     { "id": "molten_iron", "name": "鐵水", "unit": "單位", "kind": "molten", "color": "#ff7043" },
     { "id": "crushed_iron_ore", "name": "碎鐵礦石", "unit": "單位", "kind": "loose", "color": "#d08a4e" },
-    { "id": "lime", "name": "石灰", "unit": "單位", "kind": "loose", "color": "#e8e4c9" },
+    { "id": "lime", "name": "石灰石", "unit": "單位", "kind": "loose", "color": "#e8e4c9" },
     { "id": "slag", "name": "爐渣", "unit": "單位", "kind": "loose", "color": "#8e6e53" },
     { "id": "exhaust", "name": "廢氣", "unit": "單位", "kind": "fluid", "color": "#8a8f94" },
     { "id": "oxygen", "name": "氧氣", "unit": "單位", "kind": "fluid", "color": "#80deea" },
@@ -39,6 +39,13 @@
     { "id": "salt", "name": "鹽", "unit": "單位", "kind": "loose", "color": "#eceff1" },
     { "id": "chlorine", "name": "氯氣", "unit": "單位", "kind": "fluid", "color": "#c0ca33" },
     { "id": "ammonia", "name": "氨", "unit": "單位", "kind": "fluid", "color": "#4db6ac" },
+    { "id": "fertilizer_1", "name": "肥料I", "unit": "單位", "kind": "loose", "color": "#8bc34a" },
+    { "id": "fertilizer_organic", "name": "肥料(有機)", "unit": "單位", "kind": "loose", "color": "#6d4c41" },
+    { "id": "paper", "name": "紙張", "unit": "單位", "kind": "unit", "color": "#fff8e1" },
+    { "id": "edible_oil", "name": "食用油", "unit": "單位", "kind": "fluid", "color": "#ffd54f" },
+    { "id": "graphite", "name": "石墨", "unit": "單位", "kind": "loose", "color": "#455a64" },
+    { "id": "plastic_pellets", "name": "塑膠粒", "unit": "單位", "kind": "loose", "color": "#ec407a" },
+    { "id": "disinfectant", "name": "消毒劑", "unit": "單位", "kind": "fluid", "color": "#26c6da" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -177,7 +184,7 @@
     },
     {
       "id": "mine_lime",
-      "name": "採石灰",
+      "name": "採石灰石",
       "inputs": [],
       "outputs": [ { "productId": "lime", "quantity": 60 } ],
       "cycleSeconds": 60
@@ -356,6 +363,106 @@
       "cycleSeconds": 60
     },
     {
+      "id": "crack_heavy_to_diesel",
+      "name": "裂解重油(產柴油)",
+      "inputs": [ { "productId": "heavy_oil", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 36 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_heavy_to_naphtha",
+      "name": "裂解重油(產石腦油)",
+      "inputs": [ { "productId": "heavy_oil", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "naphtha", "quantity": 36 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_naphtha_to_diesel",
+      "name": "裂解石腦油(產柴油)",
+      "inputs": [ { "productId": "naphtha", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_diesel_to_naphtha",
+      "name": "裂解柴油(產石腦油)",
+      "inputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "steam_high", "quantity": 3 } ],
+      "outputs": [ { "productId": "naphtha", "quantity": 18 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_naphtha_to_gas",
+      "name": "裂解石腦油(產燃氣)",
+      "inputs": [ { "productId": "naphtha", "quantity": 24 }, { "productId": "steam_high", "quantity": 2 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 24 }, { "productId": "hydrogen", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_gas_to_diesel",
+      "name": "轉化燃氣(產柴油)",
+      "inputs": [ { "productId": "fuel_gas", "quantity": 36 }, { "productId": "oxygen", "quantity": 18 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "water", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "reform_hydrogen",
+      "name": "重整燃氣製氫",
+      "inputs": [ { "productId": "fuel_gas", "quantity": 24 }, { "productId": "steam_high", "quantity": 2 } ],
+      "outputs": [ { "productId": "hydrogen", "quantity": 28 }, { "productId": "carbon_dioxide", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_fertilizer",
+      "name": "製造肥料I",
+      "inputs": [ { "productId": "ammonia", "quantity": 12 }, { "productId": "oxygen", "quantity": 18 } ],
+      "outputs": [ { "productId": "fertilizer_1", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_fertilizer_organic",
+      "name": "製造肥料I(有機肥料)",
+      "inputs": [ { "productId": "fertilizer_organic", "quantity": 30 }, { "productId": "ammonia", "quantity": 12 }, { "productId": "oxygen", "quantity": 18 } ],
+      "outputs": [ { "productId": "fertilizer_1", "quantity": 45 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "synthesize_ammonia",
+      "name": "合成氨",
+      "inputs": [ { "productId": "hydrogen", "quantity": 6 }, { "productId": "nitrogen", "quantity": 12 } ],
+      "outputs": [ { "productId": "ammonia", "quantity": 6 } ],
+      "cycleSeconds": 60,
+      "powerMultiplier": 2
+    },
+    {
+      "id": "make_paper",
+      "name": "製造紙張",
+      "inputs": [ { "productId": "wood_chips", "quantity": 6 }, { "productId": "lime", "quantity": 1.5 }, { "productId": "steam_high", "quantity": 1.5 } ],
+      "outputs": [ { "productId": "paper", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_diesel_biofuel",
+      "name": "生質柴油",
+      "inputs": [ { "productId": "ethanol", "quantity": 7.5 }, { "productId": "edible_oil", "quantity": 15 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_graphite",
+      "name": "製造石墨",
+      "inputs": [ { "productId": "coal", "quantity": 4 }, { "productId": "chlorine", "quantity": 12 } ],
+      "outputs": [ { "productId": "graphite", "quantity": 12 }, { "productId": "sour_water", "quantity": 4 } ],
+      "cycleSeconds": 60,
+      "powerMultiplier": 2
+    },
+    {
+      "id": "make_disinfectant",
+      "name": "製造消毒劑",
+      "inputs": [ { "productId": "ethanol", "quantity": 4.5 }, { "productId": "plastic_pellets", "quantity": 3 } ],
+      "outputs": [ { "productId": "disinfectant", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_cement",
       "name": "燒製水泥",
       "inputs": [
@@ -377,7 +484,7 @@
     { "id": "boiler_gas", "name": "鍋爐(燃氣)", "category": "蒸氣", "recipeIds": [ "boil_steam_light_oil", "boil_steam_naphtha", "boil_steam_ethanol", "boil_steam_fuel_gas", "boil_steam_hydrogen", "boil_steam_heavy_oil", "boil_steam_medium_oil" ] },
     { "id": "boiler_electric", "name": "鍋爐(電)", "category": "蒸氣", "recipeIds": [ "boil_steam_electric" ] },
     { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
-    { "id": "lime_quarry", "name": "石灰場", "category": "採集", "recipeIds": [ "mine_lime" ] },
+    { "id": "lime_quarry", "name": "石灰石場", "category": "採集", "recipeIds": [ "mine_lime" ] },
     { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "recipeIds": [ "crush_iron_ore" ] },
     { "id": "blast_furnace_2", "name": "高爐II", "category": "冶金", "recipeIds": [ "smelt_iron_blast" ] },
     { "id": "air_separator", "name": "空氣分離器", "category": "加工", "recipeIds": [ "separate_air" ] },
@@ -394,6 +501,9 @@
     { "id": "diesel_generator_2", "name": "柴油發電機2", "category": "電力", "powerGenerationKw": 5000, "recipeIds": [ "generate_diesel_2" ] },
     { "id": "evaporation_pond_heated", "name": "蒸發池(加熱)", "category": "加工", "powerUseKw": 250, "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "evaporate_seawater_brine", "evaporate_seawater_salt", "evaporate_brine" ] },
     { "id": "electrolyzer_2", "name": "電解槽II", "category": "加工", "powerUseKw": 1100, "workers": 3, "maintenanceType": "維修II", "maintenancePerMinute": 0.9, "recipeIds": [ "electrolyze_brine", "electrolyze_water", "electrolyze_ammonia" ] },
+    { "id": "cracking_unit", "name": "裂解裝置", "category": "石化", "powerUseKw": 160, "workers": 12, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "crack_heavy_to_diesel", "crack_heavy_to_naphtha", "crack_naphtha_to_diesel", "crack_diesel_to_naphtha", "crack_naphtha_to_gas", "crack_gas_to_diesel" ] },
+    { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] },
+    { "id": "chemical_plant", "name": "化工廠", "category": "加工", "powerUseKw": 250, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "make_fertilizer", "make_fertilizer_organic", "synthesize_ammonia", "make_paper", "make_diesel_biofuel", "make_graphite", "make_disinfectant" ] },
     { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "powerUseKw": 400, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "desalinate_ultra_steam", "desalinate", "desalinate_low_steam" ] }
   ],
   "transports": [

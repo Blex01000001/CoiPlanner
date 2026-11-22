@@ -231,4 +231,53 @@ public class RealGameDataTests
         Assert.Equal(maintenance, machine.MaintenancePerMinute);
         Assert.Equal(0, machine.PowerUseKw);
     }
+
+    private static void AssertRecipe(string id, Dictionary<string, double> inputs, Dictionary<string, double> outputs, double powerMultiplier = 1)
+    {
+        var r = Recipe(id);
+        Assert.Equal(inputs, Amounts(r.Inputs));
+        Assert.Equal(outputs, Amounts(r.Outputs));
+        Assert.Equal(powerMultiplier, r.PowerMultiplier);
+    }
+
+    [Fact]
+    public void CrackingUnit_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "cracking_unit");
+        Assert.Equal((12, 160, "維修I", 2.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(6, m.RecipeIds.Count);
+
+        AssertRecipe("crack_heavy_to_diesel", new() { ["heavy_oil"] = 24, ["hydrogen"] = 9 }, new() { ["diesel"] = 36, ["fuel_gas"] = 6 });
+        AssertRecipe("crack_heavy_to_naphtha", new() { ["heavy_oil"] = 24, ["hydrogen"] = 9 }, new() { ["naphtha"] = 36, ["fuel_gas"] = 6 });
+        AssertRecipe("crack_naphtha_to_diesel", new() { ["naphtha"] = 24, ["hydrogen"] = 9 }, new() { ["diesel"] = 24, ["fuel_gas"] = 6 });
+        AssertRecipe("crack_diesel_to_naphtha", new() { ["diesel"] = 24, ["steam_high"] = 3 }, new() { ["naphtha"] = 18, ["fuel_gas"] = 6 });
+        AssertRecipe("crack_naphtha_to_gas", new() { ["naphtha"] = 24, ["steam_high"] = 2 }, new() { ["fuel_gas"] = 24, ["hydrogen"] = 8 });
+        AssertRecipe("crack_gas_to_diesel", new() { ["fuel_gas"] = 36, ["oxygen"] = 18 }, new() { ["diesel"] = 24, ["water"] = 6 });
+    }
+
+    [Fact]
+    public void HydrogenReformer_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "hydrogen_reformer");
+        Assert.Equal((8, 400, "維修I", 1.9), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+
+        AssertRecipe("reform_hydrogen", new() { ["fuel_gas"] = 24, ["steam_high"] = 2 }, new() { ["hydrogen"] = 28, ["carbon_dioxide"] = 24 });
+    }
+
+    [Fact]
+    public void ChemicalPlant_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "chemical_plant");
+        Assert.Equal((8, 250, "維修I", 1.9), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(7, m.RecipeIds.Count);
+
+        AssertRecipe("make_fertilizer", new() { ["ammonia"] = 12, ["oxygen"] = 18 }, new() { ["fertilizer_1"] = 30 });
+        AssertRecipe("make_fertilizer_organic", new() { ["fertilizer_organic"] = 30, ["ammonia"] = 12, ["oxygen"] = 18 }, new() { ["fertilizer_1"] = 45 });
+        AssertRecipe("synthesize_ammonia", new() { ["hydrogen"] = 6, ["nitrogen"] = 12 }, new() { ["ammonia"] = 6 }, powerMultiplier: 2);
+        AssertRecipe("make_paper", new() { ["wood_chips"] = 6, ["lime"] = 1.5, ["steam_high"] = 1.5 }, new() { ["paper"] = 12 });
+        AssertRecipe("make_diesel_biofuel", new() { ["ethanol"] = 7.5, ["edible_oil"] = 15 }, new() { ["diesel"] = 27 });
+        AssertRecipe("make_graphite", new() { ["coal"] = 4, ["chlorine"] = 12 }, new() { ["graphite"] = 12, ["sour_water"] = 4 }, powerMultiplier: 2);
+        AssertRecipe("make_disinfectant", new() { ["ethanol"] = 4.5, ["plastic_pellets"] = 3 }, new() { ["disinfectant"] = 12 });
+        Assert.Equal("石灰石", Data.Products.Single(p => p.Id == "lime").Name);
+    }
 }
