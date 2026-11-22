@@ -49,7 +49,10 @@ public sealed class PlanCalculator
                 recipe.Inputs.Select(i => new ProductRate(i.ProductId, recipe.InputPerMinute(i.ProductId) * node.Count)).ToList(),
                 recipe.Outputs.Select(o => new ProductRate(o.ProductId, recipe.OutputPerMinute(o.ProductId) * node.Count)).ToList(),
                 machine.PowerUseKw * node.Count,
-                machine.PowerGenerationKw * node.Count));
+                machine.PowerGenerationKw * node.Count,
+                machine.Workers * node.Count,
+                machine.MaintenanceType,
+                machine.MaintenancePerMinute * node.Count));
         }
 
         foreach (var source in plan.Sources)

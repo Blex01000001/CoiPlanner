@@ -119,4 +119,25 @@ public class PlanCalculatorTests
 
         Assert.Contains(result.Issues, i => i.Message.Contains("同一個節點"));
     }
+
+    [Fact]
+    public void Calculate_SumsWorkersAndMaintenanceByCount()
+    {
+        // demo_press：每台 2 工人、維修 M1 0.5/分
+        var result = _calculator.Calculate(new ProductionPlan { Nodes = [Press("p1", count: 3), Press("p2"), Furnace()] });
+
+        Assert.Equal(8, result.Workers);
+        var maintenance = Assert.Single(result.Maintenance);
+        Assert.Equal("M1", maintenance.Type);
+        Assert.Equal(2, maintenance.PerMinute);
+    }
+
+    [Fact]
+    public void Calculate_NoWorkersOrMaintenance_TotalsAreEmpty()
+    {
+        var result = _calculator.Calculate(new ProductionPlan { Nodes = [Furnace()] });
+
+        Assert.Equal(0, result.Workers);
+        Assert.Empty(result.Maintenance);
+    }
 }

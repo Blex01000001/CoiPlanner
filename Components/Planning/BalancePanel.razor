@@ -8,6 +8,22 @@
     <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
         每分鐘的實際產出與消耗（最近 @Format(AverageSeconds) 秒平均）。
     </MudText>
+    @if (Result is { Workers: > 0 } or { Maintenance.Count: > 0 })
+    {
+        <MudText Typo="Typo.subtitle2" Class="mb-1">人力與維修（全部機器合計）</MudText>
+        <MudSimpleTable Dense="true" Elevation="0" Class="mb-3">
+            <tbody>
+                @if (Result.Workers > 0)
+                {
+                    <tr><td>工人</td><td style="text-align:right">@FormatRate(Result.Workers)</td></tr>
+                }
+                @foreach (var m in Result.Maintenance)
+                {
+                    <tr><td>@m.Type（每分鐘）</td><td style="text-align:right">@FormatRate(m.PerMinute)</td></tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    }
     @if (Snapshot is { Power.DemandKw: > 0 } or { Power.SupplyKw: > 0 })
     {
         <MudText Typo="Typo.subtitle2" Class="mb-1">電力（kW）</MudText>
@@ -66,6 +82,8 @@
 </MudPaper>
 
 @code {
+    /// <summary>規劃檢查結果；工人與維修只加總額定值，不隨模擬變化。</summary>
+    [Parameter] public PlanResult? Result { get; set; }
     [Parameter] public SimulationSnapshot? Snapshot { get; set; }
     [Parameter] public IReadOnlyDictionary<string, Product> Products { get; set; } = new Dictionary<string, Product>();
     [Parameter] public double AverageSeconds { get; set; }
