@@ -104,9 +104,26 @@ public class RealGameDataTests
     public void SeawaterAndDesalinator_MatchUserData()
     {
         Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108 }, Amounts(RecipeOf("seawater_pump").Outputs));
-        var d = RecipeOf("thermal_desalinator");
-        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_high"] = 12 }, Amounts(d.Inputs));
-        Assert.Equal(new Dictionary<string, double> { ["water"] = 78, ["brine"] = 42 }, Amounts(d.Outputs));
+
+        var machine = Data.Machines.Single(m => m.Id == "thermal_desalinator");
+        Assert.Equal(3, machine.RecipeIds.Count);
+        Assert.Equal(400, machine.PowerUseKw);
+        Assert.Equal(4, machine.Workers);
+        Assert.Equal("維修I", machine.MaintenanceType);
+        Assert.Equal(0.2, machine.MaintenancePerMinute);
+
+        var low = Recipe("desalinate");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["low_steam"] = 12 }, Amounts(low.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 78, ["brine"] = 42 }, Amounts(low.Outputs));
+
+        var high = Recipe("desalinate_high_steam");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 108, ["steam_high"] = 6 }, Amounts(high.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 72, ["brine"] = 42 }, Amounts(high.Outputs));
+
+        var spent = Recipe("desalinate_spent_steam");
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 72, ["spent_gas"] = 24 }, Amounts(spent.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 72, ["brine"] = 24 }, Amounts(spent.Outputs));
+        Assert.Equal("乏汽", Data.Products.Single(p => p.Id == "spent_gas").Name);
     }
 
     [Fact]
