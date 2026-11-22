@@ -131,4 +131,14 @@ public class PowerTests
         var issue = Assert.Single(Check(plan).Issues, i => i.EdgeIndex == 0 && i.Message.Contains("背景統計值"));
         Assert.Contains("Smog", issue.Message);
     }
+
+    [Fact]
+    public void Calculator_RecipePowerMultiplier_ScalesPowerUse()
+    {
+        var fast = new Node { Id = "d", MachineId = "demo_drill", RecipeId = "mine_alpha_fast", Count = 2 };
+
+        // 每台 150 kW × 配方倍率 4 × 2 台
+        Assert.Equal(1200, Check(new ProductionPlan { Nodes = [fast] }).PowerUseKw);
+        Assert.Equal(300, Check(new ProductionPlan { Nodes = [Drill("d", 2)] }).PowerUseKw);
+    }
 }

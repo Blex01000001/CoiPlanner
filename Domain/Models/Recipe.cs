@@ -9,6 +9,9 @@ public sealed record Recipe
     public IReadOnlyList<ItemAmount> Outputs { get; init; } = [];
     public required double CycleSeconds { get; init; }
 
+    /// <summary>執行這個配方時，機器耗電（<see cref="Machine.PowerUseKw"/>）的倍率；發電量不受影響。</summary>
+    public double PowerMultiplier { get; init; } = 1;
+
     /// <summary>單台機器每分鐘的週期數。</summary>
     public double CyclesPerMinute => 60.0 / CycleSeconds;
 

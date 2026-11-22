@@ -177,4 +177,58 @@ public class RealGameDataTests
         Assert.Equal(0.2, pump.MaintenancePerMinute);
         Assert.Equal(100, pump.PowerUseKw);
     }
+
+    [Fact]
+    public void EvaporationPond_MatchesUserData()
+    {
+        var pond = Data.Machines.Single(m => m.Id == "evaporation_pond_heated");
+        Assert.Equal(6, pond.Workers);
+        Assert.Equal(250, pond.PowerUseKw);
+        Assert.Equal("維修I", pond.MaintenanceType);
+        Assert.Equal(0.2, pond.MaintenancePerMinute);
+        Assert.Equal(3, pond.RecipeIds.Count);
+
+        Assert.Equal(new Dictionary<string, double> { ["seawater"] = 96 }, Amounts(Recipe("evaporate_seawater_brine").Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["brine"] = 48 }, Amounts(Recipe("evaporate_seawater_brine").Outputs));
+        Assert.Equal(new Dictionary<string, double> { ["salt"] = 6 }, Amounts(Recipe("evaporate_seawater_salt").Outputs));
+        Assert.Equal(new Dictionary<string, double> { ["brine"] = 96 }, Amounts(Recipe("evaporate_brine").Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["salt"] = 12 }, Amounts(Recipe("evaporate_brine").Outputs));
+    }
+
+    [Fact]
+    public void Electrolyzer_MatchesUserData()
+    {
+        var machine = Data.Machines.Single(m => m.Id == "electrolyzer_2");
+        Assert.Equal(3, machine.Workers);
+        Assert.Equal(1100, machine.PowerUseKw);
+        Assert.Equal("維修II", machine.MaintenanceType);
+        Assert.Equal(0.9, machine.MaintenancePerMinute);
+
+        Assert.Equal(new Dictionary<string, double> { ["brine"] = 72 }, Amounts(Recipe("electrolyze_brine").Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["chlorine"] = 48 }, Amounts(Recipe("electrolyze_brine").Outputs));
+
+        var water = Recipe("electrolyze_water");
+        Assert.Equal(new Dictionary<string, double> { ["water"] = 8 }, Amounts(water.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["oxygen"] = 32, ["hydrogen"] = 16 }, Amounts(water.Outputs));
+        Assert.Equal(4, water.PowerMultiplier);
+        Assert.Equal(1, Recipe("electrolyze_brine").PowerMultiplier);
+
+        var ammonia = Recipe("electrolyze_ammonia");
+        Assert.Equal(new Dictionary<string, double> { ["ammonia"] = 48 }, Amounts(ammonia.Inputs));
+        Assert.Equal(new Dictionary<string, double> { ["nitrogen"] = 96, ["hydrogen"] = 48 }, Amounts(ammonia.Outputs));
+    }
+
+    [Theory]
+    [InlineData("distillation_1", 6, 1.4)]
+    [InlineData("distillation_2", 8, 1.9)]
+    [InlineData("distillation_3", 8, 2.8)]
+    public void Distillation_WorkersAndMaintenance_MatchUserData(string id, double workers, double maintenance)
+    {
+        var machine = Data.Machines.Single(m => m.Id == id);
+
+        Assert.Equal(workers, machine.Workers);
+        Assert.Equal("維修I", machine.MaintenanceType);
+        Assert.Equal(maintenance, machine.MaintenancePerMinute);
+        Assert.Equal(0, machine.PowerUseKw);
+    }
 }
