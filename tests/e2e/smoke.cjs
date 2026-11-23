@@ -48,8 +48,30 @@ async function main() {
             }
         });
 
-        await step("資料瀏覽：各分頁可切換且沒有錯誤", async () => {
+        await step("起始頁是產線規劃；左側按鈕可切換到資料瀏覽再回來", async () => {
             await page.goto(BASE);
+            await page.waitForSelector(".planner canvas");
+            await page.click('.app-nav [aria-label="資料瀏覽"]');
+            await page.waitForSelector(".mud-tab");
+            assertEqual(new URL(page.url()).pathname, "/data", "資料瀏覽的網址");
+            assertEqual(await page.title(), "資料瀏覽 - CoiPlanner", "資料瀏覽的頁籤標題");
+            await page.click('.app-nav [aria-label="產線規劃"]');
+            await page.waitForSelector(".planner canvas");
+            assertEqual(await page.title(), "產線規劃 - CoiPlanner", "產線規劃的頁籤標題");
+            assertEqual(await page.locator(".app-nav button, .app-nav a").count(), 2, "左側按鈕數量");
+        });
+
+        await step("頁籤圖示：favicon.svg、PNG 與 apple-touch-icon 都能載入", async () => {
+            const hrefs = await page.locator('head link[rel="icon"], head link[rel="apple-touch-icon"]').evaluateAll(els => els.map(e => e.getAttribute("href")));
+            assertEqual(hrefs.sort().join(","), "apple-touch-icon.png,favicon.png,favicon.svg", "icon 連結");
+            for (const href of hrefs) {
+                const res = await fetch(`${BASE}/${href}`);
+                assert(res.ok && (res.headers.get("content-type") ?? "").startsWith("image/"), `${href}：${res.status} ${res.headers.get("content-type")}`);
+            }
+        });
+
+        await step("資料瀏覽：各分頁可切換且沒有錯誤", async () => {
+            await page.goto(`${BASE}/data`);
             await page.waitForSelector(".mud-tab");
             for (const tab of await page.locator(".mud-tab").all()) await tab.click();
             const tabs = await page.locator(".mud-tab").allInnerTexts();

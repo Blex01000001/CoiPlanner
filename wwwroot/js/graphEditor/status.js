@@ -76,8 +76,10 @@ export class StatusMethods {
             return { text: `供應 ${pct}`, color: STATUS_COLORS.source };
         switch (state.status) {
             case "Starved": {
-                const names = state.missingInputs.map(id => this.productsById.get(id)?.name ?? id).join("、");
-                return { text: `停擺：缺${names}`, color: STATUS_COLORS.stopped };
+                // 缺的可能是物料，也可能是電（只缺電時物料清單是空的）
+                const missing = state.missingInputs.map(id => this.productsById.get(id)?.name ?? id);
+                if (state.noPower) missing.push("電力");
+                return { text: `停擺：缺${missing.join("、")}`, color: STATUS_COLORS.stopped };
             }
             case "Blocked":
                 return { text: "停擺：輸出堵塞", color: STATUS_COLORS.stopped };

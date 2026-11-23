@@ -1,5 +1,4 @@
 @inherits LayoutComponentBase
-@implements IDisposable
 @inject NavigationManager Navigation
 
 <MudThemeProvider />
@@ -8,15 +7,13 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    @* 不使用頂端 App Bar，讓畫面（尤其是產線規劃的畫布）佔滿整個視窗；選單由左上角的浮動按鈕開啟 *@
-    <MudIconButton Class="app-menu-button" Icon="@Icons.Material.Filled.Menu" Variant="Variant.Filled" Color="Color.Primary"
-                   Size="Size.Small" OnClick="@(() => _drawerOpen = true)" aria-label="開啟選單" />
-    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Temporary" Elevation="2">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">CoiPlanner</MudText>
-        </MudDrawerHeader>
-        <NavMenu />
-    </MudDrawer>
+    @* 不使用頂端 App Bar，讓畫面（尤其是產線規劃的畫布）佔滿整個視窗；換頁按鈕浮在左側 *@
+    <div class="app-nav">
+        <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Variant="Variant.Filled" Size="Size.Small"
+                       Color="@(OnPlanner ? Color.Primary : Color.Default)" Class="@(OnPlanner ? null : "app-nav-idle")" Href="@Navigation.BaseUri" title="產線規劃" aria-label="產線規劃" />
+        <MudIconButton Icon="@Icons.Material.Filled.MenuBook" Variant="Variant.Filled" Size="Size.Small"
+                       Color="@(OnPlanner ? Color.Default : Color.Primary)" Class="@(OnPlanner ? "app-nav-idle" : null)" Href="@($"{Navigation.BaseUri}data")" title="資料瀏覽" aria-label="資料瀏覽" />
+    </div>
     <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="app-content py-4">
         @Body
     </MudContainer>
@@ -29,16 +26,6 @@
 </div>
 
 @code {
-    private bool _drawerOpen;
-
-    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
-
-    // 選單是浮在畫面上的抽屜，換頁後自動收起
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        _drawerOpen = false;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+    // 產線規劃是起始頁（/ 與 /planner），其餘（目前只有 /data）是資料瀏覽
+    private bool OnPlanner => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/') is "" or "planner";
 }
