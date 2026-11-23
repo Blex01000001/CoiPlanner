@@ -36,16 +36,25 @@ h1:focus {
         content: "發生錯誤。"
     }
 
-/* 沒有 App Bar：選單按鈕固定在左上角，一般頁面的內容往下留出按鈕的空間 */
-.app-menu-button {
-    position: fixed !important;
+/* 沒有 App Bar：換頁按鈕浮在左側，一般頁面的內容往右留出按鈕的空間 */
+.app-nav {
+    position: fixed;
     top: 12px;
     left: 12px;
     z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 目前不在該頁時的按鈕：淺灰色，深色畫布上才看得到（和規劃頁右側按鈕相同） */
+.app-nav-idle {
+    background-color: #e8e8e8 !important;
+    color: #424242 !important;
 }
 
 .app-content {
-    padding-top: 56px !important;
+    padding-left: 68px !important;
 }
 
 /* 產線規劃：畫布佔滿整個視窗，結果面板浮在右上角 */
