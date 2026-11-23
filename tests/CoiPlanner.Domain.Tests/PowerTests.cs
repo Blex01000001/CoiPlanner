@@ -166,4 +166,41 @@ public class PowerTests
 
         Assert.False(sim.Snapshot().Nodes.Single(n => n.NodeId == "d").NoPower);
     }
+
+    [Fact]
+    public void PowerDisabled_MachinesRunWithoutPower_ButBalanceStillComputed()
+    {
+        // 沒有發電機：電力啟用時鑽機停擺
+        var plan = new ProductionPlan { Nodes = [Drill("d")] };
+        var sim = Simulate(plan);
+        sim.Run(10);
+        Assert.True(sim.Snapshot().Nodes.Single().NoPower);
+
+        // 停用電力：鑽機照常運轉，但需求與供電比例仍照算
+        sim.PowerEnabled = false;
+        sim.Run(10);
+
+        var snapshot = sim.Snapshot();
+        var drill = snapshot.Nodes.Single();
+        Assert.False(drill.NoPower);
+        Assert.Equal(NodeStatus.Running, drill.Status);
+        Near(12, drill.Outputs[0].ActualPerMinute, 0.5);
+        Assert.False(snapshot.Power.Enabled);
+        Near(150, snapshot.Power.DemandKw, 1);
+        Assert.Equal(0, snapshot.Power.SupplyKw);
+        Assert.Equal(0, snapshot.Power.Satisfaction);
+    }
+
+    [Fact]
+    public void PowerDisabled_ThenEnabled_StopsAgain()
+    {
+        var sim = Simulate(new ProductionPlan { Nodes = [Drill("d")] });
+        sim.PowerEnabled = false;
+        sim.Run(10);
+        sim.PowerEnabled = true;
+        sim.Run(10);
+
+        Assert.True(sim.Snapshot().Nodes.Single().NoPower);
+        Assert.True(sim.Snapshot().Power.Enabled);
+    }
 }

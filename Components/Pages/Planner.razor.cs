@@ -40,6 +40,8 @@ public partial class Planner
     private bool _running = true;
     private int _speed = 1;
     private bool _flowDots;
+    // 電力停用時機器不受供電影響（物料平衡仍照算）；只在這個頁面的畫面上有效，不存進規劃檔
+    private bool _powerEnabled = true;
     private int _tick;
     private readonly CancellationTokenSource _loopCts = new();
     // 匯入或清空後，下一次收到畫布的規劃時讓模擬從頭開始
@@ -123,6 +125,12 @@ public partial class Planner
 
     // 沒開啟的面板按鈕用淺色底，在深色畫布上才看得到
     private string IdleClass(SidePanel panel) => _panel == panel ? "" : "planner-side-button-idle";
+
+    private void SetPowerEnabled(bool enabled)
+    {
+        _powerEnabled = enabled;
+        _sim.PowerEnabled = enabled;
+    }
 
     private async Task SetFlowDotsAsync(bool dots)
     {
@@ -296,21 +304,23 @@ public partial class Planner
                 MachineCategory = x.Machine.Category,
                 RecipeId = x.Recipe.Id,
                 RecipeName = x.Recipe.Name,
-                Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),
-                Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId)),
+                Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId, x.Recipe.InputPerMinute(i.ProductId))),
+                Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId, x.Recipe.OutputPerMinute(o.ProductId))),
             }),
         // 每個物品（背景統計值除外）都可以放一個資源來源節點
         Products = Data.Products.Where(p => !p.Background).Select(p => Slot(p.Id)),
         Transports = Data.Transports.Select(t => new { t.Id, t.Name, t.Kind, t.TiersPerMinute }),
     };
 
-    private object Slot(string productId) => new
+    /// <summary>perMinute：單台機器每分鐘的量（配方的插槽才有；資源來源沒有）。</summary>
+    private object Slot(string productId, double? perMinute = null) => new
     {
         ProductId = productId,
         Name = _products[productId].Name,
         Unit = _products[productId].Unit,
         Kind = _products[productId].Kind,
         Color = _products[productId].Color,
+        PerMinute = perMinute,
     };
 
     private static bool IsEmpty(ProductionPlan plan) =>

@@ -27,6 +27,10 @@
     @if (Snapshot is { Power.DemandKw: > 0 } or { Power.SupplyKw: > 0 })
     {
         <MudText Typo="Typo.subtitle2" Class="mb-1">電力（kW）</MudText>
+        @if (!Snapshot.Power.Enabled)
+        {
+            <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-1">電力已停用：機器不受供電影響，下表仍照算。</MudText>
+        }
         <MudSimpleTable Dense="true" Elevation="0" Class="mb-3">
             <thead>
                 <tr>
@@ -40,7 +44,7 @@
                     <td style="text-align:right">@FormatRate(Snapshot.Power.SupplyKw)</td>
                     <td style="text-align:right">@FormatRate(Snapshot.Power.DemandKw)</td>
                     <td style="text-align:right">
-                        <MudText Typo="Typo.body2" Color="@(Snapshot.Power.Satisfaction < 0.999 ? Color.Error : Color.Success)">
+                        <MudText Typo="Typo.body2" Color="@(Snapshot.Power.Satisfaction < 0.999 ? (Snapshot.Power.Enabled ? Color.Error : Color.Warning) : Color.Success)">
                             @((Snapshot.Power.Satisfaction * 100).ToString("0"))%
                         </MudText>
                     </td>

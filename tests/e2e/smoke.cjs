@@ -207,6 +207,72 @@ async function main() {
             await page.click('[aria-label="物料平衡面板"]');
         });
 
+        await step("拖曳連線到空白處放開：跳窗列出可接的節點，可搜尋，點選後新增並連線（輸出端找消耗者、輸入端找供應者）", async () => {
+            const dialog = page.getByRole("dialog", { name: "可連接的節點" });
+            const drag = async (from, to) => {
+                await page.mouse.move(...from);
+                await page.mouse.down();
+                await page.mouse.move(...to, { steps: 12 });
+                await page.mouse.up();
+            };
+
+            // 輸出端：海水泵（節點在 40,100）的海水輸出 → 找吃海水的機器
+            await dropFile("pump.json");
+            await savedPlan(p => p.nodes.length === 1);
+            await drag([292, 114], [560, 360]);
+            await dialog.waitFor();
+            const text = await dialog.innerText();
+            for (const expected of ["蒸發池(加熱) · 蒸發海水(製鹽)", "熱脫鹽器 · 熱脫鹽(高壓蒸汽)", "消耗 108/分（每台）"])
+                assert(text.includes(expected), `跳窗內容缺「${expected}」：${text}`);
+            assert(!text.includes("資源 ·"), "輸出端不該列出資源來源");
+            await dialog.getByRole("searchbox").fill("製鹽");
+            assertEqual(await dialog.locator(".link-popup-item:visible").count(), 1, "搜尋「製鹽」後的項目數");
+            await page.keyboard.press("Escape");
+            await dialog.waitFor({ state: "detached" });
+            assertEqual((await savedPlan()).nodes.length, 1, "按 Esc 不該新增節點");
+
+            await drag([292, 114], [560, 360]);
+            await dialog.waitFor();
+            await dialog.getByRole("button", { name: /蒸發海水\(製鹽\)/ }).click();
+            const linked = await savedPlan(p => p.nodes.length === 2 && p.edges.length === 1);
+            assertEqual(linked.edges[0].productId, "seawater", "新連線的物品");
+            assertEqual(linked.nodes.find(n => n.machineId === "evaporation_pond_heated").recipeId, "evaporate_seawater_salt", "新增的節點");
+
+            // 輸入端：熱脫鹽器（節點在 440,140）的第二個輸入（高壓蒸汽）→ 找供應者，含資源來源
+            await dropFile("lone.json");
+            await savedPlan(p => p.nodes.length === 1 && p.nodes[0].machineId === "thermal_desalinator");
+            await drag([450, 174], [180, 420]);
+            await dialog.waitFor();
+            assert((await dialog.innerText()).includes("資源 · 蒸汽(高壓)"), "輸入端應列出資源來源");
+            await dialog.getByRole("button", { name: /資源 · 蒸汽\(高壓\)/ }).click();
+            const fed = await savedPlan(p => p.sources.length === 1 && p.edges.length === 1);
+            assertEqual(fed.edges[0].productId, "steam_high", "供應端連線的物品");
+            assertEqual(fed.sources[0].productId, "steam_high", "新增的資源");
+        });
+
+        await step("電力開關：沒有發電機時停擺；停用電力後機器照常運轉，物料平衡的電力仍照算", async () => {
+            await dropFile("pump.json");
+            await savedPlan(p => p.nodes.length === 1 && p.nodes[0].count === 3);
+            await page.click(".planner-sim-bar >> text=20×");
+            await page.click('[aria-label="物料平衡面板"]');
+            const panel = page.locator(".planner-side:not(.d-none)");
+            await panel.getByText("供電比例").waitFor();
+            assert((await panel.innerText()).includes("0%"), "沒有發電機時供電比例應為 0%");
+            assertEqual(await balanceOf("海水").then(b => b?.supply ?? 0), 0, "沒電時海水產出");
+
+            await page.click('[aria-label="切換電力"]');
+            assertEqual(await page.getAttribute('[aria-label="切換電力"]', "aria-pressed"), "false", "停用後的按鈕狀態");
+            await waitForClock(300);
+            await panel.getByText("電力已停用").waitFor();
+            const text = await panel.innerText();
+            assert(/供電比例[\s\S]*0%/.test(text) && /300/.test(text), `停用後電力表仍應照算（需求 300 kW、比例 0%）：${text}`);
+            const sea = await balanceOf("海水");
+            assert(sea && sea.supply > 300, `停用電力後海水應照常產出（3 台 324/分）：${sea?.supply}`);
+
+            await page.click('[aria-label="切換電力"]');
+            await page.click('[aria-label="物料平衡面板"]');
+        });
+
         await step("暫存長條：暫存堆滿的插槽那一行會填上藍色，空的時候不會", async () => {
             // 先用 1× 讓模擬慢慢開始，才量得到「還是空的」那一刻
             await page.click(".planner-sim-bar >> text=1×");
