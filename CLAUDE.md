@@ -1,12 +1,12 @@
 # CoiPlanner：Captain of Industry 產線規劃工具
 
-Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與模擬工具。不連線遊戲，資料來自 `Data/*.json`；規劃畫面是 ComfyUI 風格節點編輯器（@comfyorg/litegraph）。
+Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式整個在瀏覽器執行）＋ MudBlazor 的產線規劃與模擬工具。不連線遊戲，資料來自 `Data/*.json`；規劃畫面是 ComfyUI 風格節點編輯器（@comfyorg/litegraph）。
 **JS 只負責畫面，計算一律在 C# `Domain/`（不依賴 UI，附 xUnit 測試）。** 細節以程式碼與檔案開頭註解為準。
 
 ## 檔案地圖
 | 檔案 | 負責 | 常見修改 |
 |---|---|---|
-| `Data/game.json` | 物品（含運輸型態 `kind`）、配方、機器、運輸方式。啟動時 `GameDataLoader.LoadFromDirectory` 載入全部 `Data/*.json` 並驗證，有錯網站無法啟動 | 新增／刪除機器、配方、物品 |
+| `Data/game.json` | 物品（含運輸型態 `kind`）、配方、機器、運輸方式。建置時全部 `Data/*.json` 編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 載入並驗證，有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
 | `Domain/Models/` | 領域模型。`ProductionPlan.cs`＝規劃檔格式；`Simulation.cs`＝模擬參數與狀態 | 加欄位 |
 | `Domain/Services/PlanCalculator.cs` | 規劃檢查（問題清單）、額定速率、連線運輸上限；**不算實際流量** | 新增檢查規則 |
 | `Domain/Services/ProductionSimulator.cs` | 逐步模擬：實際流量、稼動率、狀態、物料平衡 | 模擬行為 |
@@ -17,8 +17,8 @@ Blazor Web App（.NET 8、Interactive Server）＋ MudBlazor 的產線規劃與�
 | `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`stock.js` 暫存長條、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
 | `Components/Pages/Home.razor` | 資料瀏覽（物品、配方、機器、運輸） | 顯示新資料欄位 |
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左上浮動選單按鈕＋抽屜 | 很少改 |
-| `Components/App.razor` | `<head>`、CSS 版本號（`Versioned`） | 新增 CSS |
-| `Program.cs` | DI、SignalR 上限、提示訊息位置、`logs/crash.log` | 很少改 |
+| `wwwroot/index.html` | 網頁骨架：`<head>`、CSS、啟動 Blazor 的 script | 新增 CSS |
+| `Program.cs` | WebAssembly 啟動、DI、提示訊息位置、載入遊戲資料 | 很少改 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
 | `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
@@ -37,8 +37,9 @@ dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   
 for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法
 tsc -p tsconfig.check.json | grep -E "^wwwroot/js/.*TS(2304|2305|2307|2459|2460|2614|2724|2552)"   # 改 JS 後必跑（2 秒）；列出找不到的名稱或匯出，沒有輸出＝沒問題（需要 tsc，雲端容器內建）
 node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
+# 部署用的是 Release（有裁剪）；改動可能受影響時（JSON 序列化、反射）另跑：dotnet build -c Release && CONFIG=Release node tests/e2e/smoke.cjs
 ```
-- 冒煙測試自己在 5170 埠啟動網站；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
+- 冒煙測試先 `dotnet publish --no-build` 到 `tests/e2e/.output/site`、跑 `scripts/prepare-pages.cjs`（和部署相同的整理），再用內建的 Node 靜態伺服器在 5170 埠提供（和 GitHub Pages 一樣只是檔案）；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
 - **測試全過才 commit，不可為了通過而跳過或刪除測試。**
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
@@ -48,7 +49,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
 5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／stock／flow／viewport／menus.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
-6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`；單一訊息上限 2 MB。
+6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`。
 
 ## 架構決策（不要改回去）
 - **不修改 `wwwroot/lib/litegraph/`**：檔案原樣複製自 npm，才能直接升級；行為差異全在 `graphEditor/` 覆寫。
@@ -56,14 +57,15 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - 運輸方式由物品 `kind` 決定（一種型態只走一種運輸），使用者只選等級；`Edge.Transport` 仍存檔，供 C# 檢查。
 - `PlanCalculator` 只做檢查與額定值，實際數字一律來自 `ProductionSimulator`。原因：使用者選擇「只做模擬」。
 - 模擬規則皆為使用者決定：連續流量、依連線建立順序填滿、沒接線的輸入＝0（停擺）、沒接線的輸出送進倉庫。`SimulationSettings` 預設值（暫存每台 1/3 分鐘向上取整、運送 0.5 秒、啟動 0.5 秒）是使用者暫訂，**改動前先問**。
-- 模擬在 C# 以 100 ms 計時器推進、推給 JS；面板每 `PanelRefreshTicks` 次才重繪。原因：控制 SignalR 流量。
-- `/js/` 以 `Cache-Control: no-cache` 提供（`Program.cs`），CSS 網址加檔案時間版本號（`Versioned`）。原因：`graphEditor` 是多個 ES 模組，子模組的網址沒辦法加版本號；瀏覽器也曾沿用舊 CSS，畫布上方出現白條。冒煙測試會檢查這個標頭。
+- 模擬在 C# 以 100 ms 計時器推進、推給 JS；面板每 `PanelRefreshTicks` 次才重繪。原因：減少面板重繪，瀏覽器端的計算量也不浪費在面板上。
+- 靜態網站，部署在 GitHub Pages（`.github/workflows/deploy.yml`：推到 `feature/domain-model` 時 `dotnet test` → `dotnet publish` → `scripts/prepare-pages.cjs` → 部署）。原因：使用者只有自己用，不想再開 Visual Studio 或維護伺服器。
+- 瀏覽器快取靠版本號：Pages 的檔案會被快取約 10 分鐘，而 `graphEditor` 是多個 ES 模組、子模組網址是固定的，所以 `prepare-pages.cjs` 在**發佈的檔案**裡把版本號（commit SHA）加到模組匯入與 `index.html` 的 CSS／JS 網址，入口模組由 `Planner.razor.cs` 用組件的 `InformationalVersion`（部署時設成 SHA）當版本。原始檔不要手動加版本號；新增 JS 匯入時沿用 `from "./x.js"`／`"../x.js"` 的寫法（腳本只認這個格式）。
+- 網站在子路徑 `/CoiPlanner/` 下：`index.html` 的 `<base href="/">` 只在發佈時換成子路徑，原始檔維持 `/`（本機開發用）；網址一律用相對路徑，不寫開頭的 `/`。`404.html`（複製自 `index.html`）讓直接開 `/planner` 這類網址時由 Blazor 路由接手。
 - `Editor` 的方法分散在 `plan／status／stock／flow／viewport／menus.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。
 - 畫布像素＝CSS 大小 × `devicePixelRatio`，並對前景 ctx `setTransform`（`fitCanvas`）。原因：Windows 顯示比例 125%／150% 時畫面模糊且只畫一部分。
 - 格線在 `onRenderBackground` 畫，不用 `onDrawBackground`。原因：後者會蓋掉群組。格線間距＝Shift 對齊間距 `GRID_SIZE`，對齊以含標題的外框為準。
 - Shift 在 `window` 追蹤並切換 `LiteGraph.alwaysSnapToGrid`。原因：litegraph 只在 canvas 有焦點時才知道 Shift。
 - 保留拖放 .json 匯入（`OnFileDropped`）。原因：VS 偵錯時開檔案選擇視窗可能讓偵錯中斷。
-- SignalR `MaximumReceiveMessageSize` 2 MB。原因：預設 32 KB，規劃稍大就斷線。
 - `PlanPanel` 用 `d-none` 隱藏而非不渲染。原因：`MudFileUpload` 必須一直存在。
 - Razor 迴圈中不要在子元件內容使用 `for` 的迴圈變數，改用 `foreach` 的區域變數。原因：子內容延後渲染，曾在 `Home.razor` 造成索引越界。
 - 沒有頂端 App Bar、提示訊息放在下方中央。原因：畫布滿版，右上是模擬控制列。
@@ -80,9 +82,9 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - `Data/game.json` 的結構由使用者手動維護，同樣視為對外格式。
 
 ## 環境陷阱
-- 停止網站用 `pkill -x CoiPlanner`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。
+- 冒煙測試的伺服器是 Node 程序，異常中斷時用 `pkill -x node`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。
 - 使用者在 Windows＋Visual Studio 開發，瀏覽器為 Brave／Chrome，顯示比例常不是 100%。
-- 使用者的 Windows 會保留一些埠（Hyper-V／WSL／Docker 的 NAT），綁定時出現「存取權限不足」（10013）。ASP.NET 範本預設的 7xxx HTTPS 埠就曾在保留範圍內，所以 HTTPS 開發埠用 5443（`launchSettings.json`）。可用 `netsh interface ipv4 show excludedportrange protocol=tcp` 查；新增埠時避開保留範圍。
+- 使用者的 Windows 會保留一些埠（Hyper-V／WSL／Docker 的 NAT），綁定時出現「存取權限不足」（10013）。ASP.NET 範本預設的 7xxx HTTPS 埠就曾在保留範圍內，所以本機開發伺服器（`dotnet run`）的 HTTPS 埠用 5443（`launchSettings.json`）。可用 `netsh interface ipv4 show excludedportrange protocol=tcp` 查；新增埠時避開保留範圍。
 
 ## 規則（使用者訂定，不可刪改）
 - 速率單位統一為「每分鐘」

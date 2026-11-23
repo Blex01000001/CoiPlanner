@@ -30,16 +30,55 @@ public sealed class GameDataLoader
         if (files.Count == 0)
             throw new GameDataException($"資料夾內沒有 *.json：{directory}");
 
+        var streams = files.Select(file => (Path.GetFileName(file), (Stream)File.OpenRead(file))).ToList();
+        try
+        {
+            return LoadFromStreams(streams);
+        }
+        finally
+        {
+            foreach (var (_, stream) in streams)
+                stream.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 讀取組件裡編入的資料檔（資源名稱為 <c>Data/*.json</c>），合併後一起驗證。
+    /// 網站是靜態網頁，沒有資料夾可以讀，資料在建置時編進組件。
+    /// </summary>
+    public GameData LoadFromAssembly(System.Reflection.Assembly assembly)
+    {
+        var names = assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith("Data/", StringComparison.Ordinal) && n.EndsWith(".json", StringComparison.Ordinal))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        if (names.Count == 0)
+            throw new GameDataException($"組件 {assembly.GetName().Name} 內沒有編入 Data/*.json。");
+
+        var streams = names.Select(n => (n["Data/".Length..], assembly.GetManifestResourceStream(n)!)).ToList();
+        try
+        {
+            return LoadFromStreams(streams);
+        }
+        finally
+        {
+            foreach (var (_, stream) in streams)
+                stream.Dispose();
+        }
+    }
+
+    /// <summary>合併多個資料檔（名稱只用在錯誤訊息），跨檔案的重複 id 與引用也會被檢查。</summary>
+    public GameData LoadFromStreams(IEnumerable<(string Name, Stream Stream)> files)
+    {
         var parts = files.Select(file =>
         {
             try
             {
-                using var stream = File.OpenRead(file);
-                return Deserialize(stream);
+                return Deserialize(file.Stream);
             }
             catch (GameDataException ex)
             {
-                throw new GameDataException($"{Path.GetFileName(file)}：{ex.Message}", ex);
+                throw new GameDataException($"{file.Name}：{ex.Message}", ex);
             }
         }).ToList();
 

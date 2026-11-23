@@ -18,6 +18,9 @@ public partial class Planner
     // 面板（模擬時間、物料平衡表）每幾次更新重繪一次，畫布則每次都更新
     private const int PanelRefreshTicks = 3;
 
+    private static readonly string ScriptVersion =
+        System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(Planner).Assembly)?.InformationalVersion ?? "dev";
+
     private ElementReference _canvas;
     private PlanPanel? _planPanel;
     private IJSObjectReference? _module;
@@ -60,8 +63,8 @@ public partial class Planner
         _pendingLoad = IsEmpty(saved) ? null : saved;
 
         _dotnetRef = DotNetObjectReference.Create(this);
-        // /js/ 由 Program.cs 以 no-cache 提供，每次載入都會向伺服器確認是不是最新版
-        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
+        // 版本號隨每次部署改變（部署流程設定 InformationalVersion），瀏覽器才不會沿用快取裡的舊模組
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/graphEditor.js?v={Uri.EscapeDataString(ScriptVersion)}");
         _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved, MaxImportBytes);
         // 第一次 OnGraphChanged 可能比 createEditor 先回來，那時還沒有 _editor 可以顯示結果
         if (_result is not null)
@@ -105,7 +108,7 @@ public partial class Planner
         }
         catch (Exception ex) when (!_loopCts.IsCancellationRequested)
         {
-            // 模擬出錯時停下來並提示，不能讓 circuit 中斷
+            // 模擬出錯時停下來並提示，不能讓整個頁面當掉
             Logger.LogError(ex, "模擬失敗");
             _running = false;
             Snackbar.Add($"模擬發生錯誤，已暫停：{ex.Message}", Severity.Error);

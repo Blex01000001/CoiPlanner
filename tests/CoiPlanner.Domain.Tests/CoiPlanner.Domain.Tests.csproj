@@ -24,6 +24,11 @@
     <ProjectReference Include="../../Domain/CoiPlanner.Domain.csproj" />
   </ItemGroup>
 
+  <!-- 和網站專案一樣把 Data/*.json 編進組件，測試 LoadFromAssembly -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../Data/*.json" LogicalName="Data/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <!-- 測試讀取 repo 內的 Data/*.json，確保實際遊戲資料能通過驗證 -->
   <ItemGroup>
     <None Include="../../Data/*.json" Link="Data/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
