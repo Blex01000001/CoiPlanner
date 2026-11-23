@@ -60,7 +60,6 @@ public partial class Planner
         _pendingLoad = IsEmpty(saved) ? null : saved;
 
         _dotnetRef = DotNetObjectReference.Create(this);
-        // /js/ 由 Program.cs 以 no-cache 提供，每次載入都會向伺服器確認是不是最新版
         _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/graphEditor.js");
         _editor = await _module.InvokeAsync<IJSObjectReference>("createEditor", _canvas, _dotnetRef, BuildCatalog(), saved, MaxImportBytes);
         // 第一次 OnGraphChanged 可能比 createEditor 先回來，那時還沒有 _editor 可以顯示結果
@@ -105,7 +104,7 @@ public partial class Planner
         }
         catch (Exception ex) when (!_loopCts.IsCancellationRequested)
         {
-            // 模擬出錯時停下來並提示，不能讓 circuit 中斷
+            // 模擬出錯時停下來並提示，不能讓整個頁面當掉
             Logger.LogError(ex, "模擬失敗");
             _running = false;
             Snackbar.Add($"模擬發生錯誤，已暫停：{ex.Message}", Severity.Error);

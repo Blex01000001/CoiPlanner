@@ -1,16 +1,17 @@
 # CoiPlanner：Captain of Industry 產線規劃工具
 
-用 Blazor Server 做的「規劃與模擬」控制台。不連線遊戲，物品、配方與機器資料來自 `Data/*.json`，產線由使用者在 ComfyUI 風格的節點編輯器中自行規劃。
+用 Blazor WebAssembly 做的靜態網頁「規劃與模擬」控制台。不連線遊戲，物品、配方與機器資料來自 `Data/*.json`，產線由使用者在 ComfyUI 風格的節點編輯器中自行規劃。
 
 ## 技術
-- .NET 8、Blazor Web App（Interactive Server）、MudBlazor 9
+- .NET 8、Blazor WebAssembly 獨立版（靜態網站，沒有伺服器）、MudBlazor 9
 - 節點編輯器：[@comfyorg/litegraph](https://www.npmjs.com/package/@comfyorg/litegraph) 0.17.2（MIT，放在 `wwwroot/lib/litegraph/`）
 - 計算邏輯在 `Domain/`（不依賴 UI），測試在 `tests/CoiPlanner.Domain.Tests`（xUnit）
 
 ## 執行
 ```bash
-dotnet run --project CoiPlanner.csproj
+dotnet run --project CoiPlanner.csproj    # 開發伺服器，只負責提供靜態檔案
 ```
+改了 `Data/*.json` 要重新建置（資料在建置時編進組件）。
 ```bash
 dotnet test
 ```

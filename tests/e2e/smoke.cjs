@@ -1,13 +1,15 @@
-// 瀏覽器冒煙測試：啟動已建置的網站，用 Playwright 實際操作主要功能，結束後關閉網站。
+// 瀏覽器冒煙測試：dotnet publish 出靜態檔案到 tests/e2e/.output/site，用內建的小型靜態伺服器提供（和 GitHub Pages 一樣只是檔案），
+// 用 Playwright 實際操作主要功能，結束後關閉伺服器。
 // 用法（先 dotnet build）：node tests/e2e/smoke.cjs
-//   BASE_URL=http://localhost:5062 node tests/e2e/smoke.cjs   改測已在執行的網站（不自動啟動）
+//   BASE_URL=http://localhost:5062 node tests/e2e/smoke.cjs   改測已在執行的網站（不自動啟動；dotnet run 開的開發伺服器也可以）
 //   HEADED=1 node tests/e2e/smoke.cjs                          顯示瀏覽器視窗
 // 失敗時印出步驟名稱，截圖存到 tests/e2e/.output/。
 //
 // 畫面座標的前提：新開的頁面視野是 1:1、原點在左上，節點畫在 fixtures 指定的座標（標題列在 y-30～y）。
 // 避開下方中央：那裡是提示訊息。
 const { chromium } = require("playwright");
-const { spawn } = require("child_process");
+const http = require("http");
+const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -31,11 +33,10 @@ async function main() {
     try {
         page = await newPage(browser);
 
-        await step("/js/ 以 no-cache 提供（模組更新後瀏覽器不會用舊版）", async () => {
-            for (const file of ["graphEditor.js", "graphEditor/editor.js"]) {
-                const res = await fetch(`${BASE}/js/${file}`);
-                const cache = res.headers.get("cache-control");
-                assert(res.ok && cache?.includes("no-cache"), `/js/${file}：${res.status}，cache-control=${cache}`);
+        await step("靜態檔案可載入：Blazor 啟動檔、graphEditor 模組、litegraph", async () => {
+            for (const file of ["_framework/blazor.webassembly.js", "js/graphEditor.js", "js/graphEditor/editor.js", "lib/litegraph/litegraph.es.js"]) {
+                const res = await fetch(`${BASE}/${file}`);
+                assert(res.ok && !(res.headers.get("content-type") ?? "").includes("html"), `${file}：${res.status} ${res.headers.get("content-type")}`);
             }
         });
 
@@ -462,38 +463,43 @@ async function balanceOf(productName) {
 
 // ---- 網站 ----
 
+const WWWROOT = path.join(OUTPUT, "site/wwwroot");
+const MIME = {
+    ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
+    ".json": "application/json", ".wasm": "application/wasm", ".dll": "application/octet-stream",
+    ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".dat": "application/octet-stream",
+    ".woff": "font/woff", ".woff2": "font/woff2", ".map": "application/json", ".txt": "text/plain",
+};
+
+/** 靜態檔案伺服器；找不到的路徑回 index.html（和 GitHub Pages 上用 404.html 轉回首頁的效果相同）。 */
 async function startServer() {
-    // 上一次的網站還沒結束時會測到舊版本，直接報錯
+    // 上一次的伺服器還沒結束時會測到舊版本，直接報錯
     const busy = await fetch(BASE).then(() => true, () => false);
     assert(!busy, `${BASE} 已經有網站在執行；等它結束，或用 BASE_URL 指定要測的網站`);
-    const dll = path.join(ROOT, "bin/Debug/net8.0/CoiPlanner.dll");
-    assert(fs.existsSync(dll), "找不到 bin/Debug/net8.0/CoiPlanner.dll，請先執行 dotnet build");
-    const proc = spawn("dotnet", [dll, "--urls", BASE], {
-        cwd: ROOT,
-        env: { ...process.env, ASPNETCORE_ENVIRONMENT: "Development" },
-        stdio: "ignore",
+    // 發佈（--no-build：沿用剛建置的結果，只複製檔案）出和 GitHub Pages 內容相同的靜態檔案
+    const publish = spawnSync("dotnet", ["publish", "--no-build", "-c", "Debug", "-o", path.join(OUTPUT, "site")], { cwd: ROOT, encoding: "utf8" });
+    assert(publish.status === 0 && fs.existsSync(path.join(WWWROOT, "index.html")), `dotnet publish 失敗（請先執行 dotnet build）：${publish.stdout?.slice(-500)}`);
+    const root = path.resolve(WWWROOT);
+    const srv = http.createServer((req, res) => {
+        const rel = decodeURIComponent(new URL(req.url, BASE).pathname);
+        let file = path.resolve(path.join(root, rel));
+        if (!file.startsWith(root)) { res.writeHead(403).end(); return; }
+        if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, "index.html");
+        res.writeHead(200, { "Content-Type": MIME[path.extname(file)] ?? "application/octet-stream" });
+        fs.createReadStream(file).pipe(res);
     });
-    const deadline = Date.now() + 60000;
-    while (Date.now() < deadline) {
-        try {
-            if ((await fetch(BASE)).ok) return proc;
-        } catch { /* 還沒啟動 */ }
-        await new Promise(r => setTimeout(r, 500));
-    }
-    proc.kill();
-    throw new Error(`網站 60 秒內沒有在 ${BASE} 啟動`);
+    await new Promise(resolve => srv.listen(PORT, resolve));
+    return srv;
 }
 
 // 不論怎麼結束（包含輸出被 head 之類的指令截斷而中途退出），都要把網站關掉，否則下次會因為埠被佔用而無法執行
-process.on("exit", () => server?.kill());
+process.on("exit", () => server?.close());
 
 /** 關閉網站並等它真的結束（ASP.NET 收到 SIGTERM 後會花幾秒正常關閉），下一次執行才不會撞到同一個連接埠。 */
 async function stopServer() {
-    if (!server || server.exitCode !== null) return;
-    const exited = new Promise(r => server.once("exit", r));
-    server.kill();
-    const timeout = new Promise(r => setTimeout(() => r("timeout"), 10000));
-    if (await Promise.race([exited, timeout]) === "timeout") server.kill("SIGKILL");
+    if (!server) return;
+    server.closeAllConnections?.();
+    await new Promise(r => server.close(r));
 }
 
 main().catch(async err => {

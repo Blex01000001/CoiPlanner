@@ -20,6 +20,36 @@ public sealed class GameDataLoaderDirectoryTests : IDisposable
     }
 
     [Fact]
+    public void LoadFromAssembly_EmbeddedData_MatchesDirectoryLoad()
+    {
+        var fromAssembly = _loader.LoadFromAssembly(typeof(GameDataLoaderDirectoryTests).Assembly);
+        var fromDirectory = _loader.LoadFromDirectory(Path.Combine(AppContext.BaseDirectory, "Data"));
+
+        Assert.Equal(fromDirectory.Products.Select(p => p.Id), fromAssembly.Products.Select(p => p.Id));
+        Assert.Equal(fromDirectory.Recipes.Select(r => r.Id), fromAssembly.Recipes.Select(r => r.Id));
+        Assert.Equal(fromDirectory.Machines.Select(m => m.Id), fromAssembly.Machines.Select(m => m.Id));
+    }
+
+    [Fact]
+    public void LoadFromAssembly_NoEmbeddedData_Throws()
+    {
+        var ex = Assert.Throws<GameDataException>(() => _loader.LoadFromAssembly(typeof(string).Assembly));
+
+        Assert.Contains("Data/*.json", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromStreams_ErrorNamesTheFile()
+    {
+        using var good = new MemoryStream("""{ "products": [ { "id": "a", "name": "A", "unit": "pcs" } ] }"""u8.ToArray());
+        using var bad = new MemoryStream("{ not json"u8.ToArray());
+
+        var ex = Assert.Throws<GameDataException>(() => _loader.LoadFromStreams([("a.json", good), ("bad.json", bad)]));
+
+        Assert.StartsWith("bad.json：", ex.Message);
+    }
+
+    [Fact]
     public void LoadFromDirectory_MergesFilesAndResolvesCrossFileReferences()
     {
         WriteFile("a.json", """{ "products": [ { "id": "a", "name": "A", "unit": "pcs" } ] }""");
