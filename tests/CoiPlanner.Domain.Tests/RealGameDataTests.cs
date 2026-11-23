@@ -280,4 +280,41 @@ public class RealGameDataTests
         AssertRecipe("make_disinfectant", new() { ["ethanol"] = 4.5, ["plastic_pellets"] = 3 }, new() { ["disinfectant"] = 12 });
         Assert.Equal("石灰石", Data.Products.Single(p => p.Id == "lime").Name);
     }
+
+    [Fact]
+    public void RecipeCost_EveryProductCalculates_WithFiniteCosts()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        foreach (var id in calculator.TargetProductIds)
+        {
+            var report = calculator.Calculate(id);
+            Assert.All(report.Routes, r => Assert.True(double.IsFinite(r.WeightedCost) && r.WeightedCost >= 0, $"{id} / {r.RecipeId}"));
+            Assert.Equal(report.IsExternal, calculator.IsExternal(id));
+        }
+    }
+
+    [Fact]
+    public void RecipeCost_DieselViaDistillation_MatchesRecipeData()
+    {
+        var route = new RecipeCostCalculator(Data).Calculate("diesel").Routes.Single(r => r.RecipeId == "distill_medium_oil");
+
+        // 蒸餾中油：中油 48 → 柴油 36，所以每柴油要 4/3 中油；蒸餾石油：石油 60 → 中油 48，所以每中油要 1.25 石油
+        Assert.Equal(4.0 / 3 * 1.25, route.RawInputs.Single(a => a.ProductId == "crude_oil").Quantity, 6);
+        // 輕油是蒸餾中油的副產品：30 / 36 每柴油；不計入成本
+        Assert.Equal(30.0 / 36, route.Byproducts.Single(a => a.ProductId == "light_oil").Quantity, 6);
+        Assert.DoesNotContain(route.RawInputs, a => a.ProductId == "light_oil");
+    }
+
+    [Fact]
+    public void RecipeCost_MissingDataProducts_AreRawAndExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.True(calculator.IsExternal("wood_chips"));
+        Assert.Contains("wood_chips", calculator.RawProductIds);
+        Assert.False(calculator.IsExternal("water"));      // 有抽水配方
+        Assert.True(calculator.IsRaw("water"));
+        Assert.DoesNotContain("air_pollution", calculator.RawProductIds);
+    }
 }
