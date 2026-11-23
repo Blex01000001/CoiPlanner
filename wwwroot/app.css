@@ -115,10 +115,22 @@ h1:focus {
     overflow-y: auto;
 }
 
-/* 配方成本面板：表格欄位多，比其他面板寬；窄螢幕時表格自己橫向捲動 */
-.planner-side.planner-side-wide {
-    width: 980px;
-    max-width: calc(100% - 92px);
+/* 配方成本頁：整頁滿版（固定在視窗內，左側留給換頁按鈕），內容自己捲動；窄螢幕時表格橫向捲動 */
+.cost-page {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    box-sizing: border-box;
+    padding: 16px 24px 24px 68px;
+    overflow-y: auto;
+    background: var(--mud-palette-background, #fff);
+}
+
+.cost-product {
+    max-width: 480px;
 }
 
 .cost-weights {
@@ -143,8 +155,8 @@ h1:focus {
 }
 
 .cost-table td:first-child {
-    min-width: 240px;
-    max-width: 300px;
+    min-width: 260px;
+    max-width: 420px;
     white-space: normal;
 }
 

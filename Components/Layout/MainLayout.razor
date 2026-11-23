@@ -10,9 +10,11 @@
     @* 不使用頂端 App Bar，讓畫面（尤其是產線規劃的畫布）佔滿整個視窗；換頁按鈕浮在左側 *@
     <div class="app-nav">
         <MudIconButton Icon="@Icons.Material.Filled.AccountTree" Variant="Variant.Filled" Size="Size.Small"
-                       Color="@(OnPlanner ? Color.Primary : Color.Default)" Class="@(OnPlanner ? null : "app-nav-idle")" Href="@Navigation.BaseUri" title="產線規劃" aria-label="產線規劃" />
+                       Color="@ButtonColor(NavPage.Planner)" Class="@ButtonClass(NavPage.Planner)" Href="@Navigation.BaseUri" title="產線規劃" aria-label="產線規劃" />
         <MudIconButton Icon="@Icons.Material.Filled.MenuBook" Variant="Variant.Filled" Size="Size.Small"
-                       Color="@(OnPlanner ? Color.Default : Color.Primary)" Class="@(OnPlanner ? "app-nav-idle" : null)" Href="@($"{Navigation.BaseUri}data")" title="資料瀏覽" aria-label="資料瀏覽" />
+                       Color="@ButtonColor(NavPage.Data)" Class="@ButtonClass(NavPage.Data)" Href="@($"{Navigation.BaseUri}data")" title="資料瀏覽" aria-label="資料瀏覽" />
+        <MudIconButton Icon="@Icons.Material.Filled.Calculate" Variant="Variant.Filled" Size="Size.Small"
+                       Color="@ButtonColor(NavPage.Cost)" Class="@ButtonClass(NavPage.Cost)" Href="@($"{Navigation.BaseUri}cost")" title="配方成本" aria-label="配方成本" />
     </div>
     <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="app-content py-4">
         @Body
@@ -26,6 +28,18 @@
 </div>
 
 @code {
-    // 產線規劃是起始頁（/ 與 /planner），其餘（目前只有 /data）是資料瀏覽
-    private bool OnPlanner => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/') is "" or "planner";
+    private enum NavPage { Planner, Data, Cost }
+
+    // 產線規劃是起始頁（/ 與 /planner）；其餘依路徑：/data 資料瀏覽、/cost 配方成本
+    private NavPage Current => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/') switch
+    {
+        "data" => NavPage.Data,
+        "cost" => NavPage.Cost,
+        _ => NavPage.Planner,
+    };
+
+    private Color ButtonColor(NavPage page) => Current == page ? Color.Primary : Color.Default;
+
+    // 不在該頁時用淺灰色，深色畫布上才看得到
+    private string? ButtonClass(NavPage page) => Current == page ? null : "app-nav-idle";
 }

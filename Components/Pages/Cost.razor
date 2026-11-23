@@ -1,22 +1,24 @@
+@page "/cost"
 @using CoiPlanner.Domain.Models
 @using CoiPlanner.Domain.Services
+@using System.Text.Json
 @inject GameData Data
 @inject RecipeCostCalculator Calculator
-@* 配方成本面板：選一個物品，列出每個能產出它的配方，比較每 1 單位的原料（加權）、副產品，以及耗電、工人、維修。
-   計算在 RecipeCostCalculator；選擇的物品、權重與結果由 Planner 頁持有，這裡只顯示並回報操作。 *@
-<MudPaper Class="planner-side planner-side-wide pa-4" Elevation="4">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-        <MudText Typo="Typo.h6">配方成本</MudText>
-        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => OnClose.InvokeAsync()" aria-label="收合面板" />
-    </MudStack>
+@inject IJSRuntime JS
+@* 配方成本頁（整頁滿版）：選一個物品，列出每個能產出它的配方，比較每 1 單位的原料（加權）、副產品，以及耗電、工人、維修。
+   計算在 RecipeCostCalculator；選擇的物品與原料權重存在瀏覽器（不屬於規劃檔），離開頁面再回來還在。 *@
+<PageTitle>配方成本 - CoiPlanner</PageTitle>
+
+<div class="cost-page">
+    <MudText Typo="Typo.h5" GutterBottom="true">配方成本</MudText>
     <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
         選一個物品，比較各種配方。原料與副產品是每 1 單位目標物品的量；耗電、工人、維修、機器是維持 1 單位/分產量所需。
         副產品的原料成本全部算在目標物品上；中間物品有多種做法時取加權成本最低的。
     </MudText>
 
-    <MudAutocomplete T="string" Label="目標物品" Placeholder="輸入名稱搜尋" Value="ProductId" ValueChanged="OnProductChosen"
+    <MudAutocomplete T="string" Label="目標物品" Placeholder="輸入名稱搜尋" Value="_productId" ValueChanged="OnProductChosen"
                      SearchFunc="Search" ToStringFunc="ProductName" Dense="true" Clearable="true" CoerceText="false" CoerceValue="false"
-                     ResetValueOnEmptyText="true" MaxItems="60" Class="mb-2" aria-label="目標物品" />
+                     ResetValueOnEmptyText="true" MaxItems="60" Class="mb-2 cost-product" aria-label="目標物品" />
 
     <MudButton Variant="Variant.Text" Size="Size.Small" Class="mb-1"
                StartIcon="@(_showWeights ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
@@ -27,7 +29,7 @@
             {
                 var rawId = id;
                 <MudNumericField T="double" Label="@(ProductName(rawId) + (Calculator.IsExternal(rawId) ? "（外部）" : ""))" Value="WeightOf(rawId)"
-                                 ValueChanged="v => OnWeightChanged.InvokeAsync((rawId, v))" Min="0" Step="0.5" Immediate="true"
+                                 ValueChanged="v => OnWeightChanged(rawId, v)" Min="0" Step="0.5" Immediate="true"
                                  Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" />
             }
         </div>
@@ -36,17 +38,17 @@
         </MudText>
     </MudCollapse>
 
-    @if (string.IsNullOrEmpty(ProductId) || Report is null)
+    @if (string.IsNullOrEmpty(_productId) || _report is null)
     {
         <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">請先選擇目標物品。</MudText>
     }
-    else if (Report.IsExternal)
+    else if (_report.IsExternal)
     {
-        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">資料裡沒有任何配方產出「@ProductName(Report.ProductId)」，先當外部輸入處理。</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">資料裡沒有任何配方產出「@ProductName(_report.ProductId)」，先當外部輸入處理。</MudText>
     }
     else
     {
-        <MudTable Items="Report.Routes" Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="cost-table" T="RouteCost">
+        <MudTable Items="_report.Routes" Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="cost-table" T="RouteCost">
             <HeaderContent>
                 <MudTh>配方</MudTh>
                 <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.WeightedCost))" InitialDirection="SortDirection.Ascending">加權成本</MudTableSortLabel></MudTh>
@@ -60,7 +62,7 @@
             <RowTemplate>
                 <MudTd DataLabel="配方">
                     <span class="cost-recipe">@MachineName(context.RecipeId) · @RecipeName(context.RecipeId)</span>
-                    @if (context == Report.Routes[0])
+                    @if (context == _report.Routes[0])
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">最便宜</MudChip>
                     }
@@ -111,20 +113,15 @@
             </RowTemplate>
         </MudTable>
     }
-</MudPaper>
+</div>
 
 @code {
-    /// <summary>目前選擇的目標物品 id；沒選時為 null。</summary>
-    [Parameter] public string? ProductId { get; set; }
-    [Parameter] public EventCallback<string?> ProductIdChanged { get; set; }
+    private const string WeightsKey = "coiplanner.costWeights";
+    private const string ProductKey = "coiplanner.costProduct";
 
-    /// <summary>每種原料的權重；沒列出的視為 1。</summary>
-    [Parameter] public IReadOnlyDictionary<string, double> Weights { get; set; } = new Dictionary<string, double>();
-    [Parameter] public EventCallback<(string ProductId, double Weight)> OnWeightChanged { get; set; }
-
-    [Parameter] public CostReport? Report { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
-
+    private string? _productId;
+    private Dictionary<string, double> _weights = new();
+    private CostReport? _report;
     private bool _showWeights;
     private Dictionary<string, Product> _products = new();
     private Dictionary<string, Recipe> _recipes = new();
@@ -135,15 +132,58 @@
         _recipes = Data.Recipes.ToDictionary(r => r.Id);
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        try
+        {
+            var weights = await JS.InvokeAsync<string?>("localStorage.getItem", WeightsKey);
+            if (!string.IsNullOrEmpty(weights))
+                _weights = JsonSerializer.Deserialize<Dictionary<string, double>>(weights) ?? new();
+        }
+        catch (JsonException)
+        {
+            // 壞掉的權重就當作沒有，全部用預設值 1
+            _weights = new();
+        }
+
+        var product = await JS.InvokeAsync<string?>("localStorage.getItem", ProductKey);
+        if (product is not null && Calculator.TargetProductIds.Contains(product))
+            _productId = product;
+
+        Recalculate();
+        StateHasChanged();
+    }
+
+    private async Task OnProductChosen(string? id)
+    {
+        _productId = string.IsNullOrEmpty(id) ? null : id;
+        Recalculate();
+        if (_productId is null)
+            await JS.InvokeVoidAsync("localStorage.removeItem", ProductKey);
+        else
+            await JS.InvokeVoidAsync("localStorage.setItem", ProductKey, _productId);
+    }
+
+    private async Task OnWeightChanged(string productId, double weight)
+    {
+        _weights[productId] = Math.Max(0, weight);
+        Recalculate();
+        await JS.InvokeVoidAsync("localStorage.setItem", WeightsKey, JsonSerializer.Serialize(_weights));
+    }
+
+    private void Recalculate() =>
+        _report = string.IsNullOrEmpty(_productId) ? null : Calculator.Calculate(_productId, _weights);
+
     private Task<IEnumerable<string>> Search(string? text, CancellationToken ct) =>
         Task.FromResult(Calculator.TargetProductIds
             .Where(id => string.IsNullOrWhiteSpace(text)
                          || ProductName(id).Contains(text, StringComparison.OrdinalIgnoreCase)
                          || id.Contains(text, StringComparison.OrdinalIgnoreCase)));
 
-    private Task OnProductChosen(string? id) => ProductIdChanged.InvokeAsync(string.IsNullOrEmpty(id) ? null : id);
-
-    private double WeightOf(string id) => Weights.TryGetValue(id, out var w) ? w : 1;
+    private double WeightOf(string id) => _weights.TryGetValue(id, out var w) ? w : 1;
 
     private string ProductName(string? id) => id is not null && _products.TryGetValue(id, out var p) ? p.Name : id ?? "";
 
