@@ -48,7 +48,8 @@ public sealed record SlotState(string ProductId, double ActualPerMinute, double 
 
 /// <summary>
 /// 節點目前的狀態。Utilization 是最近幾秒的平均稼動率（0～1）；
-/// MissingInputs 是造成停擺、沒有料的輸入物品。
+/// MissingInputs 是造成停擺、沒有料的輸入物品；NoPower 表示這台機器要用電，但目前完全沒有電
+/// （只缺電時 MissingInputs 是空的）。
 /// </summary>
 public sealed record NodeState(
     string NodeId,
@@ -57,7 +58,8 @@ public sealed record NodeState(
     double StartupRemainingSeconds,
     IReadOnlyList<string> MissingInputs,
     IReadOnlyList<SlotState> Inputs,
-    IReadOnlyList<SlotState> Outputs);
+    IReadOnlyList<SlotState> Outputs,
+    bool NoPower = false);
 
 /// <summary>一條連線最近幾秒平均每分鐘運送的量與運輸上限；EdgeIndex 是連線在 <see cref="ProductionPlan.Edges"/> 中的位置。</summary>
 public sealed record EdgeState(int EdgeIndex, double FlowPerMinute, double CapacityPerMinute)

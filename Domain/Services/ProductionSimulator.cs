@@ -139,7 +139,8 @@ public sealed class ProductionSimulator
             Math.Max(0, n.StartupRemaining),
             n.Missing,
             n.Inputs.Select(SlotSnapshot).ToList(),
-            n.Outputs.Select(SlotSnapshot).ToList())).ToList();
+            n.Outputs.Select(SlotSnapshot).ToList(),
+            n.NoPower)).ToList();
 
         var edges = _edges.Select(e => new EdgeState(e.Index, PerMinute(e.Meter), e.CapacityPerMinute)).ToList();
 
@@ -230,13 +231,14 @@ public sealed class ProductionSimulator
     private void ProduceMachine(SimNode node, double dt)
     {
         var f = 0.0;
+        node.NoPower = node.PowerUseKw > 0 && _powerRatio <= Epsilon;
         node.Missing = node.Inputs.Where(s => s.Stock <= Epsilon).Select(s => s.ProductId).ToList();
         if (node.Missing.Count > 0)
         {
             node.Status = NodeStatus.Starved;
             node.StartupRemaining = _settings.StartupSeconds;
         }
-        else if (node.PowerUseKw > 0 && _powerRatio <= Epsilon)
+        else if (node.NoPower)
         {
             // 完全沒有電：和缺料一樣停擺（沒有缺的物品），恢復供電後要重新等啟動延遲
             node.Status = NodeStatus.Starved;
@@ -319,6 +321,9 @@ public sealed class ProductionSimulator
         public NodeStatus Status { get; set; } = isSource ? NodeStatus.Running : NodeStatus.Starved;
         public double StartupRemaining { get; set; } = startupSeconds;
         public IReadOnlyList<string> Missing { get; set; } = [];
+
+        /// <summary>要用電的機器，而目前完全沒有電。</summary>
+        public bool NoPower { get; set; }
         public RateMeter Utilization { get; } = new(windowSteps);
 
         /// <summary>全部 Count 台機器的額定耗電與發電量（kW）。</summary>

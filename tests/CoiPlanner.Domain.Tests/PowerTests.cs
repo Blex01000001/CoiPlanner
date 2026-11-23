@@ -98,6 +98,7 @@ public class PowerTests
         var drill = snapshot.Nodes.Single(n => n.NodeId == "d");
         Assert.Equal(NodeStatus.Starved, drill.Status);
         Assert.Empty(drill.MissingInputs);
+        Assert.True(drill.NoPower);
         Assert.Equal(0, drill.Outputs[0].ActualPerMinute);
     }
 
@@ -140,5 +141,29 @@ public class PowerTests
         // 每台 150 kW × 配方倍率 4 × 2 台
         Assert.Equal(1200, Check(new ProductionPlan { Nodes = [fast] }).PowerUseKw);
         Assert.Equal(300, Check(new ProductionPlan { Nodes = [Drill("d", 2)] }).PowerUseKw);
+    }
+
+    [Fact]
+    public void Simulator_PowerStarvedAndMissingMaterial_ReportsBoth()
+    {
+        // 鑽機沒有發電機：缺電；熔爐沒有電力需求，只缺料，不能被標成缺電
+        var plan = new ProductionPlan { Nodes = [Drill("d"), Furnace("f")] };
+        var sim = Simulate(plan);
+        sim.Run(5);
+
+        var nodes = sim.Snapshot().Nodes;
+        Assert.True(nodes.Single(n => n.NodeId == "d").NoPower);
+        var furnace = nodes.Single(n => n.NodeId == "f");
+        Assert.False(furnace.NoPower);
+        Assert.Equal(["alpha_ore"], furnace.MissingInputs);
+    }
+
+    [Fact]
+    public void Simulator_PartialPower_IsNotMarkedNoPower()
+    {
+        var sim = Simulate(Plan(generators: 1, drills: 2));
+        sim.Run(30);
+
+        Assert.False(sim.Snapshot().Nodes.Single(n => n.NodeId == "d").NoPower);
     }
 }
