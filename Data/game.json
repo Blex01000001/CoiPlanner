@@ -253,8 +253,15 @@
     },
     {
       "id": "assemble_mechanical_parts",
-      "name": "組裝機械零件",
+      "name": "組裝機械零件(鋼板)",
       "inputs": [ { "productId": "steel_plate", "quantity": 24 } ],
+      "outputs": [ { "productId": "mechanical_parts", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_mechanical_parts_iron",
+      "name": "組裝機械零件(鐵板)",
+      "inputs": [ { "productId": "iron_plate", "quantity": 60 } ],
       "outputs": [ { "productId": "mechanical_parts", "quantity": 48 } ],
       "cycleSeconds": 60
     },
@@ -491,7 +498,7 @@
     { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "category": "冶金", "recipeIds": [ "make_steel" ] },
     { "id": "cooled_caster_2", "name": "水冷鑄造機II", "category": "冶金", "recipeIds": [ "cast_steel_plate" ] },
     { "id": "metal_caster_2", "name": "金屬鑄造機II", "category": "冶金", "recipeIds": [ "cast_iron_plate" ] },
-    { "id": "assembly_4", "name": "組裝機IV", "category": "加工", "recipeIds": [ "assemble_mechanical_parts" ] },
+    { "id": "assembly_4", "name": "組裝機IV", "category": "加工", "recipeIds": [ "assemble_mechanical_parts", "assemble_mechanical_parts_iron" ] },
     { "id": "oil_well", "name": "油田", "category": "採集", "recipeIds": [ "pump_crude_oil" ] },
     { "id": "distillation_1", "name": "蒸餾塔I", "category": "石化", "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 1.4, "recipeIds": [ "distill_crude_oil" ] },
     { "id": "distillation_2", "name": "蒸餾塔II", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "distill_medium_oil" ] },
