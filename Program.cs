@@ -18,6 +18,7 @@ builder.Services.AddMudServices(config =>
 var gameData = new GameDataLoader().LoadFromAssembly(typeof(Program).Assembly);
 builder.Services.AddSingleton(gameData);
 builder.Services.AddSingleton(new PlanCalculator(gameData));
+builder.Services.AddSingleton(new RecipeCostCalculator(gameData));
 builder.Services.AddSingleton<ProductionPlanSerializer>();
 
 await builder.Build().RunAsync();

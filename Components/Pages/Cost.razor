@@ -1,0 +1,197 @@
+@page "/cost"
+@using CoiPlanner.Domain.Models
+@using CoiPlanner.Domain.Services
+@using System.Text.Json
+@inject GameData Data
+@inject RecipeCostCalculator Calculator
+@inject IJSRuntime JS
+@* 配方成本頁（整頁滿版）：選一個物品，列出每個能產出它的配方，比較每 1 單位的原料（加權）、副產品，以及耗電、工人、維修。
+   計算在 RecipeCostCalculator；選擇的物品與原料權重存在瀏覽器（不屬於規劃檔），離開頁面再回來還在。 *@
+<PageTitle>配方成本 - CoiPlanner</PageTitle>
+
+<div class="cost-page">
+    <MudText Typo="Typo.h5" GutterBottom="true">配方成本</MudText>
+    <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
+        選一個物品，比較各種配方。原料與副產品是每 1 單位目標物品的量；耗電、工人、維修、機器是維持 1 單位/分產量所需。
+        副產品的原料成本全部算在目標物品上；中間物品有多種做法時取加權成本最低的。
+    </MudText>
+
+    <MudAutocomplete T="string" Label="目標物品" Placeholder="輸入名稱搜尋" Value="_productId" ValueChanged="OnProductChosen"
+                     SearchFunc="Search" ToStringFunc="ProductName" Dense="true" Clearable="true" CoerceText="false" CoerceValue="false"
+                     ResetValueOnEmptyText="true" MaxItems="60" Class="mb-2 cost-product" aria-label="目標物品" />
+
+    <MudButton Variant="Variant.Text" Size="Size.Small" Class="mb-1"
+               StartIcon="@(_showWeights ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+               OnClick="() => _showWeights = !_showWeights">原料權重（預設 1，影響加權成本與排序）</MudButton>
+    <MudCollapse Expanded="_showWeights">
+        <div class="cost-weights">
+            @foreach (var id in Calculator.RawProductIds)
+            {
+                var rawId = id;
+                <MudNumericField T="double" Label="@(ProductName(rawId) + (Calculator.IsExternal(rawId) ? "（外部）" : ""))" Value="WeightOf(rawId)"
+                                 ValueChanged="v => OnWeightChanged(rawId, v)" Min="0" Step="0.5" Immediate="true"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" />
+            }
+        </div>
+        <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
+            「外部」是資料裡沒有任何配方產出的物品（例如木屑、食用油），先當外部輸入處理。權重存在這個瀏覽器，不屬於規劃檔。
+        </MudText>
+    </MudCollapse>
+
+    @if (string.IsNullOrEmpty(_productId) || _report is null)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">請先選擇目標物品。</MudText>
+    }
+    else if (_report.IsExternal)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">資料裡沒有任何配方產出「@ProductName(_report.ProductId)」，先當外部輸入處理。</MudText>
+    }
+    else
+    {
+        <MudTable Items="_report.Routes" Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="cost-table" T="RouteCost">
+            <HeaderContent>
+                <MudTh>配方</MudTh>
+                <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.WeightedCost))" InitialDirection="SortDirection.Ascending">加權成本</MudTableSortLabel></MudTh>
+                <MudTh>原料（每 1 單位）</MudTh>
+                <MudTh>副產品（每 1 單位）</MudTh>
+                <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.PowerKw))">耗電 kW</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.Workers))">工人</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.Maintenance.Sum(m => m.PerMinute)))">維修（每分）</MudTableSortLabel></MudTh>
+                <MudTh>機器</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="配方">
+                    <span class="cost-recipe">@MachineName(context.RecipeId) · @RecipeName(context.RecipeId)</span>
+                    @if (context == _report.Routes[0])
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">最便宜</MudChip>
+                    }
+                    @if (context.Steps.Count > 0)
+                    {
+                        <div class="cost-note">上游：@string.Join("、", context.Steps.Select(s => $"{ProductName(s.ProductId)} ← {RecipeName(s.RecipeId)}"))</div>
+                    }
+                    @foreach (var warning in context.Warnings)
+                    {
+                        <div class="cost-note cost-warning">@warning</div>
+                    }
+                </MudTd>
+                <MudTd DataLabel="加權成本">@Format(context.WeightedCost)</MudTd>
+                <MudTd DataLabel="原料">
+                    @foreach (var raw in context.RawInputs)
+                    {
+                        <div>@ProductName(raw.ProductId)@(Calculator.IsExternal(raw.ProductId) ? "（外部）" : "") @Format(raw.Quantity)</div>
+                    }
+                </MudTd>
+                <MudTd DataLabel="副產品">
+                    @if (context.Byproducts.Count == 0)
+                    {
+                        <span class="mud-text-secondary">—</span>
+                    }
+                    @foreach (var by in context.Byproducts)
+                    {
+                        <div>@ProductName(by.ProductId) @Format(by.Quantity)</div>
+                    }
+                </MudTd>
+                <MudTd DataLabel="耗電 kW">@Format(context.PowerKw)</MudTd>
+                <MudTd DataLabel="工人">@Format(context.Workers)</MudTd>
+                <MudTd DataLabel="維修（每分）">
+                    @if (context.Maintenance.Count == 0)
+                    {
+                        <span class="mud-text-secondary">—</span>
+                    }
+                    @foreach (var m in context.Maintenance)
+                    {
+                        <div>@m.Type @Format(m.PerMinute)</div>
+                    }
+                </MudTd>
+                <MudTd DataLabel="機器">
+                    @foreach (var m in context.Machines)
+                    {
+                        <div>@MachineNameById(m.MachineId) @Format(m.Count)</div>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</div>
+
+@code {
+    private const string WeightsKey = "coiplanner.costWeights";
+    private const string ProductKey = "coiplanner.costProduct";
+
+    private string? _productId;
+    private Dictionary<string, double> _weights = new();
+    private CostReport? _report;
+    private bool _showWeights;
+    private Dictionary<string, Product> _products = new();
+    private Dictionary<string, Recipe> _recipes = new();
+
+    protected override void OnInitialized()
+    {
+        _products = Data.Products.ToDictionary(p => p.Id);
+        _recipes = Data.Recipes.ToDictionary(r => r.Id);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        try
+        {
+            var weights = await JS.InvokeAsync<string?>("localStorage.getItem", WeightsKey);
+            if (!string.IsNullOrEmpty(weights))
+                _weights = JsonSerializer.Deserialize<Dictionary<string, double>>(weights) ?? new();
+        }
+        catch (JsonException)
+        {
+            // 壞掉的權重就當作沒有，全部用預設值 1
+            _weights = new();
+        }
+
+        var product = await JS.InvokeAsync<string?>("localStorage.getItem", ProductKey);
+        if (product is not null && Calculator.TargetProductIds.Contains(product))
+            _productId = product;
+
+        Recalculate();
+        StateHasChanged();
+    }
+
+    private async Task OnProductChosen(string? id)
+    {
+        _productId = string.IsNullOrEmpty(id) ? null : id;
+        Recalculate();
+        if (_productId is null)
+            await JS.InvokeVoidAsync("localStorage.removeItem", ProductKey);
+        else
+            await JS.InvokeVoidAsync("localStorage.setItem", ProductKey, _productId);
+    }
+
+    private async Task OnWeightChanged(string productId, double weight)
+    {
+        _weights[productId] = Math.Max(0, weight);
+        Recalculate();
+        await JS.InvokeVoidAsync("localStorage.setItem", WeightsKey, JsonSerializer.Serialize(_weights));
+    }
+
+    private void Recalculate() =>
+        _report = string.IsNullOrEmpty(_productId) ? null : Calculator.Calculate(_productId, _weights);
+
+    private Task<IEnumerable<string>> Search(string? text, CancellationToken ct) =>
+        Task.FromResult(Calculator.TargetProductIds
+            .Where(id => string.IsNullOrWhiteSpace(text)
+                         || ProductName(id).Contains(text, StringComparison.OrdinalIgnoreCase)
+                         || id.Contains(text, StringComparison.OrdinalIgnoreCase)));
+
+    private double WeightOf(string id) => _weights.TryGetValue(id, out var w) ? w : 1;
+
+    private string ProductName(string? id) => id is not null && _products.TryGetValue(id, out var p) ? p.Name : id ?? "";
+
+    private string RecipeName(string id) => _recipes.TryGetValue(id, out var r) ? r.Name : id;
+
+    private string MachineName(string recipeId) => Data.Machines.FirstOrDefault(m => m.CanRun(recipeId))?.Name ?? "—";
+
+    private string MachineNameById(string id) => Data.Machines.FirstOrDefault(m => m.Id == id)?.Name ?? id;
+
+    private static string Format(double value) => value.ToString("0.###");
+}

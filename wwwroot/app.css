@@ -115,6 +115,65 @@ h1:focus {
     overflow-y: auto;
 }
 
+/* 配方成本頁：整頁滿版（固定在視窗內，左側留給換頁按鈕），內容自己捲動；窄螢幕時表格橫向捲動 */
+.cost-page {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    box-sizing: border-box;
+    padding: 16px 24px 24px 68px;
+    overflow-y: auto;
+    background: var(--mud-palette-background, #fff);
+}
+
+.cost-product {
+    max-width: 480px;
+}
+
+.cost-weights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 4px 0 8px;
+}
+
+.cost-table .mud-table-container {
+    overflow-x: auto;
+}
+
+/* 數字與清單欄不換行，配方欄保留寬度並允許換行；整張表比面板寬時自己橫向捲動 */
+.cost-table table {
+    min-width: 900px;
+}
+
+.cost-table th, .cost-table td {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.cost-table td:first-child {
+    min-width: 260px;
+    max-width: 420px;
+    white-space: normal;
+}
+
+.cost-recipe {
+    font-weight: 500;
+}
+
+.cost-note {
+    margin-top: 2px;
+    color: #757575;
+    font-size: 12px;
+}
+
+.cost-warning {
+    color: #b26a00;
+}
+
 .planner-fit {
     position: absolute;
     right: 16px;

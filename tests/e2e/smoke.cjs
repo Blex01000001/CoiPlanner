@@ -58,7 +58,7 @@ async function main() {
             await page.click('.app-nav [aria-label="產線規劃"]');
             await page.waitForSelector(".planner canvas");
             assertEqual(await page.title(), "產線規劃 - CoiPlanner", "產線規劃的頁籤標題");
-            assertEqual(await page.locator(".app-nav button, .app-nav a").count(), 2, "左側按鈕數量");
+            assertEqual(await page.locator(".app-nav button, .app-nav a").count(), 3, "左側按鈕數量");
         });
 
         await step("頁籤圖示：favicon.svg、PNG 與 apple-touch-icon 都能載入", async () => {
@@ -248,6 +248,57 @@ async function main() {
             const fed = await savedPlan(p => p.sources.length === 1 && p.edges.length === 1);
             assertEqual(fed.edges[0].productId, "steam_high", "供應端連線的物品");
             assertEqual(fed.sources[0].productId, "steam_high", "新增的資源");
+        });
+
+        await step("配方成本：左側按鈕進入滿版頁面；選物品列出各配方與最便宜標示；可排序；原料權重改變結果，離開再回來物品與權重仍在", async () => {
+            await page.goto(`${BASE}/planner`);
+            await page.waitForSelector(".planner canvas");
+            assertEqual(await page.locator(".planner-side-buttons button").count(), 2, "規劃頁右側按鈕數量（配方成本不在這裡）");
+            await page.click('.app-nav [aria-label="配方成本"]');
+            const panel = page.locator(".cost-page");
+            await panel.waitFor();
+            assertEqual(new URL(page.url()).pathname, "/cost", "配方成本的網址");
+            assertEqual(await page.title(), "配方成本 - CoiPlanner", "配方成本的頁籤標題");
+            // 滿版：頁面佔滿整個視窗（左側留給按鈕）
+            const box = await panel.boundingBox();
+            assert(box.x === 0 && box.y === 0 && box.width >= VIEWPORT.width - 1 && box.height >= VIEWPORT.height - 1, `頁面應該滿版：${JSON.stringify(box)}`);
+
+            await panel.locator("input").first().fill("柴油");
+            await page.locator(".mud-popover-open .mud-list-item", { hasText: /^柴油$/ }).click();
+            const rows = panel.locator("tbody tr");
+            await rows.first().waitFor();
+            const text = await panel.innerText();
+            for (const expected of ["生質柴油", "蒸餾中油", "最便宜", "石油 1.667", "輕油 0.833", "副產品"])
+                assert(text.includes(expected), `配方成本表缺「${expected}」：${text}`);
+            // 預設權重都是 1：食用油、乙醇是外部輸入，生質柴油最便宜
+            assert((await rows.first().innerText()).includes("生質柴油") && (await rows.first().innerText()).includes("最便宜"), "預設權重下生質柴油應該最便宜");
+
+            // 食用油權重調高 → 蒸餾中油變最便宜
+            await panel.getByRole("button", { name: /原料權重/ }).click();
+            const field = panel.getByLabel("食用油（外部）");
+            await field.fill("100");
+            await field.press("Tab");
+            const cheapest = panel.locator("tbody tr", { hasText: "最便宜" });
+            await cheapest.waitFor();
+            assert((await cheapest.innerText()).includes("蒸餾中油"), `調高食用油權重後最便宜應為蒸餾中油：${await cheapest.innerText()}`);
+
+            // 依耗電排序：蒸餾中油（0 kW）排第一，且最便宜的標示不跟著動
+            await panel.getByText("耗電 kW").click();
+            assert((await rows.first().innerText()).includes("蒸餾中油"), "依耗電由低到高時蒸餾中油（0 kW）應在第一列");
+
+            // 換到別的頁再回來：物品與權重還在
+            await page.click('.app-nav [aria-label="產線規劃"]');
+            await page.waitForSelector(".planner canvas");
+            await page.click('.app-nav [aria-label="配方成本"]');
+            await panel.waitFor();
+            await panel.locator("tbody tr").first().waitFor();
+            assert((await panel.innerText()).includes("蒸餾中油"), "回到配方成本頁後應該還顯示柴油的比較");
+            await panel.getByRole("button", { name: /原料權重/ }).click();
+            assertEqual(await panel.getByLabel("食用油（外部）").inputValue(), "100", "回來後的食用油權重");
+
+            // 回到規劃頁，後面的步驟都在規劃頁操作
+            await page.click('.app-nav [aria-label="產線規劃"]');
+            await page.waitForSelector(".planner canvas");
         });
 
         await step("電力開關：沒有發電機時停擺；停用電力後機器照常運轉，物料平衡的電力仍照算", async () => {
