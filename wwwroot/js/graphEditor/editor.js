@@ -1,10 +1,11 @@
 // Editor：把 litegraph 畫布、C# 互動與各功能模組組在一起。
-// 這裡有建立畫布時對 litegraph 的覆寫、事件、拖放匯入與釋放；其餘方法在 plan／status／flow／viewport／menus.js。
+// 這裡有建立畫布時對 litegraph 的覆寫、事件、拖放匯入與釋放；其餘方法在 plan／status／stock／flow／viewport／menus／linkPopup.js。
 import { LiteGraph, LGraph, LGraphCanvas, LinkMarkerShape } from "../../lib/litegraph/litegraph.es.js";
 import { registerProductColors } from "./colors.js";
 import { FlowMethods } from "./flow.js";
 import { MenuMethods } from "./menus.js";
 import { PlanMethods } from "./plan.js";
+import { LinkPopupMethods } from "./linkPopup.js";
 import { GRID_SIZE, state } from "./shared.js";
 import { StatusMethods } from "./status.js";
 import { StockMethods } from "./stock.js";
@@ -71,6 +72,8 @@ export class Editor {
         this.canvas.showLinkMenu = (segment, e) => this.showLinkMenu(segment, e);
         // litegraph 內建的右鍵選單是英文，而且有很多這個工具用不到的項目；換成自己的中文選單
         this.canvas.processContextMenu = (node, e) => this.showContextMenu(node, e);
+        // 從插槽拖出連線、放在空白處：跳窗列出可以接上的節點（linkPopup.js）
+        this.listenLinkRelease();
         this.canvas.onNodeDblClicked = node => {
             if (node.properties.kind === "note") this.editNote(node);
         };
@@ -167,6 +170,7 @@ export class Editor {
     }
 
     dispose() {
+        this.stopListeningLinkRelease();
         for (const type of ["keydown", "keyup", "pointerdown", "pointermove"])
             window.removeEventListener(type, this.onShift, true);
         window.removeEventListener("blur", this.onBlur);
@@ -184,7 +188,7 @@ export class Editor {
 }
 
 /**
- * Editor 的方法分散在 plan／status／flow／viewport／menus.js；那些檔案裡的類別只是方法的容器（不會被實例化），
+ * Editor 的方法分散在 plan／status／stock／flow／viewport／menus／linkPopup.js；那些檔案裡的類別只是方法的容器（不會被實例化），
  * 這裡把它們的方法併入 Editor.prototype。方法名稱不可重複，重複會在載入時拋錯。
  */
 function mixin(target, ...sources) {
@@ -198,4 +202,4 @@ function mixin(target, ...sources) {
     }
 }
 
-mixin(Editor, PlanMethods, StatusMethods, StockMethods, FlowMethods, ViewportMethods, MenuMethods);
+mixin(Editor, PlanMethods, StatusMethods, StockMethods, FlowMethods, ViewportMethods, MenuMethods, LinkPopupMethods);

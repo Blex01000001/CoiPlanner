@@ -14,7 +14,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `Domain/Services/ProductionPlanSerializer.cs`、`JsonDefaults.cs` | 規劃 JSON（camelCase、允許註解與尾逗號） | 很少改 |
 | `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁：`.razor` 只有版面，`.razor.cs` 是 interop、模擬迴圈、面板切換、匯入匯出、自動存檔；**所有狀態都在這裡** | 流程、新的狀態或呼叫 |
 | `Components/Planning/` | 規劃頁的畫面元件，只顯示並回報操作：`SimulationBar` 模擬控制列、`PlanPanel` 規劃面板（說明、匯出入、問題）、`BalancePanel` 物料平衡 | 面板與控制項的外觀 |
-| `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`stock.js` 暫存長條、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
+| `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`stock.js` 暫存長條、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`linkPopup.js` 拖出連線放在空白處的跳窗（列出可接的節點、點選後新增並連線）、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
 | `Components/Pages/Home.razor` | 資料瀏覽（物品、配方、機器、運輸） | 顯示新資料欄位 |
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左側兩顆浮動換頁按鈕（產線規劃、資料瀏覽）。起始頁 `/` 是產線規劃（`/planner` 也可），資料瀏覽是 `/data` | 很少改 |
 | `wwwroot/index.html`、`favicon.svg`／`favicon.png`／`apple-touch-icon.png` | 網頁骨架：`<head>`、CSS、啟動 Blazor 的 script、頁籤圖示（PNG 由 SVG 產生） | 新增 CSS |
@@ -48,7 +48,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
-5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／stock／flow／viewport／menus.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
+5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／stock／flow／viewport／menus／linkPopup.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
 6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`。
 
 ## 架構決策（不要改回去）
@@ -61,7 +61,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - 靜態網站，部署在 GitHub Pages（`.github/workflows/deploy.yml`：推到 `feature/domain-model` 時 `dotnet test` → `dotnet publish` → `scripts/prepare-pages.cjs` → 部署）。原因：使用者只有自己用，不想再開 Visual Studio 或維護伺服器。
 - 瀏覽器快取靠版本號：Pages 的檔案會被快取約 10 分鐘，而 `graphEditor` 是多個 ES 模組、子模組網址是固定的，所以 `prepare-pages.cjs` 在**發佈的檔案**裡把版本號（commit SHA）加到模組匯入與 `index.html` 的 CSS／JS 網址，入口模組由 `Planner.razor.cs` 用組件的 `InformationalVersion`（部署時設成 SHA）當版本。原始檔不要手動加版本號；新增 JS 匯入時沿用 `from "./x.js"`／`"../x.js"` 的寫法（腳本只認這個格式）。
 - 網站在子路徑 `/CoiPlanner/` 下：`index.html` 的 `<base href="/">` 只在發佈時換成子路徑，原始檔維持 `/`（本機開發用）；網址一律用相對路徑，不寫開頭的 `/`。`404.html`（複製自 `index.html`）讓直接開 `/planner` 這類網址時由 Blazor 路由接手。
-- `Editor` 的方法分散在 `plan／status／stock／flow／viewport／menus.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。
+- `Editor` 的方法分散在 `plan／status／stock／flow／viewport／menus／linkPopup.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。
 - 畫布像素＝CSS 大小 × `devicePixelRatio`，並對前景 ctx `setTransform`（`fitCanvas`）。原因：Windows 顯示比例 125%／150% 時畫面模糊且只畫一部分。
 - 格線在 `onRenderBackground` 畫，不用 `onDrawBackground`。原因：後者會蓋掉群組。格線間距＝Shift 對齊間距 `GRID_SIZE`，對齊以含標題的外框為準。
 - Shift 在 `window` 追蹤並切換 `LiteGraph.alwaysSnapToGrid`。原因：litegraph 只在 canvas 有焦點時才知道 Shift。

@@ -304,21 +304,23 @@ public partial class Planner
                 MachineCategory = x.Machine.Category,
                 RecipeId = x.Recipe.Id,
                 RecipeName = x.Recipe.Name,
-                Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId)),
-                Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId)),
+                Inputs = x.Recipe.Inputs.Select(i => Slot(i.ProductId, x.Recipe.InputPerMinute(i.ProductId))),
+                Outputs = x.Recipe.Outputs.Select(o => Slot(o.ProductId, x.Recipe.OutputPerMinute(o.ProductId))),
             }),
         // 每個物品（背景統計值除外）都可以放一個資源來源節點
         Products = Data.Products.Where(p => !p.Background).Select(p => Slot(p.Id)),
         Transports = Data.Transports.Select(t => new { t.Id, t.Name, t.Kind, t.TiersPerMinute }),
     };
 
-    private object Slot(string productId) => new
+    /// <summary>perMinute：單台機器每分鐘的量（配方的插槽才有；資源來源沒有）。</summary>
+    private object Slot(string productId, double? perMinute = null) => new
     {
         ProductId = productId,
         Name = _products[productId].Name,
         Unit = _products[productId].Unit,
         Kind = _products[productId].Kind,
         Color = _products[productId].Color,
+        PerMinute = perMinute,
     };
 
     private static bool IsEmpty(ProductionPlan plan) =>
