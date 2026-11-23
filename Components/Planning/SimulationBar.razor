@@ -19,6 +19,11 @@
         <MudIconButton Icon="@(FlowDots ? Icons.Material.Filled.FiberManualRecord : Icons.Material.Filled.ArrowForward)" Size="Size.Small"
                        OnClick="() => FlowDotsChanged.InvokeAsync(!FlowDots)" aria-label="切換流動效果" />
     </MudTooltip>
+    <MudTooltip Text="@(PowerEnabled ? "電力：啟用（按一下停用，機器不再受電力影響；物料平衡仍照算）" : "電力：已停用（按一下啟用）")">
+        <MudIconButton Icon="@(PowerEnabled ? Icons.Material.Filled.Bolt : Icons.Material.Filled.FlashOff)" Size="Size.Small"
+                       Color="@(PowerEnabled ? Color.Warning : Color.Default)" OnClick="() => PowerEnabledChanged.InvokeAsync(!PowerEnabled)"
+                       aria-label="切換電力" aria-pressed="@(PowerEnabled ? "true" : "false")" />
+    </MudTooltip>
     <MudText Typo="Typo.body2" Class="planner-sim-clock">@FormatTime(TimeSeconds)</MudText>
 </MudPaper>
 
@@ -31,6 +36,8 @@
     [Parameter] public EventCallback<int> SpeedChanged { get; set; }
     [Parameter] public double TimeSeconds { get; set; }
     [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public bool PowerEnabled { get; set; } = true;
+    [Parameter] public EventCallback<bool> PowerEnabledChanged { get; set; }
     [Parameter] public bool FlowDots { get; set; }
     [Parameter] public EventCallback<bool> FlowDotsChanged { get; set; }
 

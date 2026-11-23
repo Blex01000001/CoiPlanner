@@ -207,6 +207,29 @@ async function main() {
             await page.click('[aria-label="物料平衡面板"]');
         });
 
+        await step("電力開關：沒有發電機時停擺；停用電力後機器照常運轉，物料平衡的電力仍照算", async () => {
+            await dropFile("pump.json");
+            await savedPlan(p => p.nodes.length === 1 && p.nodes[0].count === 3);
+            await page.click(".planner-sim-bar >> text=20×");
+            await page.click('[aria-label="物料平衡面板"]');
+            const panel = page.locator(".planner-side:not(.d-none)");
+            await panel.getByText("供電比例").waitFor();
+            assert((await panel.innerText()).includes("0%"), "沒有發電機時供電比例應為 0%");
+            assertEqual(await balanceOf("海水").then(b => b?.supply ?? 0), 0, "沒電時海水產出");
+
+            await page.click('[aria-label="切換電力"]');
+            assertEqual(await page.getAttribute('[aria-label="切換電力"]', "aria-pressed"), "false", "停用後的按鈕狀態");
+            await waitForClock(300);
+            await panel.getByText("電力已停用").waitFor();
+            const text = await panel.innerText();
+            assert(/供電比例[\s\S]*0%/.test(text) && /300/.test(text), `停用後電力表仍應照算（需求 300 kW、比例 0%）：${text}`);
+            const sea = await balanceOf("海水");
+            assert(sea && sea.supply > 300, `停用電力後海水應照常產出（3 台 324/分）：${sea?.supply}`);
+
+            await page.click('[aria-label="切換電力"]');
+            await page.click('[aria-label="物料平衡面板"]');
+        });
+
         await step("暫存長條：暫存堆滿的插槽那一行會填上藍色，空的時候不會", async () => {
             // 先用 1× 讓模擬慢慢開始，才量得到「還是空的」那一刻
             await page.click(".planner-sim-bar >> text=1×");

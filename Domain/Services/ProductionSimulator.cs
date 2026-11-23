@@ -38,6 +38,12 @@ public sealed class ProductionSimulator
 
     public SimulationSettings Settings => _settings;
 
+    /// <summary>
+    /// 電力是否影響機器。停用時供給、需求與供電比例照常計算（物料平衡面板仍顯示），
+    /// 但耗電機器不會因為沒電而停擺或減產。不屬於 <see cref="SimulationSettings"/>，使用者可以隨時切換。
+    /// </summary>
+    public bool PowerEnabled { get; set; } = true;
+
     /// <summary>已經模擬的秒數。</summary>
     public double TimeSeconds { get; private set; }
 
@@ -153,9 +159,12 @@ public sealed class ProductionSimulator
                 _nodes.Values.SelectMany(n => n.Inputs).Where(s => s.ProductId == id).Sum(s => PerMinute(s.Meter))))
             .ToList();
 
-        var power = new PowerBalance(_supplyKw.Average, _demandKw.Average, _powerRatio);
+        var power = new PowerBalance(_supplyKw.Average, _demandKw.Average, _powerRatio, PowerEnabled);
         return new SimulationSnapshot(TimeSeconds, nodes, edges, balances, power);
     }
+
+    /// <summary>機器實際受到的供電比例；電力停用時永遠是 1。</summary>
+    private double EffectivePowerRatio => PowerEnabled ? _powerRatio : 1;
 
     /// <summary>依上一步發電機的稼動率算出這一步的供電比例。</summary>
     private void UpdatePower()
@@ -231,7 +240,7 @@ public sealed class ProductionSimulator
     private void ProduceMachine(SimNode node, double dt)
     {
         var f = 0.0;
-        node.NoPower = node.PowerUseKw > 0 && _powerRatio <= Epsilon;
+        node.NoPower = node.PowerUseKw > 0 && EffectivePowerRatio <= Epsilon;
         node.Missing = node.Inputs.Where(s => s.Stock <= Epsilon).Select(s => s.ProductId).ToList();
         if (node.Missing.Count > 0)
         {
@@ -259,7 +268,7 @@ public sealed class ProductionSimulator
             f = Math.Max(0, f);
 
             if (node.PowerUseKw > 0)
-                f = Math.Min(f, _powerRatio);
+                f = Math.Min(f, EffectivePowerRatio);
 
             if (f <= Epsilon)
             {

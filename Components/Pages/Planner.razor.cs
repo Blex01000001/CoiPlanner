@@ -40,6 +40,8 @@ public partial class Planner
     private bool _running = true;
     private int _speed = 1;
     private bool _flowDots;
+    // 電力停用時機器不受供電影響（物料平衡仍照算）；只在這個頁面的畫面上有效，不存進規劃檔
+    private bool _powerEnabled = true;
     private int _tick;
     private readonly CancellationTokenSource _loopCts = new();
     // 匯入或清空後，下一次收到畫布的規劃時讓模擬從頭開始
@@ -123,6 +125,12 @@ public partial class Planner
 
     // 沒開啟的面板按鈕用淺色底，在深色畫布上才看得到
     private string IdleClass(SidePanel panel) => _panel == panel ? "" : "planner-side-button-idle";
+
+    private void SetPowerEnabled(bool enabled)
+    {
+        _powerEnabled = enabled;
+        _sim.PowerEnabled = enabled;
+    }
 
     private async Task SetFlowDotsAsync(bool dots)
     {
