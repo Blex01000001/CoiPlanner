@@ -115,6 +115,53 @@ h1:focus {
     overflow-y: auto;
 }
 
+/* 配方成本面板：表格欄位多，比其他面板寬；窄螢幕時表格自己橫向捲動 */
+.planner-side.planner-side-wide {
+    width: 980px;
+    max-width: calc(100% - 92px);
+}
+
+.cost-weights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 4px 0 8px;
+}
+
+.cost-table .mud-table-container {
+    overflow-x: auto;
+}
+
+/* 數字與清單欄不換行，配方欄保留寬度並允許換行；整張表比面板寬時自己橫向捲動 */
+.cost-table table {
+    min-width: 900px;
+}
+
+.cost-table th, .cost-table td {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.cost-table td:first-child {
+    min-width: 240px;
+    max-width: 300px;
+    white-space: normal;
+}
+
+.cost-recipe {
+    font-weight: 500;
+}
+
+.cost-note {
+    margin-top: 2px;
+    color: #757575;
+    font-size: 12px;
+}
+
+.cost-warning {
+    color: #b26a00;
+}
+
 .planner-fit {
     position: absolute;
     right: 16px;

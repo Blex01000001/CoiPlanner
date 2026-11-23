@@ -12,6 +12,8 @@ namespace CoiPlanner.Components.Pages;
 public partial class Planner
 {
     private const string StorageKey = "coiplanner.plan";
+    // 配方成本的原料權重（物品 id → 權重）；只在瀏覽器儲存，不屬於規劃檔
+    private const string CostWeightsKey = "coiplanner.costWeights";
     private const long MaxImportBytes = 1024 * 1024;
     // 每 100 毫秒推進一次模擬並把狀態送到畫布；1× 時正好是一步（0.1 秒）
     private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
@@ -30,10 +32,15 @@ public partial class Planner
     private PlanResult? _result;
     private Dictionary<string, Product> _products = new();
     private HashSet<(string MachineId, string RecipeId)> _nodeTypes = new();
-    private enum SidePanel { None, Plan, Balance }
+    private enum SidePanel { None, Plan, Balance, Cost }
 
     // 一開始收起面板，畫布不被遮住；需要時按右側按鈕打開
     private SidePanel _panel = SidePanel.None;
+
+    // 配方成本面板：選擇的物品、原料權重與比較結果
+    private string? _costProduct;
+    private Dictionary<string, double> _costWeights = new();
+    private CostReport? _costReport;
 
     private readonly ProductionSimulator _sim = new();
     private SimulationSnapshot? _snapshot;
@@ -61,6 +68,7 @@ public partial class Planner
         if (!firstRender)
             return;
 
+        await ReadCostWeightsAsync();
         var saved = await ReadAutosaveAsync();
         _pendingLoad = IsEmpty(saved) ? null : saved;
 
@@ -120,6 +128,7 @@ public partial class Planner
     // 畫布右側被蓋住的寬度，fit view 時要避開：右側按鈕欄（含間距 68px），面板展開時再加上面板 360px 與間距
     private const int ButtonsInset = 68;
     private const int PanelInset = ButtonsInset + 360 + 12;
+    private const int CostPanelInset = ButtonsInset + 980 + 12;
 
     private void TogglePanel(SidePanel panel) => _panel = _panel == panel ? SidePanel.None : panel;
 
@@ -142,7 +151,38 @@ public partial class Planner
     private async Task FitViewAsync()
     {
         if (_editor is not null)
-            await _editor.InvokeVoidAsync("fitView", _panel == SidePanel.None ? ButtonsInset : PanelInset);
+            await _editor.InvokeVoidAsync("fitView", _panel switch { SidePanel.None => ButtonsInset, SidePanel.Cost => CostPanelInset, _ => PanelInset });
+    }
+
+    private void SetCostProduct(string? productId)
+    {
+        _costProduct = productId;
+        RecalculateCost();
+    }
+
+    private async Task SetCostWeight((string ProductId, double Weight) change)
+    {
+        _costWeights[change.ProductId] = Math.Max(0, change.Weight);
+        RecalculateCost();
+        await JS.InvokeVoidAsync("localStorage.setItem", CostWeightsKey, System.Text.Json.JsonSerializer.Serialize(_costWeights));
+    }
+
+    private void RecalculateCost() =>
+        _costReport = string.IsNullOrEmpty(_costProduct) ? null : CostCalculator.Calculate(_costProduct, _costWeights);
+
+    private async Task ReadCostWeightsAsync()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", CostWeightsKey);
+            if (!string.IsNullOrEmpty(json))
+                _costWeights = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, double>>(json) ?? new();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // 壞掉的權重就當作沒有，全部用預設值 1
+            _costWeights = new();
+        }
     }
 
     private void ResetSimulation()

@@ -15,6 +15,7 @@
 @inject IJSRuntime JS
 @inject GameData Data
 @inject PlanCalculator Calculator
+@inject RecipeCostCalculator CostCalculator
 @inject ProductionPlanSerializer Serializer
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -43,11 +44,21 @@
             <MudFab Color="@(_panel == SidePanel.Balance ? Color.Primary : Color.Default)" Class="@IdleClass(SidePanel.Balance)" Size="Size.Small"
                     StartIcon="@Icons.Material.Filled.TableChart" OnClick="() => TogglePanel(SidePanel.Balance)" aria-label="物料平衡面板" />
         </MudTooltip>
+        <MudTooltip Text="配方成本比較" Placement="Placement.Left">
+            <MudFab Color="@(_panel == SidePanel.Cost ? Color.Primary : Color.Default)" Class="@IdleClass(SidePanel.Cost)" Size="Size.Small"
+                    StartIcon="@Icons.Material.Filled.Calculate" OnClick="() => TogglePanel(SidePanel.Cost)" aria-label="配方成本面板" />
+        </MudTooltip>
     </div>
 
     <PlanPanel @ref="_planPanel" Visible="@(_panel == SidePanel.Plan)" Enabled="@(_editor is not null)" CanClear="@(!IsEmpty(_plan))"
                Result="_result" Settings="_sim.Settings" OnClose="() => _panel = SidePanel.None"
                OnExport="ExportAsync" OnFileSelected="ImportAsync" OnClear="ClearAsync" />
+
+    @if (_panel == SidePanel.Cost)
+    {
+        <CostPanel ProductId="_costProduct" ProductIdChanged="SetCostProduct" Weights="_costWeights" OnWeightChanged="SetCostWeight"
+                   Report="_costReport" OnClose="() => _panel = SidePanel.None" />
+    }
 
     @if (_panel == SidePanel.Balance)
     {

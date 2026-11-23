@@ -9,6 +9,7 @@ namespace CoiPlanner.Domain.Services;
 /// <item>原料＝有「沒有輸入的配方」（抽水、採礦…）產出的物品，或完全沒有配方產出的物品（資料缺少，視為外部輸入，見 <see cref="IsExternal"/>）。</item>
 /// <item>中間物品有多種做法時，取加權成本最低的配方（循環時以反覆逼近求解）。只有目標物品本身會列出所有配方。</item>
 /// <item>副產品不分攤成本、不抵扣，只單獨列出數量。</item>
+/// <item>展開時若上游又需要目標物品本身（循環），那一部分視為外部輸入，以該物品目前最低的生產成本計價，並附上警告。</item>
 /// <item>耗電、工人、維修包含採集原料的機器（例如海水泵）；原料有多種採集配方時取每單位耗電最低的。</item>
 /// </list>
 /// </summary>
@@ -66,15 +67,17 @@ public sealed class RecipeCostCalculator
             return new CostReport(productId, []);
 
         var weightOf = (string id) => weights is not null && weights.TryGetValue(id, out var w) ? Math.Max(0, w) : 1.0;
-        var best = BestRecipes(weightOf);
-        var routes = recipes.Select(r => Expand(productId, r, best, weightOf))
+        var (best, cost) = BestRecipes(weightOf);
+        // 原料用權重計價；循環時視為外部輸入的中間物品，用它目前最低的生產成本計價（算不出來時才用權重）
+        double UnitCost(string id) => !IsRaw(id) && cost.TryGetValue(id, out var c) && double.IsFinite(c) ? c : weightOf(id);
+        var routes = recipes.Select(r => Expand(productId, r, best, UnitCost))
             .OrderBy(r => r.WeightedCost).ThenBy(r => r.PowerKw)
             .ToList();
         return new CostReport(productId, routes);
     }
 
     /// <summary>每個非原料物品加權成本最低的配方。成本以反覆逼近求解，所以配方之間有循環也能算。</summary>
-    private Dictionary<string, Recipe> BestRecipes(Func<string, double> weightOf)
+    private (Dictionary<string, Recipe> Best, Dictionary<string, double> Cost) BestRecipes(Func<string, double> weightOf)
     {
         var cost = new Dictionary<string, double>();
         foreach (var id in _products.Keys)
@@ -104,10 +107,10 @@ public sealed class RecipeCostCalculator
             if (!changed)
                 break;
         }
-        return best;
+        return (best, cost);
     }
 
-    private RouteCost Expand(string target, Recipe recipe, Dictionary<string, Recipe> best, Func<string, double> weightOf)
+    private RouteCost Expand(string target, Recipe recipe, Dictionary<string, Recipe> best, Func<string, double> unitCost)
     {
         var acc = new Accumulator();
         var path = new HashSet<string> { target };
@@ -118,7 +121,7 @@ public sealed class RecipeCostCalculator
             recipe.Id,
             raw,
             acc.Byproducts.Select(kv => new ProductAmount(kv.Key, kv.Value)).ToList(),
-            raw.Sum(r => r.Quantity * weightOf(r.ProductId)),
+            raw.Sum(r => r.Quantity * unitCost(r.ProductId)),
             acc.Machines.Select(kv => new MachineNeed(kv.Key, kv.Value)).ToList(),
             acc.PowerKw,
             acc.Workers,

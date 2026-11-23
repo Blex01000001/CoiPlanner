@@ -250,6 +250,42 @@ async function main() {
             assertEqual(fed.sources[0].productId, "steam_high", "新增的資源");
         });
 
+        await step("配方成本：選物品列出各配方與最便宜標示；可依欄位排序；原料權重改變結果且重新整理後仍在", async () => {
+            await page.click('[aria-label="配方成本面板"]');
+            const panel = page.locator(".planner-side-wide");
+            await panel.waitFor();
+            await panel.locator("input").first().fill("柴油");
+            await page.locator(".mud-popover-open .mud-list-item", { hasText: /^柴油$/ }).click();
+            const rows = panel.locator("tbody tr");
+            await rows.first().waitFor();
+            const text = await panel.innerText();
+            for (const expected of ["生質柴油", "蒸餾中油", "最便宜", "石油 1.667", "輕油 0.833", "副產品"])
+                assert(text.includes(expected), `配方成本表缺「${expected}」：${text}`);
+            // 預設權重都是 1：食用油、乙醇是外部輸入，生質柴油最便宜
+            assert((await rows.first().innerText()).includes("生質柴油") && (await rows.first().innerText()).includes("最便宜"), "預設權重下生質柴油應該最便宜");
+
+            // 食用油權重調高 → 蒸餾中油變最便宜
+            await panel.getByRole("button", { name: /原料權重/ }).click();
+            const field = panel.getByLabel("食用油（外部）");
+            await field.fill("100");
+            await field.press("Tab");
+            const cheapest = panel.locator("tbody tr", { hasText: "最便宜" });
+            await cheapest.waitFor();
+            assert((await cheapest.innerText()).includes("蒸餾中油"), `調高食用油權重後最便宜應為蒸餾中油：${await cheapest.innerText()}`);
+
+            // 依耗電排序：蒸餾中油（0 kW）排第一，且最便宜的標示不跟著動
+            await panel.getByText("耗電 kW").click();
+            assert((await rows.first().innerText()).includes("蒸餾中油"), "依耗電由低到高時蒸餾中油（0 kW）應在第一列");
+
+            // 重新整理後權重還在
+            await page.reload();
+            await page.waitForSelector(".planner canvas");
+            await page.click('[aria-label="配方成本面板"]');
+            await page.locator(".planner-side-wide").getByRole("button", { name: /原料權重/ }).click();
+            assertEqual(await page.locator(".planner-side-wide").getByLabel("食用油（外部）").inputValue(), "100", "重新整理後的食用油權重");
+            await page.click('[aria-label="配方成本面板"]');
+        });
+
         await step("電力開關：沒有發電機時停擺；停用電力後機器照常運轉，物料平衡的電力仍照算", async () => {
             await dropFile("pump.json");
             await savedPlan(p => p.nodes.length === 1 && p.nodes[0].count === 3);

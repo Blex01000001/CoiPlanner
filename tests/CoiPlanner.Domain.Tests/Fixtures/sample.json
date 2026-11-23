@@ -31,6 +31,13 @@
       "cycleSeconds": 60
     },
     {
+      "id": "reforge_gamma",
+      "name": "Reforge Gamma Plate",
+      "inputs": [ { "productId": "gamma_plate", "quantity": 2 }, { "productId": "alpha_ore", "quantity": 1 } ],
+      "outputs": [ { "productId": "gamma_plate", "quantity": 3 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_delta",
       "name": "Make Delta",
       "inputs": [ { "productId": "epsilon", "quantity": 1 }, { "productId": "alpha_ore", "quantity": 1 } ],
@@ -69,7 +76,7 @@
   ],
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
-    { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma", "press_gamma_alt" ] },
+    { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma", "press_gamma_alt", "reforge_gamma" ] },
     { "id": "demo_lab", "name": "Demo Lab", "recipeIds": [ "make_delta", "make_epsilon" ] },
     { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha", "mine_alpha_fast" ] },
     { "id": "demo_generator", "name": "Demo Generator", "powerGenerationKw": 200, "recipeIds": [ "burn_alpha" ] }
