@@ -13,6 +13,9 @@ public sealed record Machine
     /// <summary>單台機器全速運轉時的發電量（kW）。</summary>
     public double PowerGenerationKw { get; init; }
 
+    /// <summary>單台機器需要的算力（TF）。目前只記錄資料並顯示在資料瀏覽頁，還沒有納入檢查或模擬。</summary>
+    public double ComputingTf { get; init; }
+
     /// <summary>單台機器需要的工人數。目前只記錄資料，還沒有納入檢查或模擬。</summary>
     public double Workers { get; init; }
 

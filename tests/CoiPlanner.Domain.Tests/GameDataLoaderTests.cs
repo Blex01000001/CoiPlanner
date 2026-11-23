@@ -102,7 +102,17 @@ public class GameDataLoaderTests
         Assert.Contains("color", ex.Message);
     }
 
+    [Fact]
+    public void LoadFromFile_SampleJson_MapsComputing()
+    {
+        var data = new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));
+
+        Assert.Equal(2.5, data.Machines.Single(m => m.Id == "demo_lab").ComputingTf);
+        Assert.Equal(0, data.Machines.Single(m => m.Id == "demo_press").ComputingTf);
+    }
+
     [Theory]
+    [InlineData("\"computingTf\": -1")]
     [InlineData("\"workers\": -1")]
     [InlineData("\"maintenanceType\": \"M1\", \"maintenancePerMinute\": -0.1")]
     [InlineData("\"maintenancePerMinute\": 0.2")]

@@ -163,8 +163,8 @@ public sealed class GameDataLoader
 
         foreach (var machine in data.Machines)
         {
-            if (machine.Workers < 0 || machine.MaintenancePerMinute < 0)
-                errors.Add($"machine '{machine.Id}' 的 workers 與 maintenancePerMinute 不能是負數。");
+            if (machine.Workers < 0 || machine.MaintenancePerMinute < 0 || machine.ComputingTf < 0)
+                errors.Add($"machine '{machine.Id}' 的 workers、maintenancePerMinute 與 computingTf 不能是負數。");
             if (machine.MaintenancePerMinute > 0 && string.IsNullOrWhiteSpace(machine.MaintenanceType))
                 errors.Add($"machine '{machine.Id}' 有 maintenancePerMinute，必須指定 maintenanceType。");
             if (machine.PowerUseKw < 0 || machine.PowerGenerationKw < 0)

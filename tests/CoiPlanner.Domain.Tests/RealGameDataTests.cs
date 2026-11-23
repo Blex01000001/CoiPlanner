@@ -335,7 +335,8 @@ public class RealGameDataTests
     public void Assembly_MechanicalParts_HasSteelAndIronPlateRecipes()
     {
         var machine = Data.Machines.Single(m => m.Id == "assembly_4");
-        Assert.Equal(["assemble_mechanical_parts", "assemble_mechanical_parts_iron"], machine.RecipeIds);
+        Assert.Contains("assemble_mechanical_parts", machine.RecipeIds);
+        Assert.Contains("assemble_mechanical_parts_iron", machine.RecipeIds);
 
         AssertRecipe("assemble_mechanical_parts", new() { ["steel_plate"] = 24 }, new() { ["mechanical_parts"] = 48 });
         AssertRecipe("assemble_mechanical_parts_iron", new() { ["iron_plate"] = 60 }, new() { ["mechanical_parts"] = 48 });
@@ -349,5 +350,43 @@ public class RealGameDataTests
         Assert.Equal(2, report.Routes.Count);
         Assert.Contains(report.Routes, r => r.RecipeId == "assemble_mechanical_parts");
         Assert.Contains(report.Routes, r => r.RecipeId == "assemble_mechanical_parts_iron");
+    }
+
+    [Fact]
+    public void AssemblyIV_StatsAndRecipeCount_MatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "assembly_4");
+
+        Assert.Equal((2, 250, "維修II", 1.9, 3), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute, m.ComputingTf));
+        Assert.Equal(37, m.RecipeIds.Count);
+        Assert.Equal(m.RecipeIds.Count, m.RecipeIds.Distinct().Count());
+        Assert.Equal("鋼", Data.Products.Single(p => p.Id == "steel_plate").Name);
+    }
+
+    [Fact]
+    public void AssemblyIV_Recipes_MatchUserData()
+    {
+        AssertRecipe("assemble_building_parts_1_iron", new() { ["iron_plate"] = 36, ["wood"] = 36, ["concrete_slab"] = 48 }, new() { ["building_parts_1"] = 48 });
+        AssertRecipe("assemble_building_parts_1_steel", new() { ["steel_plate"] = 24, ["wood"] = 24, ["concrete_slab"] = 36 }, new() { ["building_parts_1"] = 48 });
+        AssertRecipe("assemble_building_parts_4", new() { ["building_parts_3"] = 12, ["electronics_2"] = 6 }, new() { ["building_parts_4"] = 6 });
+        AssertRecipe("assemble_vehicle_parts_2", new() { ["vehicle_parts_1"] = 16, ["steel_plate"] = 8, ["glass"] = 4 }, new() { ["vehicle_parts_2"] = 8 });
+        AssertRecipe("assemble_lab_equipment_4", new() { ["lab_equipment_3"] = 16, ["electronics_3"] = 2 }, new() { ["lab_equipment_4"] = 16 });
+        AssertRecipe("assemble_electronics_1", new() { ["rubber"] = 8, ["copper_plate"] = 48 }, new() { ["electronics_1"] = 48 });
+        AssertRecipe("assemble_electronics_2", new() { ["printed_circuit_board"] = 12, ["electronics_1"] = 24, ["polysilicon"] = 6 }, new() { ["electronics_2"] = 12 });
+        AssertRecipe("assemble_medical_supplies_3", new() { ["medical_supplies_2"] = 48, ["anesthetic"] = 24, ["morphine"] = 24 }, new() { ["medical_supplies_3"] = 48 });
+        AssertRecipe("assemble_packaged_food_tofu", new() { ["tofu"] = 24, ["vegetables"] = 32 }, new() { ["packaged_food"] = 16 });
+        AssertRecipe("assemble_space_station_part_basic", new() { ["composite_core"] = 8, ["solar_cell"] = 4, ["chemical_fuel"] = 2 }, new() { ["space_station_part_basic"] = 4 });
+        AssertRecipe("assemble_crew_rations", new() { ["packaged_food"] = 4, ["medical_supplies_2"] = 2, ["plastic_pellets"] = 2 }, new() { ["crew_rations"] = 8 });
+    }
+
+    [Fact]
+    public void RecipeCost_CrewRations_ExpandsDeepChain()
+    {
+        var report = new RecipeCostCalculator(Data).Calculate("crew_rations");
+
+        Assert.NotEmpty(report.Routes);
+        Assert.All(report.Routes, r => Assert.True(double.IsFinite(r.WeightedCost) && r.WeightedCost > 0));
+        // 抗生素、肉等沒有配方產出的物品視為外部輸入
+        Assert.True(new RecipeCostCalculator(Data).IsExternal("antibiotics"));
     }
 }
