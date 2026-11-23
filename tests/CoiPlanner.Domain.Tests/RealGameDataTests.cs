@@ -317,4 +317,17 @@ public class RealGameDataTests
         Assert.True(calculator.IsRaw("water"));
         Assert.DoesNotContain("air_pollution", calculator.RawProductIds);
     }
+
+    [Fact]
+    public void RecipeCost_SameMachineWithDifferentRecipes_IsNotMerged()
+    {
+        // 柴油經「裂解石腦油」：石腦油又來自「裂解柴油」，兩個配方都由裂解裝置執行，必須分開列
+        var route = new RecipeCostCalculator(Data).Calculate("diesel").Routes.Single(r => r.RecipeId == "crack_naphtha_to_diesel");
+
+        var cracking = route.Machines.Where(m => m.MachineId == "cracking_unit").ToList();
+        Assert.True(cracking.Count >= 2, "裂解裝置應該依配方分開列");
+        Assert.Equal(cracking.Count, cracking.Select(m => m.RecipeId).Distinct().Count());
+        Assert.Contains(cracking, m => m.RecipeId == "crack_naphtha_to_diesel");
+        Assert.Contains(cracking, m => m.RecipeId == "crack_diesel_to_naphtha");
+    }
 }

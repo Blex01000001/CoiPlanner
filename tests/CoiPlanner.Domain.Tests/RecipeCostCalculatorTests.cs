@@ -81,10 +81,11 @@ public class RecipeCostCalculatorTests
         var route = Route(_calculator.Calculate("gamma_plate"), "press_gamma");
 
         // 每 1 單位/分 gamma：壓床 1/6 台、熔爐 0.25 台、鑽機 0.25 台
-        var machines = route.Machines.ToDictionary(m => m.MachineId, m => m.Count);
-        Near(1.0 / 6, machines["demo_press"]);
-        Near(0.25, machines["demo_furnace"]);
-        Near(0.25, machines["demo_drill"]);
+        var machines = route.Machines.ToDictionary(m => (m.MachineId, m.RecipeId), m => m.Count);
+        Near(1.0 / 6, machines[("demo_press", "press_gamma")]);
+        Near(0.25, machines[("demo_furnace", "smelt_beta")]);
+        Near(0.25, machines[("demo_drill", "mine_alpha")]);
+        Assert.Equal(3, machines.Count);
         Near(0.25 * 150, route.PowerKw);                  // 只有鑽機耗電（含採集原料的機器）
         Near(2.0 / 6, route.Workers);
         var maintenance = Assert.Single(route.Maintenance);

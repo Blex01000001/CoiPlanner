@@ -3,8 +3,11 @@ namespace CoiPlanner.Domain.Models;
 /// <summary>某一物品的數量（單位依用途而定，見各欄位的說明）。</summary>
 public sealed record ProductAmount(string ProductId, double Quantity);
 
-/// <summary>維持 1 單位/分目標產量需要的機器台數（可能是小數，代表機器的使用比例）。</summary>
-public sealed record MachineNeed(string MachineId, double Count);
+/// <summary>
+/// 維持 1 單位/分目標產量時，某台機器跑某個配方需要的台數（可能是小數，代表機器的使用比例）。
+/// 同一種機器跑不同配方要分開列，不合併。
+/// </summary>
+public sealed record MachineNeed(string MachineId, string RecipeId, double Count);
 
 /// <summary>某一種維修每分鐘的需求量。</summary>
 public sealed record MaintenanceNeed(string Type, double PerMinute);

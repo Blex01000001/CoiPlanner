@@ -10,7 +10,7 @@ namespace CoiPlanner.Domain.Services;
 /// <item>中間物品有多種做法時，取加權成本最低的配方（循環時以反覆逼近求解）。只有目標物品本身會列出所有配方。</item>
 /// <item>副產品不分攤成本、不抵扣，只單獨列出數量。</item>
 /// <item>展開時若上游又需要目標物品本身（循環），那一部分視為外部輸入，以該物品目前最低的生產成本計價，並附上警告。</item>
-/// <item>耗電、工人、維修包含採集原料的機器（例如海水泵）；原料有多種採集配方時取每單位耗電最低的。</item>
+/// <item>機器依「機器＋配方」分開列（同一種機器跑不同配方不合併）；耗電、工人、維修包含採集原料的機器（例如海水泵）；原料有多種採集配方時取每單位耗電最低的。</item>
 /// </list>
 /// </summary>
 public sealed class RecipeCostCalculator
@@ -122,7 +122,7 @@ public sealed class RecipeCostCalculator
             raw,
             acc.Byproducts.Select(kv => new ProductAmount(kv.Key, kv.Value)).ToList(),
             raw.Sum(r => r.Quantity * unitCost(r.ProductId)),
-            acc.Machines.Select(kv => new MachineNeed(kv.Key, kv.Value)).ToList(),
+            acc.Machines.Select(kv => new MachineNeed(kv.Key.MachineId, kv.Key.RecipeId, kv.Value)).ToList(),
             acc.PowerKw,
             acc.Workers,
             acc.Maintenance.Select(kv => new MaintenanceNeed(kv.Key, kv.Value)).ToList(),
@@ -137,7 +137,8 @@ public sealed class RecipeCostCalculator
         var machines = quantityPerMinute / recipe.OutputPerMinute(productId);
         if (_machineByRecipe.TryGetValue(recipe.Id, out var machine))
         {
-            acc.Machines[machine.Id] = acc.Machines.GetValueOrDefault(machine.Id) + machines;
+            var key = (machine.Id, recipe.Id);
+            acc.Machines[key] = acc.Machines.GetValueOrDefault(key) + machines;
             acc.PowerKw += machines * machine.PowerUseKw * recipe.PowerMultiplier;
             acc.Workers += machines * machine.Workers;
             if (machine.MaintenancePerMinute > 0 && !string.IsNullOrWhiteSpace(machine.MaintenanceType))
@@ -199,7 +200,7 @@ public sealed class RecipeCostCalculator
     {
         public Dictionary<string, double> Raw { get; } = new();
         public Dictionary<string, double> Byproducts { get; } = new();
-        public Dictionary<string, double> Machines { get; } = new();
+        public Dictionary<(string MachineId, string RecipeId), double> Machines { get; } = new();
         public Dictionary<string, double> Maintenance { get; } = new();
         public List<UpstreamStep> Steps { get; } = [];
         public HashSet<string> Warnings { get; } = [];

@@ -268,7 +268,7 @@ async function main() {
             const rows = panel.locator("tbody tr");
             await rows.first().waitFor();
             const text = await panel.innerText();
-            for (const expected of ["生質柴油", "蒸餾中油", "最便宜", "石油 1.667", "輕油 0.833", "副產品"])
+            for (const expected of ["生質柴油", "蒸餾中油", "最便宜", "石油 1.667", "輕油 0.833", "副產品", "裂解裝置 · 裂解柴油(產石腦油)", "裂解裝置 · 裂解石腦油(產柴油)"])
                 assert(text.includes(expected), `配方成本表缺「${expected}」：${text}`);
             // 預設權重都是 1：食用油、乙醇是外部輸入，生質柴油最便宜
             assert((await rows.first().innerText()).includes("生質柴油") && (await rows.first().innerText()).includes("最便宜"), "預設權重下生質柴油應該最便宜");
