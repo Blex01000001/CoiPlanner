@@ -330,4 +330,24 @@ public class RealGameDataTests
         Assert.Contains(cracking, m => m.RecipeId == "crack_naphtha_to_diesel");
         Assert.Contains(cracking, m => m.RecipeId == "crack_diesel_to_naphtha");
     }
+
+    [Fact]
+    public void Assembly_MechanicalParts_HasSteelAndIronPlateRecipes()
+    {
+        var machine = Data.Machines.Single(m => m.Id == "assembly_4");
+        Assert.Equal(["assemble_mechanical_parts", "assemble_mechanical_parts_iron"], machine.RecipeIds);
+
+        AssertRecipe("assemble_mechanical_parts", new() { ["steel_plate"] = 24 }, new() { ["mechanical_parts"] = 48 });
+        AssertRecipe("assemble_mechanical_parts_iron", new() { ["iron_plate"] = 60 }, new() { ["mechanical_parts"] = 48 });
+    }
+
+    [Fact]
+    public void RecipeCost_MechanicalParts_ListsBothRoutes()
+    {
+        var report = new RecipeCostCalculator(Data).Calculate("mechanical_parts");
+
+        Assert.Equal(2, report.Routes.Count);
+        Assert.Contains(report.Routes, r => r.RecipeId == "assemble_mechanical_parts");
+        Assert.Contains(report.Routes, r => r.RecipeId == "assemble_mechanical_parts_iron");
+    }
 }
