@@ -1,0 +1,55 @@
+# 推到 feature/domain-model（預設分支）時：跑測試 → 發佈 Blazor WebAssembly → 部署到 GitHub Pages。
+# 第一次使用要在儲存庫的 Settings → Pages → Build and deployment → Source 選「GitHub Actions」。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ feature/domain-model ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時只部署一次；新的推送會等舊的做完，不取消正在部署的
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test --configuration Release
+
+      - name: Publish
+        run: >
+          dotnet publish CoiPlanner.csproj --configuration Release --output out
+          -p:InformationalVersion=${{ github.sha }}
+          -p:IncludeSourceRevisionInInformationalVersion=false
+
+      # 子路徑（專案頁面在 /儲存庫名稱/）、版本號、404.html、.nojekyll
+      - name: Prepare for GitHub Pages
+        run: node scripts/prepare-pages.cjs out/wwwroot --version ${{ github.sha }} --base /${{ github.event.repository.name }}/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

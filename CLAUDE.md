@@ -37,8 +37,9 @@ dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   
 for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法
 tsc -p tsconfig.check.json | grep -E "^wwwroot/js/.*TS(2304|2305|2307|2459|2460|2614|2724|2552)"   # 改 JS 後必跑（2 秒）；列出找不到的名稱或匯出，沒有輸出＝沒問題（需要 tsc，雲端容器內建）
 node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
+# 部署用的是 Release（有裁剪）；改動可能受影響時（JSON 序列化、反射）另跑：dotnet build -c Release && CONFIG=Release node tests/e2e/smoke.cjs
 ```
-- 冒煙測試先 `dotnet publish --no-build` 到 `tests/e2e/.output/site`，再用內建的 Node 靜態伺服器在 5170 埠提供（和 GitHub Pages 一樣只是檔案）；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
+- 冒煙測試先 `dotnet publish --no-build` 到 `tests/e2e/.output/site`、跑 `scripts/prepare-pages.cjs`（和部署相同的整理），再用內建的 Node 靜態伺服器在 5170 埠提供（和 GitHub Pages 一樣只是檔案）；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
 - **測試全過才 commit，不可為了通過而跳過或刪除測試。**
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
@@ -57,7 +58,9 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - `PlanCalculator` 只做檢查與額定值，實際數字一律來自 `ProductionSimulator`。原因：使用者選擇「只做模擬」。
 - 模擬規則皆為使用者決定：連續流量、依連線建立順序填滿、沒接線的輸入＝0（停擺）、沒接線的輸出送進倉庫。`SimulationSettings` 預設值（暫存每台 1/3 分鐘向上取整、運送 0.5 秒、啟動 0.5 秒）是使用者暫訂，**改動前先問**。
 - 模擬在 C# 以 100 ms 計時器推進、推給 JS；面板每 `PanelRefreshTicks` 次才重繪。原因：減少面板重繪，瀏覽器端的計算量也不浪費在面板上。
-- 靜態網站，部署在 GitHub Pages（階段 2 設定，細節以 `.github/workflows` 為準）。原因：使用者只有自己用，不想再開 Visual Studio 或維護伺服器。目前 `/js/` 與 CSS 的瀏覽器快取尚未處理（`graphEditor` 是多個 ES 模組，子模組網址沒辦法加版本號；瀏覽器曾沿用舊 CSS，畫布上方出現白條）。
+- 靜態網站，部署在 GitHub Pages（`.github/workflows/deploy.yml`：推到 `feature/domain-model` 時 `dotnet test` → `dotnet publish` → `scripts/prepare-pages.cjs` → 部署）。原因：使用者只有自己用，不想再開 Visual Studio 或維護伺服器。
+- 瀏覽器快取靠版本號：Pages 的檔案會被快取約 10 分鐘，而 `graphEditor` 是多個 ES 模組、子模組網址是固定的，所以 `prepare-pages.cjs` 在**發佈的檔案**裡把版本號（commit SHA）加到模組匯入與 `index.html` 的 CSS／JS 網址，入口模組由 `Planner.razor.cs` 用組件的 `InformationalVersion`（部署時設成 SHA）當版本。原始檔不要手動加版本號；新增 JS 匯入時沿用 `from "./x.js"`／`"../x.js"` 的寫法（腳本只認這個格式）。
+- 網站在子路徑 `/CoiPlanner/` 下：`index.html` 的 `<base href="/">` 只在發佈時換成子路徑，原始檔維持 `/`（本機開發用）；網址一律用相對路徑，不寫開頭的 `/`。`404.html`（複製自 `index.html`）讓直接開 `/planner` 這類網址時由 Blazor 路由接手。
 - `Editor` 的方法分散在 `plan／status／stock／flow／viewport／menus.js` 的類別，由 `editor.js` 的 `mixin()` 併入 `Editor.prototype`；那些類別只是方法容器，不可 `new`。原因：JS 沒有 partial class，這樣才能拆檔而不改方法內容。
 - 畫布像素＝CSS 大小 × `devicePixelRatio`，並對前景 ctx `setTransform`（`fitCanvas`）。原因：Windows 顯示比例 125%／150% 時畫面模糊且只畫一部分。
 - 格線在 `onRenderBackground` 畫，不用 `onDrawBackground`。原因：後者會蓋掉群組。格線間距＝Shift 對齊間距 `GRID_SIZE`，對齊以含標題的外框為準。

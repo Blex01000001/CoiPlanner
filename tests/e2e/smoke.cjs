@@ -33,6 +33,14 @@ async function main() {
     try {
         page = await newPage(browser);
 
+        await step("發佈檔案已加版本號、有 404.html 與 .nojekyll", async () => {
+            const stamped = fs.readFileSync(path.join(WWWROOT, "js/graphEditor.js"), "utf8");
+            assert(stamped.includes('"./graphEditor/editor.js?v=smoke"'), "graphEditor.js 的模組匯入沒有版本號");
+            const html = fs.readFileSync(path.join(WWWROOT, "index.html"), "utf8");
+            assert(html.includes('href="app.css?v=smoke"') && html.includes('src="_framework/blazor.webassembly.js?v=smoke"'), "index.html 的網址沒有版本號");
+            assert(fs.existsSync(path.join(WWWROOT, "404.html")) && fs.existsSync(path.join(WWWROOT, ".nojekyll")), "缺 404.html 或 .nojekyll");
+        });
+
         await step("靜態檔案可載入：Blazor 啟動檔、graphEditor 模組、litegraph", async () => {
             for (const file of ["_framework/blazor.webassembly.js", "js/graphEditor.js", "js/graphEditor/editor.js", "lib/litegraph/litegraph.es.js"]) {
                 const res = await fetch(`${BASE}/${file}`);
@@ -477,8 +485,14 @@ async function startServer() {
     const busy = await fetch(BASE).then(() => true, () => false);
     assert(!busy, `${BASE} 已經有網站在執行；等它結束，或用 BASE_URL 指定要測的網站`);
     // 發佈（--no-build：沿用剛建置的結果，只複製檔案）出和 GitHub Pages 內容相同的靜態檔案
-    const publish = spawnSync("dotnet", ["publish", "--no-build", "-c", "Debug", "-o", path.join(OUTPUT, "site")], { cwd: ROOT, encoding: "utf8" });
-    assert(publish.status === 0 && fs.existsSync(path.join(WWWROOT, "index.html")), `dotnet publish 失敗（請先執行 dotnet build）：${publish.stdout?.slice(-500)}`);
+    // CONFIG=Release 時測試的是實際部署的發佈版（有裁剪），要先 dotnet build -c Release
+    const config = process.env.CONFIG ?? "Debug";
+    fs.rmSync(path.join(OUTPUT, "site"), { recursive: true, force: true });
+    const publish = spawnSync("dotnet", ["publish", "--no-build", "-c", config, "-o", path.join(OUTPUT, "site")], { cwd: ROOT, encoding: "utf8" });
+    assert(publish.status === 0 && fs.existsSync(path.join(WWWROOT, "index.html")), `dotnet publish 失敗（請先執行 dotnet build${config === "Release" ? " -c Release" : ""}）：${publish.stdout?.slice(-500)}`);
+    // 和部署時一樣整理：模組匯入與 CSS／JS 網址加版本號、404.html、.nojekyll
+    const prepare = spawnSync("node", [path.join(ROOT, "scripts/prepare-pages.cjs"), WWWROOT, "--version", "smoke"], { encoding: "utf8" });
+    assert(prepare.status === 0, `prepare-pages 失敗：${prepare.stdout}${prepare.stderr}`);
     const root = path.resolve(WWWROOT);
     const srv = http.createServer((req, res) => {
         const rel = decodeURIComponent(new URL(req.url, BASE).pathname);
