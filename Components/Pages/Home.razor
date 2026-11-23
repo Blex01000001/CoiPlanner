@@ -63,6 +63,7 @@
                 <MudTh>耗電／發電 (kW)</MudTh>
                 <MudTh>工人</MudTh>
                 <MudTh>維修（每分鐘）</MudTh>
+                <MudTh>算力 (TF)</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="名稱">
@@ -83,6 +84,7 @@
                 <MudTd DataLabel="維修（每分鐘）">
                     @if (context.MaintenancePerMinute > 0) { <span>@context.MaintenanceType @context.MaintenancePerMinute.ToString("0.##")</span> }
                 </MudTd>
+                <MudTd DataLabel="算力 (TF)">@(context.ComputingTf > 0 ? context.ComputingTf.ToString("0.##") : "")</MudTd>
             </RowTemplate>
         </MudTable>
     </MudTabPanel>

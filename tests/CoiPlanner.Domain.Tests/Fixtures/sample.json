@@ -77,7 +77,7 @@
   "machines": [
     { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
     { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma", "press_gamma_alt", "reforge_gamma" ] },
-    { "id": "demo_lab", "name": "Demo Lab", "recipeIds": [ "make_delta", "make_epsilon" ] },
+    { "id": "demo_lab", "name": "Demo Lab", "computingTf": 2.5, "recipeIds": [ "make_delta", "make_epsilon" ] },
     { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha", "mine_alpha_fast" ] },
     { "id": "demo_generator", "name": "Demo Generator", "powerGenerationKw": 200, "recipeIds": [ "burn_alpha" ] }
   ],
