@@ -107,7 +107,7 @@
                 <MudTd DataLabel="機器">
                     @foreach (var m in context.Machines)
                     {
-                        <div>@MachineNameById(m.MachineId) @Format(m.Count)</div>
+                        <div>@MachineNameById(m.MachineId) · @RecipeName(m.RecipeId) @Format(m.Count)</div>
                     }
                 </MudTd>
             </RowTemplate>
