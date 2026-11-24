@@ -436,4 +436,49 @@ public class RealGameDataTests
         Assert.False(calculator.IsExternal("copper_plate"));
         Assert.Equal(2, calculator.Calculate("copper_plate").Routes.Count);
     }
+
+    [Fact]
+    public void CrusherLarge_StatsAndRecipes_MatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "crusher_large");
+        Assert.Equal((6, 1000, "維修I", 3.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(12, m.RecipeIds.Count);
+
+        AssertRecipe("crush_iron_ore", new() { ["iron_ore"] = 192 }, new() { ["crushed_iron_ore"] = 192 });
+        AssertRecipe("crush_copper_ore", new() { ["copper_ore"] = 192 }, new() { ["crushed_copper_ore"] = 192 });
+        AssertRecipe("crush_slag", new() { ["slag"] = 144 }, new() { ["crushed_slag"] = 144 });
+        AssertRecipe("crush_rock", new() { ["rock"] = 144 }, new() { ["gravel"] = 144 });
+        AssertRecipe("grind_gravel", new() { ["gravel"] = 48 }, new() { ["manufactured_sand"] = 48 });
+        AssertRecipe("crush_quartz", new() { ["quartz"] = 288 }, new() { ["crushed_quartz"] = 288 });
+        AssertRecipe("grind_quartz_sand", new() { ["crushed_quartz"] = 96 }, new() { ["sand"] = 96 });
+        AssertRecipe("crush_uranium_ore", new() { ["uranium_ore"] = 72 }, new() { ["uranium_powder"] = 72 });
+        AssertRecipe("crush_gold_ore", new() { ["gold_ore"] = 144 }, new() { ["crushed_gold_ore"] = 144 });
+        AssertRecipe("grind_gold_ore", new() { ["crushed_gold_ore"] = 72 }, new() { ["gold_powder"] = 72 });
+        AssertRecipe("crush_bauxite", new() { ["bauxite"] = 72 }, new() { ["bauxite_powder"] = 72 });
+        AssertRecipe("crush_titanium_ore", new() { ["titanium_ore"] = 96 }, new() { ["crushed_titanium_ore"] = 96 });
+        Assert.Equal("鐵礦石", Data.Products.Single(p => p.Id == "iron_ore").Name);
+    }
+
+    [Fact]
+    public void CrusherLarge_LockedRecipes_AreMarked()
+    {
+        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).Order().ToList();
+
+        Assert.Equal(["crush_bauxite", "crush_titanium_ore", "crush_uranium_ore"], locked);
+    }
+
+    [Fact]
+    public void RecipeCost_CrushedCopperOre_IsTracedToCopperOre()
+    {
+        // 碎銅礦石現在有粉碎配方產出，不再是外部輸入：往下追到銅礦石（資料裡沒有配方產出的外部輸入）
+        var calculator = new RecipeCostCalculator(Data);
+        var route = Assert.Single(calculator.Calculate("crushed_copper_ore").Routes);
+
+        Assert.Equal("crush_copper_ore", route.RecipeId);
+        var raw = Assert.Single(route.RawInputs);
+        Assert.Equal("copper_ore", raw.ProductId);
+        Assert.Equal(1, raw.Quantity, 6);
+        Assert.True(calculator.IsExternal("copper_ore"));
+        Assert.False(calculator.IsExternal("crushed_copper_ore"));
+    }
 }

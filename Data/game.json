@@ -4,7 +4,7 @@
     { "id": "water", "name": "水", "unit": "單位", "kind": "fluid", "color": "#4fc3f7" },
     { "id": "coal", "name": "煤礦", "unit": "單位", "kind": "loose", "color": "#7a7570" },
     { "id": "steam_high", "name": "蒸汽(高壓)", "unit": "單位", "kind": "fluid", "color": "#e6eaec" },
-    { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose", "color": "#b5651d" },
+    { "id": "iron_ore", "name": "鐵礦石", "unit": "單位", "kind": "loose", "color": "#b5651d" },
     { "id": "molten_iron", "name": "熔融鐵", "unit": "單位", "kind": "molten", "color": "#ff7043" },
     { "id": "crushed_iron_ore", "name": "碎鐵礦石", "unit": "單位", "kind": "loose", "color": "#d08a4e" },
     { "id": "lime", "name": "石灰石", "unit": "單位", "kind": "loose", "color": "#e8e4c9" },
@@ -109,6 +109,22 @@
     { "id": "sand", "name": "砂", "unit": "單位", "kind": "loose", "color": "#5fe383" },
     { "id": "glass_mixture", "name": "玻璃混合物", "unit": "單位", "kind": "loose", "color": "#39ac53" },
     { "id": "cullet", "name": "碎玻璃", "unit": "單位", "kind": "loose", "color": "#ac3967" },
+    { "id": "copper_ore", "name": "銅礦石", "unit": "單位", "kind": "loose", "color": "#a24fc4" },
+    { "id": "crushed_slag", "name": "碎爐渣", "unit": "單位", "kind": "loose", "color": "#4fc458" },
+    { "id": "rock", "name": "岩石", "unit": "單位", "kind": "loose", "color": "#bdd071" },
+    { "id": "gravel", "name": "碎石", "unit": "單位", "kind": "loose", "color": "#c44f8f" },
+    { "id": "manufactured_sand", "name": "機制砂", "unit": "單位", "kind": "loose", "color": "#c38522" },
+    { "id": "quartz", "name": "石英", "unit": "單位", "kind": "loose", "color": "#dc4538" },
+    { "id": "crushed_quartz", "name": "碎石英", "unit": "單位", "kind": "loose", "color": "#c322b6" },
+    { "id": "uranium_ore", "name": "鈾礦石", "unit": "單位", "kind": "loose", "color": "#5638dc" },
+    { "id": "uranium_powder", "name": "鈾礦粉", "unit": "單位", "kind": "loose", "color": "#5222c3" },
+    { "id": "gold_ore", "name": "金礦石", "unit": "單位", "kind": "loose", "color": "#389adc" },
+    { "id": "crushed_gold_ore", "name": "碎金礦石", "unit": "單位", "kind": "loose", "color": "#22c362" },
+    { "id": "gold_powder", "name": "金礦粉", "unit": "單位", "kind": "loose", "color": "#2271c3" },
+    { "id": "bauxite", "name": "鋁土礦", "unit": "單位", "kind": "loose", "color": "#89dc38" },
+    { "id": "bauxite_powder", "name": "鋁土礦粉末", "unit": "單位", "kind": "loose", "color": "#2eb89b" },
+    { "id": "titanium_ore", "name": "鈦礦石", "unit": "單位", "kind": "loose", "color": "#38dc9d" },
+    { "id": "crushed_titanium_ore", "name": "碎鈦礦石", "unit": "單位", "kind": "loose", "color": "#61c322" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -841,6 +857,86 @@
       "cycleSeconds": 60
     },
     {
+      "id": "crush_copper_ore",
+      "name": "粉碎銅礦石",
+      "inputs": [ { "productId": "copper_ore", "quantity": 192 } ],
+      "outputs": [ { "productId": "crushed_copper_ore", "quantity": 192 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_slag",
+      "name": "粉碎爐渣",
+      "inputs": [ { "productId": "slag", "quantity": 144 } ],
+      "outputs": [ { "productId": "crushed_slag", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_rock",
+      "name": "粉碎岩石",
+      "inputs": [ { "productId": "rock", "quantity": 144 } ],
+      "outputs": [ { "productId": "gravel", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_gravel",
+      "name": "碎石製機制砂",
+      "inputs": [ { "productId": "gravel", "quantity": 48 } ],
+      "outputs": [ { "productId": "manufactured_sand", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_quartz",
+      "name": "粉碎石英",
+      "inputs": [ { "productId": "quartz", "quantity": 288 } ],
+      "outputs": [ { "productId": "crushed_quartz", "quantity": 288 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_quartz_sand",
+      "name": "碎石英製砂",
+      "inputs": [ { "productId": "crushed_quartz", "quantity": 96 } ],
+      "outputs": [ { "productId": "sand", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_uranium_ore",
+      "name": "粉碎鈾礦石",
+      "inputs": [ { "productId": "uranium_ore", "quantity": 72 } ],
+      "outputs": [ { "productId": "uranium_powder", "quantity": 72 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "crush_gold_ore",
+      "name": "粉碎金礦石",
+      "inputs": [ { "productId": "gold_ore", "quantity": 144 } ],
+      "outputs": [ { "productId": "crushed_gold_ore", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_gold_ore",
+      "name": "碎金礦石製金礦粉",
+      "inputs": [ { "productId": "crushed_gold_ore", "quantity": 72 } ],
+      "outputs": [ { "productId": "gold_powder", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_bauxite",
+      "name": "粉碎鋁土礦",
+      "inputs": [ { "productId": "bauxite", "quantity": 72 } ],
+      "outputs": [ { "productId": "bauxite_powder", "quantity": 72 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "crush_titanium_ore",
+      "name": "粉碎鈦礦石",
+      "inputs": [ { "productId": "titanium_ore", "quantity": 96 } ],
+      "outputs": [ { "productId": "crushed_titanium_ore", "quantity": 96 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
       "id": "make_cement",
       "name": "燒製水泥",
       "inputs": [
@@ -863,7 +959,7 @@
     { "id": "boiler_electric", "name": "鍋爐(電)", "category": "蒸氣", "recipeIds": [ "boil_steam_electric" ] },
     { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
     { "id": "lime_quarry", "name": "石灰石場", "category": "採集", "recipeIds": [ "mine_lime" ] },
-    { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "recipeIds": [ "crush_iron_ore" ] },
+    { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "powerUseKw": 1000, "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 3.8, "recipeIds": [ "crush_iron_ore", "crush_copper_ore", "crush_slag", "crush_rock", "grind_gravel", "crush_quartz", "grind_quartz_sand", "crush_uranium_ore", "crush_gold_ore", "grind_gold_ore", "crush_bauxite", "crush_titanium_ore" ] },
     { "id": "blast_furnace_2", "name": "高爐II", "category": "冶金", "workers": 18, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "smelt_iron_blast", "smelt_iron_scrap", "smelt_copper_scrap", "smelt_copper_ore", "smelt_glass_mixture", "smelt_glass_cullet" ] },
     { "id": "air_separator", "name": "空氣分離器", "category": "加工", "recipeIds": [ "separate_air" ] },
     { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "category": "冶金", "recipeIds": [ "make_steel" ] },
