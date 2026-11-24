@@ -12,8 +12,19 @@ public sealed record MachineNeed(string MachineId, string RecipeId, double Count
 /// <summary>某一種維修每分鐘的需求量。</summary>
 public sealed record MaintenanceNeed(string Type, double PerMinute);
 
-/// <summary>展開時，某個中間物品選用了哪個配方（取加權成本最低的）。</summary>
-public sealed record UpstreamStep(string ProductId, string RecipeId);
+/// <summary>中間物品的某個做法，以及用它生產 1 單位該物品的加權成本。</summary>
+public sealed record RecipeOption(string RecipeId, double UnitCost);
+
+/// <summary>
+/// 展開時，某個中間物品選用了哪個配方：預設取加權成本最低的，使用者也可以指定（Pinned）。
+/// UnitCost 是用選用的配方生產 1 單位的加權成本；Alternatives 是其他做法（成本由低到高），沒有替代做法時為空。
+/// </summary>
+public sealed record UpstreamStep(
+    string ProductId,
+    string RecipeId,
+    double UnitCost = 0,
+    bool Pinned = false,
+    IReadOnlyList<RecipeOption>? Alternatives = null);
 
 /// <summary>
 /// 用某一個配方生產目標物品的成本，全部換算成「每 1 單位目標物品」（速率單位是每分鐘，所以也是維持 1 單位/分的需求）。

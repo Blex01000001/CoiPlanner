@@ -13,7 +13,7 @@
     <MudText Typo="Typo.h5" GutterBottom="true">配方成本</MudText>
     <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
         選一個物品，比較各種配方。原料與副產品是每 1 單位目標物品的量；耗電、工人、維修、機器是維持 1 單位/分產量所需。
-        副產品的原料成本全部算在目標物品上；中間物品有多種做法時取加權成本最低的。
+        副產品的原料成本全部算在目標物品上；中間物品有多種做法時預設取加權成本最低的，下面可以指定改用哪一個。
     </MudText>
 
     <MudAutocomplete T="string" Label="目標物品" Placeholder="輸入名稱搜尋" Value="_productId" ValueChanged="OnProductChosen"
@@ -38,6 +38,33 @@
         </MudText>
     </MudCollapse>
 
+    @if (PinnableProducts.Count > 0)
+    {
+        <MudButton Variant="Variant.Text" Size="Size.Small" Class="mb-1"
+                   StartIcon="@(_showRecipes ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                   OnClick="() => _showRecipes = !_showRecipes">中間物品的做法（預設自動選最便宜@(_recipeOverrides.Count > 0 ? $"，已指定 {_recipeOverrides.Count} 項" : "")）</MudButton>
+        <MudCollapse Expanded="_showRecipes">
+            <div class="cost-weights cost-recipes">
+                @foreach (var id in PinnableProducts)
+                {
+                    var pid = id;
+                    <MudSelect T="string" Label="@ProductName(pid)" Value="@(_recipeOverrides.GetValueOrDefault(pid, ""))" ValueChanged="v => OnRecipeChosen(pid, v)"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true">
+                        <MudSelectItem T="string" Value="@("")">自動（最便宜）</MudSelectItem>
+                        @foreach (var recipeId in Calculator.RecipesProducing(pid))
+                        {
+                            var rid = recipeId;
+                            <MudSelectItem T="string" Value="@rid">@MachineName(rid) · @RecipeName(rid)</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+            </div>
+            <MudText Typo="Typo.caption" Class="d-block mud-text-secondary mb-2">
+                只列出目前結果用到、而且有兩種以上做法的中間物品。指定後整張表都用你選的做法重算；選回「自動」就恢復取最便宜的。指定的做法存在這個瀏覽器。
+            </MudText>
+        </MudCollapse>
+    }
+
     @if (string.IsNullOrEmpty(_productId) || _report is null)
     {
         <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">請先選擇目標物品。</MudText>
@@ -52,6 +79,7 @@
             <HeaderContent>
                 <MudTh>配方</MudTh>
                 <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.WeightedCost))" InitialDirection="SortDirection.Ascending">加權成本</MudTableSortLabel></MudTh>
+                <MudTh>比最便宜多</MudTh>
                 <MudTh>原料（每 1 單位）</MudTh>
                 <MudTh>副產品（每 1 單位）</MudTh>
                 <MudTh><MudTableSortLabel SortBy="@(new Func<RouteCost, object>(r => r.PowerKw))">耗電 kW</MudTableSortLabel></MudTh>
@@ -70,9 +98,15 @@
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">最便宜</MudChip>
                     }
-                    @if (context.Steps.Count > 0)
+                    @foreach (var step in context.Steps)
                     {
-                        <div class="cost-note">上游：@string.Join("、", context.Steps.Select(s => $"{ProductName(s.ProductId)} ← {RecipeName(s.RecipeId)}"))</div>
+                        <div class="cost-note">
+                            上游：@ProductName(step.ProductId) ← @RecipeName(step.RecipeId)@(step.Pinned ? "（指定）" : "")
+                            @if (step.Alternatives is { Count: > 0 })
+                            {
+                                <span>；其他做法（每 1 單位@(ProductName(step.ProductId)) 的加權成本差）：@string.Join("、", step.Alternatives.Take(3).Select(a => $"{RecipeName(a.RecipeId)} {SignedFormat(a.UnitCost - step.UnitCost)}"))@(step.Alternatives.Count > 3 ? $" 等 {step.Alternatives.Count} 種" : "")</span>
+                            }
+                        </div>
                     }
                     @foreach (var warning in context.Warnings)
                     {
@@ -80,6 +114,7 @@
                     }
                 </MudTd>
                 <MudTd DataLabel="加權成本">@Format(context.WeightedCost)</MudTd>
+                <MudTd DataLabel="比最便宜多">@Difference(context)</MudTd>
                 <MudTd DataLabel="原料">
                     @foreach (var raw in context.RawInputs)
                     {
@@ -122,11 +157,15 @@
 @code {
     private const string WeightsKey = "coiplanner.costWeights";
     private const string ProductKey = "coiplanner.costProduct";
+    private const string RecipesKey = "coiplanner.costRecipes";
 
     private string? _productId;
     private Dictionary<string, double> _weights = new();
     private CostReport? _report;
     private bool _showWeights;
+    private bool _showRecipes;
+    // 使用者指定的中間物品做法（物品 id → 配方 id）；沒有的物品取加權成本最低的
+    private Dictionary<string, string> _recipeOverrides = new();
     private Dictionary<string, Product> _products = new();
     private Dictionary<string, Recipe> _recipes = new();
 
@@ -151,6 +190,17 @@
         {
             // 壞掉的權重就當作沒有，全部用預設值 1
             _weights = new();
+        }
+
+        try
+        {
+            var recipes = await JS.InvokeAsync<string?>("localStorage.getItem", RecipesKey);
+            if (!string.IsNullOrEmpty(recipes))
+                _recipeOverrides = JsonSerializer.Deserialize<Dictionary<string, string>>(recipes) ?? new();
+        }
+        catch (JsonException)
+        {
+            _recipeOverrides = new();
         }
 
         var product = await JS.InvokeAsync<string?>("localStorage.getItem", ProductKey);
@@ -178,8 +228,38 @@
         await JS.InvokeVoidAsync("localStorage.setItem", WeightsKey, JsonSerializer.Serialize(_weights));
     }
 
+    private async Task OnRecipeChosen(string productId, string? recipeId)
+    {
+        if (string.IsNullOrEmpty(recipeId))
+            _recipeOverrides.Remove(productId);
+        else
+            _recipeOverrides[productId] = recipeId;
+        Recalculate();
+        await JS.InvokeVoidAsync("localStorage.setItem", RecipesKey, JsonSerializer.Serialize(_recipeOverrides));
+    }
+
     private void Recalculate() =>
-        _report = string.IsNullOrEmpty(_productId) ? null : Calculator.Calculate(_productId, _weights);
+        _report = string.IsNullOrEmpty(_productId) ? null : Calculator.Calculate(_productId, _weights, _recipeOverrides);
+
+    /// <summary>可以指定做法的中間物品：目前結果用到、有兩種以上做法的，加上已經指定的（指定後才不會從清單消失）。</summary>
+    private List<string> PinnableProducts =>
+        (_report?.Routes.SelectMany(r => r.Steps).Select(s => s.ProductId) ?? [])
+            .Concat(_recipeOverrides.Keys)
+            .Distinct()
+            .Where(id => Calculator.RecipesProducing(id).Count >= 2)
+            .ToList();
+
+    /// <summary>這一列比最便宜的那一列多多少（數值與百分比）。</summary>
+    private string Difference(RouteCost route)
+    {
+        var cheapest = _report!.Routes.Min(r => r.WeightedCost);
+        var diff = route.WeightedCost - cheapest;
+        if (diff <= 1e-9)
+            return "—";
+        return cheapest > 1e-9 ? $"+{Format(diff)}（+{diff / cheapest:P0}）" : $"+{Format(diff)}";
+    }
+
+    private static string SignedFormat(double value) => value >= 0 ? $"+{Format(value)}" : Format(value);
 
     private Task<IEnumerable<string>> Search(string? text, CancellationToken ct) =>
         Task.FromResult(Calculator.TargetProductIds

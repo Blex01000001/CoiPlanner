@@ -140,6 +140,10 @@ h1:focus {
     margin: 4px 0 8px;
 }
 
+.cost-recipes {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
 .cost-table .mud-table-container {
     overflow-x: auto;
 }
