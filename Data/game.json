@@ -125,6 +125,16 @@
     { "id": "bauxite_powder", "name": "鋁土礦粉末", "unit": "單位", "kind": "loose", "color": "#2eb89b" },
     { "id": "titanium_ore", "name": "鈦礦石", "unit": "單位", "kind": "loose", "color": "#38dc9d" },
     { "id": "crushed_titanium_ore", "name": "碎鈦礦石", "unit": "單位", "kind": "loose", "color": "#61c322" },
+    { "id": "sulfur", "name": "硫磺", "unit": "單位", "kind": "loose", "color": "#92117e" },
+    { "id": "filter_media", "name": "過濾介質", "unit": "單位", "kind": "loose", "color": "#cab190" },
+    { "id": "compost", "name": "堆肥", "unit": "單位", "kind": "loose", "color": "#441aad" },
+    { "id": "dirt", "name": "土", "unit": "單位", "kind": "loose", "color": "#8d0ea7" },
+    { "id": "fertilizer_2", "name": "肥料II", "unit": "單位", "kind": "loose", "color": "#6e3559" },
+    { "id": "potato", "name": "馬鈴薯", "unit": "單位", "kind": "loose", "color": "#d7c583" },
+    { "id": "wheat", "name": "小麥", "unit": "單位", "kind": "loose", "color": "#620abe" },
+    { "id": "corn", "name": "玉米", "unit": "單位", "kind": "loose", "color": "#47dc65" },
+    { "id": "soybean", "name": "大豆", "unit": "單位", "kind": "loose", "color": "#dda2a7" },
+    { "id": "minced_meat", "name": "碎肉", "unit": "單位", "kind": "unit", "color": "#125fda" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -937,6 +947,132 @@
       "locked": true
     },
     {
+      "id": "mix_glass_mixture",
+      "name": "調配玻璃混合物",
+      "inputs": [ { "productId": "sand", "quantity": 120 }, { "productId": "lime", "quantity": 30 }, { "productId": "salt", "quantity": 12 } ],
+      "outputs": [ { "productId": "glass_mixture", "quantity": 120 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_glass_mixture_acid",
+      "name": "調配玻璃混合物(酸)",
+      "inputs": [ { "productId": "sand", "quantity": 96 }, { "productId": "lime", "quantity": 24 }, { "productId": "salt", "quantity": 12 }, { "productId": "acid", "quantity": 24 } ],
+      "outputs": [ { "productId": "glass_mixture", "quantity": 120 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_acid",
+      "name": "製造酸",
+      "inputs": [ { "productId": "sulfur", "quantity": 12 }, { "productId": "water", "quantity": 60 } ],
+      "outputs": [ { "productId": "acid", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_sulfur_slag",
+      "name": "硫磺製爐渣",
+      "inputs": [ { "productId": "sulfur", "quantity": 60 }, { "productId": "lime", "quantity": 12 } ],
+      "outputs": [ { "productId": "slag", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_brine",
+      "name": "調配鹽水",
+      "inputs": [ { "productId": "salt", "quantity": 12 }, { "productId": "water", "quantity": 84 } ],
+      "outputs": [ { "productId": "brine", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_filter_media_sand",
+      "name": "製造過濾介質(砂)",
+      "inputs": [ { "productId": "gravel", "quantity": 48 }, { "productId": "sand", "quantity": 24 }, { "productId": "coal", "quantity": 6 } ],
+      "outputs": [ { "productId": "filter_media", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_filter_media_manufactured_sand",
+      "name": "製造過濾介質(機制砂)",
+      "inputs": [ { "productId": "gravel", "quantity": 48 }, { "productId": "manufactured_sand", "quantity": 24 }, { "productId": "coal", "quantity": 6 } ],
+      "outputs": [ { "productId": "filter_media", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_organic_fertilizer_compost",
+      "name": "製造有機肥料(堆肥)",
+      "inputs": [ { "productId": "compost", "quantity": 72 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "fertilizer_organic", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_organic_fertilizer_dirt",
+      "name": "製造有機肥料(堆肥＋土)",
+      "inputs": [ { "productId": "compost", "quantity": 24 }, { "productId": "dirt", "quantity": 48 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "fertilizer_organic", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_fertilizer_2",
+      "name": "製造肥料II",
+      "inputs": [ { "productId": "fertilizer_1", "quantity": 60 }, { "productId": "lime", "quantity": 12 }, { "productId": "sulfur", "quantity": 12 } ],
+      "outputs": [ { "productId": "fertilizer_2", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_dirt",
+      "name": "製造土",
+      "inputs": [ { "productId": "gravel", "quantity": 48 }, { "productId": "compost", "quantity": 48 } ],
+      "outputs": [ { "productId": "dirt", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_animal_feed_potato",
+      "name": "製造動物飼料(馬鈴薯)",
+      "inputs": [ { "productId": "potato", "quantity": 120 } ],
+      "outputs": [ { "productId": "animal_feed", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_animal_feed_wheat",
+      "name": "製造動物飼料(小麥)",
+      "inputs": [ { "productId": "wheat", "quantity": 120 } ],
+      "outputs": [ { "productId": "animal_feed", "quantity": 192 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_animal_feed_corn",
+      "name": "製造動物飼料(玉米)",
+      "inputs": [ { "productId": "corn", "quantity": 120 } ],
+      "outputs": [ { "productId": "animal_feed", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_animal_feed_soybean",
+      "name": "製造動物飼料(大豆)",
+      "inputs": [ { "productId": "soybean", "quantity": 120 } ],
+      "outputs": [ { "productId": "animal_feed", "quantity": 216 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_compost_animal_feed",
+      "name": "製造堆肥(動物飼料)",
+      "inputs": [ { "productId": "animal_feed", "quantity": 24 } ],
+      "outputs": [ { "productId": "compost", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_compost_biomass",
+      "name": "製造堆肥(生物質)",
+      "inputs": [ { "productId": "biomass", "quantity": 24 } ],
+      "outputs": [ { "productId": "compost", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_compost_minced_meat",
+      "name": "製造堆肥(碎肉)",
+      "inputs": [ { "productId": "minced_meat", "quantity": 24 } ],
+      "outputs": [ { "productId": "compost", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_cement",
       "name": "燒製水泥",
       "inputs": [
@@ -979,6 +1115,7 @@
     { "id": "cracking_unit", "name": "裂解裝置", "category": "石化", "powerUseKw": 160, "workers": 12, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "crack_heavy_to_diesel", "crack_heavy_to_naphtha", "crack_naphtha_to_diesel", "crack_diesel_to_naphtha", "crack_naphtha_to_gas", "crack_gas_to_diesel" ] },
     { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] },
     { "id": "chemical_plant", "name": "化工廠", "category": "加工", "powerUseKw": 250, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "make_fertilizer", "make_fertilizer_organic", "synthesize_ammonia", "make_paper", "make_diesel_biofuel", "make_graphite", "make_disinfectant" ] },
+    { "id": "mixer_2", "name": "攪拌機II", "category": "加工", "powerUseKw": 200, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "mix_glass_mixture", "mix_glass_mixture_acid", "make_acid", "mix_sulfur_slag", "mix_brine", "make_filter_media_sand", "make_filter_media_manufactured_sand", "make_organic_fertilizer_compost", "make_organic_fertilizer_dirt", "make_fertilizer_2", "make_dirt", "make_animal_feed_potato", "make_animal_feed_wheat", "make_animal_feed_corn", "make_animal_feed_soybean", "make_compost_animal_feed", "make_compost_biomass", "make_compost_minced_meat" ] },
     { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "powerUseKw": 400, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "desalinate_ultra_steam", "desalinate", "desalinate_low_steam" ] }
   ],
   "transports": [

@@ -481,4 +481,43 @@ public class RealGameDataTests
         Assert.True(calculator.IsExternal("copper_ore"));
         Assert.False(calculator.IsExternal("crushed_copper_ore"));
     }
+
+    [Fact]
+    public void MixerII_StatsAndRecipes_MatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "mixer_2");
+        Assert.Equal((4, 200, "維修I", 1.9), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(18, m.RecipeIds.Count);
+
+        AssertRecipe("mix_glass_mixture", new() { ["sand"] = 120, ["lime"] = 30, ["salt"] = 12 }, new() { ["glass_mixture"] = 120 });
+        AssertRecipe("mix_glass_mixture_acid", new() { ["sand"] = 96, ["lime"] = 24, ["salt"] = 12, ["acid"] = 24 }, new() { ["glass_mixture"] = 120 });
+        AssertRecipe("make_acid", new() { ["sulfur"] = 12, ["water"] = 60 }, new() { ["acid"] = 72 });
+        AssertRecipe("mix_sulfur_slag", new() { ["sulfur"] = 60, ["lime"] = 12 }, new() { ["slag"] = 30 });
+        AssertRecipe("mix_brine", new() { ["salt"] = 12, ["water"] = 84 }, new() { ["brine"] = 96 });
+        AssertRecipe("make_filter_media_sand", new() { ["gravel"] = 48, ["sand"] = 24, ["coal"] = 6 }, new() { ["filter_media"] = 72 });
+        AssertRecipe("make_filter_media_manufactured_sand", new() { ["gravel"] = 48, ["manufactured_sand"] = 24, ["coal"] = 6 }, new() { ["filter_media"] = 72 });
+        AssertRecipe("make_organic_fertilizer_compost", new() { ["compost"] = 72, ["water"] = 24 }, new() { ["fertilizer_organic"] = 96 });
+        AssertRecipe("make_organic_fertilizer_dirt", new() { ["compost"] = 24, ["dirt"] = 48, ["water"] = 24 }, new() { ["fertilizer_organic"] = 96 });
+        AssertRecipe("make_fertilizer_2", new() { ["fertilizer_1"] = 60, ["lime"] = 12, ["sulfur"] = 12 }, new() { ["fertilizer_2"] = 72 });
+        AssertRecipe("make_dirt", new() { ["gravel"] = 48, ["compost"] = 48 }, new() { ["dirt"] = 96 });
+        AssertRecipe("make_animal_feed_potato", new() { ["potato"] = 120 }, new() { ["animal_feed"] = 96 });
+        AssertRecipe("make_animal_feed_wheat", new() { ["wheat"] = 120 }, new() { ["animal_feed"] = 192 });
+        AssertRecipe("make_animal_feed_corn", new() { ["corn"] = 120 }, new() { ["animal_feed"] = 144 });
+        AssertRecipe("make_animal_feed_soybean", new() { ["soybean"] = 120 }, new() { ["animal_feed"] = 216 });
+        AssertRecipe("make_compost_animal_feed", new() { ["animal_feed"] = 24 }, new() { ["compost"] = 12 });
+        AssertRecipe("make_compost_biomass", new() { ["biomass"] = 24 }, new() { ["compost"] = 16 });
+        AssertRecipe("make_compost_minced_meat", new() { ["minced_meat"] = 24 }, new() { ["compost"] = 8 });
+    }
+
+    [Fact]
+    public void RecipeCost_AnimalFeedAndCompost_AreNoLongerExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("animal_feed"));
+        Assert.False(calculator.IsExternal("compost"));
+        Assert.False(calculator.IsExternal("dirt"));
+        Assert.Equal(4, calculator.Calculate("animal_feed").Routes.Count);
+        Assert.True(calculator.IsExternal("soybean"));
+    }
 }
