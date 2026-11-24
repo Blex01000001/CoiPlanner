@@ -65,7 +65,8 @@ public class RecipeCostCalculatorTests
     [Fact]
     public void Weights_ChangeTheCostAndTheOrder()
     {
-        var weights = new Dictionary<string, double> { ["alpha_ore"] = 2.5 };
+        // iron_ore 權重調高，避免 smelt_beta_ore 因為 alpha 變貴而被自動選用，這個測試只看 alpha 權重的影響
+        var weights = new Dictionary<string, double> { ["alpha_ore"] = 2.5, ["iron_ore"] = 10 };
 
         var report = _calculator.Calculate("gamma_plate", weights);
 
@@ -99,7 +100,9 @@ public class RecipeCostCalculatorTests
         var route = Route(_calculator.Calculate("gamma_plate"), "press_gamma");
 
         var step = Assert.Single(route.Steps);
-        Assert.Equal(new UpstreamStep("beta_ingot", "smelt_beta"), step);
+        Assert.Equal("beta_ingot", step.ProductId);
+        Assert.Equal("smelt_beta", step.RecipeId);
+        Assert.False(step.Pinned);
     }
 
     [Fact]
@@ -153,5 +156,65 @@ public class RecipeCostCalculatorTests
         var report = _calculator.Calculate("gamma_plate", new Dictionary<string, double> { ["alpha_ore"] = -5 });
 
         Assert.All(report.Routes, r => Assert.Equal(0, r.WeightedCost));
+    }
+
+    [Fact]
+    public void Step_ListsAlternativeRecipesWithTheirUnitCost()
+    {
+        // beta_ingot 有兩種做法：smelt_beta（alpha 12 → 6，每個 2）與 smelt_beta_ore（alpha 6＋iron_ore 12 → 6，每個 3）
+        var step = Assert.Single(Route(_calculator.Calculate("gamma_plate"), "press_gamma").Steps);
+
+        Near(2, step.UnitCost);
+        var alternative = Assert.Single(step.Alternatives!);
+        Assert.Equal("smelt_beta_ore", alternative.RecipeId);
+        Near(3, alternative.UnitCost);
+    }
+
+    [Fact]
+    public void Override_PinsAnIntermediateRecipe_AndChangesTheRawInputs()
+    {
+        var overrides = new Dictionary<string, string> { ["beta_ingot"] = "smelt_beta_ore" };
+
+        var route = Route(_calculator.Calculate("gamma_plate", null, overrides), "press_gamma");
+
+        // 每 1 gamma 要 1.5 beta：alpha 1.5、iron_ore 3（指定的做法比較貴，加權成本 4.5）
+        Near(1.5, Amount(route.RawInputs, "alpha_ore"));
+        Near(3, Amount(route.RawInputs, "iron_ore"));
+        Near(4.5, route.WeightedCost);
+        var step = Assert.Single(route.Steps);
+        Assert.Equal("smelt_beta_ore", step.RecipeId);
+        Assert.True(step.Pinned);
+        Assert.Equal("smelt_beta", Assert.Single(step.Alternatives!).RecipeId);
+    }
+
+    [Fact]
+    public void WithoutOverride_AWeightCanMakeTheOtherRecipeTheCheapest()
+    {
+        // iron_ore 權重 0 → smelt_beta_ore 每個只要 1，比 smelt_beta 的 2 便宜，自動被選用（不是指定）
+        var route = Route(_calculator.Calculate("gamma_plate", new Dictionary<string, double> { ["iron_ore"] = 0 }), "press_gamma");
+
+        var step = Assert.Single(route.Steps);
+        Assert.Equal("smelt_beta_ore", step.RecipeId);
+        Assert.False(step.Pinned);
+    }
+
+    [Fact]
+    public void Override_WithARecipeThatDoesNotMakeTheProduct_IsIgnored()
+    {
+        var overrides = new Dictionary<string, string> { ["beta_ingot"] = "press_gamma", ["alpha_ore"] = "smelt_beta" };
+
+        var route = Route(_calculator.Calculate("gamma_plate", null, overrides), "press_gamma");
+
+        Assert.Equal("smelt_beta", Assert.Single(route.Steps).RecipeId);
+        Near(3, route.WeightedCost);
+    }
+
+    [Fact]
+    public void ProductsWithAlternatives_AndRecipesProducing()
+    {
+        Assert.Contains("beta_ingot", _calculator.ProductsWithAlternatives);
+        Assert.DoesNotContain("alpha_ore", _calculator.ProductsWithAlternatives);   // 原料不能指定做法
+        Assert.Equal(["smelt_beta", "smelt_beta_ore"], _calculator.RecipesProducing("beta_ingot"));
+        Assert.Empty(_calculator.RecipesProducing("iron_ore"));
     }
 }

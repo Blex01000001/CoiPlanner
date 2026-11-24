@@ -304,6 +304,37 @@ async function main() {
             await page.waitForSelector(".planner canvas");
         });
 
+        await step("配方成本：中間物品有替代做法時列出差額，可以指定做法（熔融鐵改用鐵礦石），整張表重算", async () => {
+            await page.click('.app-nav [aria-label="配方成本"]');
+            const panel = page.locator(".cost-page");
+            await panel.waitFor();
+            await panel.locator("input").first().fill("機械零件");
+            await page.locator(".mud-popover-open .mud-list-item", { hasText: /^機械零件$/ }).click();
+            const ironRow = panel.locator("tbody tr", { hasText: "組裝機械零件(鐵板)" });
+            await ironRow.waitFor();
+            const before = await ironRow.innerText();
+            assert(before.includes("鐵廢料") && !before.includes("鐵礦石 "), `預設應該走鐵廢料：${before}`);
+            assert(before.includes("其他做法") && before.includes("高爐煉鐵"), `應該列出替代做法與差額：${before}`);
+            assert((await panel.innerText()).includes("比最便宜多"), "缺「比最便宜多」欄");
+
+            // 指定熔融鐵用「高爐煉鐵」（鐵礦石）
+            await panel.getByRole("button", { name: /中間物品的做法/ }).click();
+            await panel.locator(".cost-recipes .mud-select", { hasText: "熔融鐵" }).first().click();
+            await page.locator(".mud-popover-open .mud-list-item", { hasText: /高爐煉鐵$/ }).click();
+            await ironRow.filter({ hasText: "（指定）" }).waitFor();
+            const after = await ironRow.innerText();
+            assert(after.includes("鐵礦石 ") && after.includes("石灰石"), `指定後原料應追到鐵礦石與石灰石：${after}`);
+            assert(!/(^|\n)[^\n]*鐵廢料 \d/.test(after), `指定後原料不該再有鐵廢料：${after}`);
+
+            // 選回自動：恢復走鐵廢料
+            await panel.locator(".cost-recipes .mud-select", { hasText: "熔融鐵" }).first().click();
+            await page.locator(".mud-popover-open .mud-list-item", { hasText: /^自動（最便宜）$/ }).click();
+            await ironRow.filter({ hasNotText: "（指定）" }).waitFor();
+
+            await page.click('.app-nav [aria-label="產線規劃"]');
+            await page.waitForSelector(".planner canvas");
+        });
+
         await step("電力開關：沒有發電機時停擺；停用電力後機器照常運轉，物料平衡的電力仍照算", async () => {
             await dropFile("pump.json");
             await savedPlan(p => p.nodes.length === 1 && p.nodes[0].count === 3);

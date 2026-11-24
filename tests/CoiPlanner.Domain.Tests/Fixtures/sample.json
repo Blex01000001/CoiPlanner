@@ -17,6 +17,13 @@
       "cycleSeconds": 10
     },
     {
+      "id": "smelt_beta_ore",
+      "name": "Smelt Beta Ingot (ore)",
+      "inputs": [ { "productId": "alpha_ore", "quantity": 6 }, { "productId": "iron_ore", "quantity": 12 } ],
+      "outputs": [ { "productId": "beta_ingot", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "press_gamma",
       "name": "Press Gamma Plate",
       "inputs": [ { "productId": "beta_ingot", "quantity": 3 } ],
@@ -76,7 +83,7 @@
     }
   ],
   "machines": [
-    { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta" ] },
+    { "id": "demo_furnace", "name": "Demo Furnace", "recipeIds": [ "smelt_beta", "smelt_beta_ore" ] },
     { "id": "demo_press", "name": "Demo Press", "workers": 2, "maintenanceType": "M1", "maintenancePerMinute": 0.5, "recipeIds": [ "press_gamma", "press_gamma_alt", "reforge_gamma" ] },
     { "id": "demo_lab", "name": "Demo Lab", "computingTf": 2.5, "recipeIds": [ "make_delta", "make_epsilon" ] },
     { "id": "demo_drill", "name": "Demo Drill", "powerUseKw": 150, "recipeIds": [ "mine_alpha", "mine_alpha_fast" ] },

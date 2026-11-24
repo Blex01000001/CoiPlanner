@@ -520,4 +520,28 @@ public class RealGameDataTests
         Assert.Equal(4, calculator.Calculate("animal_feed").Routes.Count);
         Assert.True(calculator.IsExternal("soybean"));
     }
+
+    [Fact]
+    public void RecipeCost_MoltenIron_DefaultsToScrap_ButCanBePinnedToTheOreRecipe()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+        Assert.Contains("molten_iron", calculator.ProductsWithAlternatives);
+
+        // 預設（權重都是 1）：鐵廢料路線比較便宜，鐵礦石不會出現
+        var byDefault = calculator.Calculate("mechanical_parts").Routes.Single(r => r.RecipeId == "assemble_mechanical_parts_iron");
+        Assert.Contains(byDefault.RawInputs, a => a.ProductId == "iron_scrap");
+        Assert.DoesNotContain(byDefault.RawInputs, a => a.ProductId == "iron_ore");
+        var step = byDefault.Steps.Single(s => s.ProductId == "molten_iron");
+        Assert.Equal("smelt_iron_scrap", step.RecipeId);
+        Assert.Contains(step.Alternatives!, o => o.RecipeId == "smelt_iron_blast" && o.UnitCost > step.UnitCost);
+
+        // 指定「高爐煉鐵」：原料追到鐵礦石、石灰石，不再有鐵廢料
+        var pinned = calculator.Calculate("mechanical_parts", null, new Dictionary<string, string> { ["molten_iron"] = "smelt_iron_blast" })
+            .Routes.Single(r => r.RecipeId == "assemble_mechanical_parts_iron");
+        Assert.Contains(pinned.RawInputs, a => a.ProductId == "iron_ore");
+        Assert.Contains(pinned.RawInputs, a => a.ProductId == "lime");
+        Assert.DoesNotContain(pinned.RawInputs, a => a.ProductId == "iron_scrap");
+        Assert.True(pinned.Steps.Single(s => s.ProductId == "molten_iron").Pinned);
+        Assert.True(pinned.WeightedCost > byDefault.WeightedCost);
+    }
 }

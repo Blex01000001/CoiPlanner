@@ -14,7 +14,7 @@ public class GameDataLoaderTests
         var data = _loader.LoadFromFile(SamplePath);
 
         Assert.Equal(7, data.Products.Count);
-        Assert.Equal(9, data.Recipes.Count);
+        Assert.Equal(10, data.Recipes.Count);
         Assert.Equal(5, data.Machines.Count);
     }
 

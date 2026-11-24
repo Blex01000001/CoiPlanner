@@ -9,7 +9,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `Data/game.json` | 物品（含運輸型態 `kind`）、配方、機器、運輸方式。建置時全部 `Data/*.json` 編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 載入並驗證，有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
 | `Domain/Models/` | 領域模型。`ProductionPlan.cs`＝規劃檔格式；`Simulation.cs`＝模擬參數與狀態 | 加欄位 |
 | `Domain/Services/PlanCalculator.cs` | 規劃檢查（問題清單）、額定速率、連線運輸上限；**不算實際流量** | 新增檢查規則 |
-| `Domain/Services/RecipeCostCalculator.cs` | 配方成本比較：選一個物品，列出能產出它的每個配方，展開到原料，算每 1 單位的原料（加權）、副產品，以及維持 1 單位/分的耗電、工人、維修。原料權重由使用者設定（存在瀏覽器 `coiplanner.costWeights`，不屬於規劃檔） | 成本規則 |
+| `Domain/Services/RecipeCostCalculator.cs` | 配方成本比較：選一個物品，列出能產出它的每個配方，展開到原料，算每 1 單位的原料（加權）、副產品，以及維持 1 單位/分的耗電、工人、維修。原料權重與指定的中間物品做法由使用者設定（存在瀏覽器 `coiplanner.costWeights`、`coiplanner.costRecipes`，不屬於規劃檔） | 成本規則 |
 | `Domain/Services/ProductionSimulator.cs` | 逐步模擬：實際流量、稼動率、狀態、物料平衡 | 模擬行為 |
 | `Domain/Services/GameDataLoader.cs` | 載入與跨檔驗證遊戲資料 | 新資料欄位的驗證 |
 | `Domain/Services/ProductionPlanSerializer.cs`、`JsonDefaults.cs` | 規劃 JSON（camelCase、允許註解與尾逗號） | 很少改 |
