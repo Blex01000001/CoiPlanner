@@ -103,6 +103,15 @@ public class GameDataLoaderTests
     }
 
     [Fact]
+    public void LoadFromFile_SampleJson_MapsLockedRecipes()
+    {
+        var data = new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));
+
+        Assert.True(data.Recipes.Single(r => r.Id == "mine_alpha_fast").Locked);
+        Assert.False(data.Recipes.Single(r => r.Id == "mine_alpha").Locked);
+    }
+
+    [Fact]
     public void LoadFromFile_SampleJson_MapsComputing()
     {
         var data = new GameDataLoader().LoadFromFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample.json"));

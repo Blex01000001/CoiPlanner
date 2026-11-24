@@ -9,6 +9,9 @@ public sealed record Recipe
     public IReadOnlyList<ItemAmount> Outputs { get; init; } = [];
     public required double CycleSeconds { get; init; }
 
+    /// <summary>遊戲中尚未解鎖（需要研究）的配方。目前只記錄資料並在資料瀏覽與配方成本頁標示，不影響規劃、模擬與計算。</summary>
+    public bool Locked { get; init; }
+
     /// <summary>執行這個配方時，機器耗電（<see cref="Machine.PowerUseKw"/>）的倍率；發電量不受影響。</summary>
     public double PowerMultiplier { get; init; } = 1;
 

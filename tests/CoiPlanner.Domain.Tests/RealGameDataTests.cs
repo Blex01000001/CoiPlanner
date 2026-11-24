@@ -67,7 +67,7 @@ public class RealGameDataTests
     [Fact]
     public void BlastFurnace_MatchesUserData()
     {
-        var recipe = RecipeOf("blast_furnace_2");
+        var recipe = Recipe("smelt_iron_blast");
 
         Assert.Equal(60, recipe.CycleSeconds);
         Assert.Equal(new Dictionary<string, double> { ["crushed_iron_ore"] = 48, ["lime"] = 6, ["coal"] = 15 }, Amounts(recipe.Inputs));
@@ -388,5 +388,136 @@ public class RealGameDataTests
         Assert.All(report.Routes, r => Assert.True(double.IsFinite(r.WeightedCost) && r.WeightedCost > 0));
         // 抗生素、肉等沒有配方產出的物品視為外部輸入
         Assert.True(new RecipeCostCalculator(Data).IsExternal("antibiotics"));
+    }
+
+    [Fact]
+    public void CopperElectrolyzer_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "copper_electrolyzer");
+        Assert.Equal((5, 400, "維修I", 1.9), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+
+        AssertRecipe("electrolyze_copper_acid", new() { ["impure_copper"] = 24, ["acid"] = 6 }, new() { ["copper_plate"] = 24 });
+        AssertRecipe("electrolyze_copper_water", new() { ["impure_copper"] = 24, ["water"] = 6 }, new() { ["copper_plate"] = 19.5 });
+    }
+
+    [Fact]
+    public void MetalCasterII_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "metal_caster_2");
+        Assert.Equal((2, 0, 0), (m.Workers, m.PowerUseKw, m.MaintenancePerMinute));
+        Assert.Equal(["cast_iron_plate", "cast_impure_copper", "cast_aluminium"], m.RecipeIds);
+
+        AssertRecipe("cast_iron_plate", new() { ["molten_iron"] = 24 }, new() { ["iron_plate"] = 24 });
+        AssertRecipe("cast_impure_copper", new() { ["molten_copper"] = 24 }, new() { ["impure_copper"] = 24 });
+        AssertRecipe("cast_aluminium", new() { ["molten_aluminium"] = 24 }, new() { ["aluminium"] = 24 });
+        Assert.Equal("熔融鐵", Data.Products.Single(p => p.Id == "molten_iron").Name);
+    }
+
+    [Fact]
+    public void BlastFurnaceII_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "blast_furnace_2");
+        Assert.Equal((18, 0, "維修I", 2.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(6, m.RecipeIds.Count);
+
+        AssertRecipe("smelt_iron_blast", new() { ["crushed_iron_ore"] = 48, ["lime"] = 6, ["coal"] = 15 }, new() { ["molten_iron"] = 48, ["slag"] = 18, ["exhaust"] = 36 });
+        AssertRecipe("smelt_iron_scrap", new() { ["iron_scrap"] = 48, ["coal"] = 9 }, new() { ["molten_iron"] = 48, ["exhaust"] = 27 });
+        AssertRecipe("smelt_copper_scrap", new() { ["copper_scrap"] = 48, ["coal"] = 9 }, new() { ["molten_copper"] = 48, ["exhaust"] = 27 });
+        AssertRecipe("smelt_copper_ore", new() { ["crushed_copper_ore"] = 48, ["sand"] = 6, ["coal"] = 15 }, new() { ["molten_copper"] = 48, ["slag"] = 18, ["exhaust"] = 36 });
+        AssertRecipe("smelt_glass_mixture", new() { ["glass_mixture"] = 60, ["coal"] = 15 }, new() { ["molten_glass"] = 48, ["slag"] = 24, ["exhaust"] = 36 });
+        AssertRecipe("smelt_glass_cullet", new() { ["cullet"] = 72, ["coal"] = 9 }, new() { ["molten_glass"] = 48, ["exhaust"] = 27 });
+    }
+
+    [Fact]
+    public void CopperPlate_IsNoLongerExternal_AndHasTwoRoutes()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("copper_plate"));
+        Assert.Equal(2, calculator.Calculate("copper_plate").Routes.Count);
+    }
+
+    [Fact]
+    public void CrusherLarge_StatsAndRecipes_MatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "crusher_large");
+        Assert.Equal((6, 1000, "維修I", 3.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(12, m.RecipeIds.Count);
+
+        AssertRecipe("crush_iron_ore", new() { ["iron_ore"] = 192 }, new() { ["crushed_iron_ore"] = 192 });
+        AssertRecipe("crush_copper_ore", new() { ["copper_ore"] = 192 }, new() { ["crushed_copper_ore"] = 192 });
+        AssertRecipe("crush_slag", new() { ["slag"] = 144 }, new() { ["crushed_slag"] = 144 });
+        AssertRecipe("crush_rock", new() { ["rock"] = 144 }, new() { ["gravel"] = 144 });
+        AssertRecipe("grind_gravel", new() { ["gravel"] = 48 }, new() { ["manufactured_sand"] = 48 });
+        AssertRecipe("crush_quartz", new() { ["quartz"] = 288 }, new() { ["crushed_quartz"] = 288 });
+        AssertRecipe("grind_quartz_sand", new() { ["crushed_quartz"] = 96 }, new() { ["sand"] = 96 });
+        AssertRecipe("crush_uranium_ore", new() { ["uranium_ore"] = 72 }, new() { ["uranium_powder"] = 72 });
+        AssertRecipe("crush_gold_ore", new() { ["gold_ore"] = 144 }, new() { ["crushed_gold_ore"] = 144 });
+        AssertRecipe("grind_gold_ore", new() { ["crushed_gold_ore"] = 72 }, new() { ["gold_powder"] = 72 });
+        AssertRecipe("crush_bauxite", new() { ["bauxite"] = 72 }, new() { ["bauxite_powder"] = 72 });
+        AssertRecipe("crush_titanium_ore", new() { ["titanium_ore"] = 96 }, new() { ["crushed_titanium_ore"] = 96 });
+        Assert.Equal("鐵礦石", Data.Products.Single(p => p.Id == "iron_ore").Name);
+    }
+
+    [Fact]
+    public void CrusherLarge_LockedRecipes_AreMarked()
+    {
+        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).Order().ToList();
+
+        Assert.Equal(["crush_bauxite", "crush_titanium_ore", "crush_uranium_ore"], locked);
+    }
+
+    [Fact]
+    public void RecipeCost_CrushedCopperOre_IsTracedToCopperOre()
+    {
+        // 碎銅礦石現在有粉碎配方產出，不再是外部輸入：往下追到銅礦石（資料裡沒有配方產出的外部輸入）
+        var calculator = new RecipeCostCalculator(Data);
+        var route = Assert.Single(calculator.Calculate("crushed_copper_ore").Routes);
+
+        Assert.Equal("crush_copper_ore", route.RecipeId);
+        var raw = Assert.Single(route.RawInputs);
+        Assert.Equal("copper_ore", raw.ProductId);
+        Assert.Equal(1, raw.Quantity, 6);
+        Assert.True(calculator.IsExternal("copper_ore"));
+        Assert.False(calculator.IsExternal("crushed_copper_ore"));
+    }
+
+    [Fact]
+    public void MixerII_StatsAndRecipes_MatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "mixer_2");
+        Assert.Equal((4, 200, "維修I", 1.9), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(18, m.RecipeIds.Count);
+
+        AssertRecipe("mix_glass_mixture", new() { ["sand"] = 120, ["lime"] = 30, ["salt"] = 12 }, new() { ["glass_mixture"] = 120 });
+        AssertRecipe("mix_glass_mixture_acid", new() { ["sand"] = 96, ["lime"] = 24, ["salt"] = 12, ["acid"] = 24 }, new() { ["glass_mixture"] = 120 });
+        AssertRecipe("make_acid", new() { ["sulfur"] = 12, ["water"] = 60 }, new() { ["acid"] = 72 });
+        AssertRecipe("mix_sulfur_slag", new() { ["sulfur"] = 60, ["lime"] = 12 }, new() { ["slag"] = 30 });
+        AssertRecipe("mix_brine", new() { ["salt"] = 12, ["water"] = 84 }, new() { ["brine"] = 96 });
+        AssertRecipe("make_filter_media_sand", new() { ["gravel"] = 48, ["sand"] = 24, ["coal"] = 6 }, new() { ["filter_media"] = 72 });
+        AssertRecipe("make_filter_media_manufactured_sand", new() { ["gravel"] = 48, ["manufactured_sand"] = 24, ["coal"] = 6 }, new() { ["filter_media"] = 72 });
+        AssertRecipe("make_organic_fertilizer_compost", new() { ["compost"] = 72, ["water"] = 24 }, new() { ["fertilizer_organic"] = 96 });
+        AssertRecipe("make_organic_fertilizer_dirt", new() { ["compost"] = 24, ["dirt"] = 48, ["water"] = 24 }, new() { ["fertilizer_organic"] = 96 });
+        AssertRecipe("make_fertilizer_2", new() { ["fertilizer_1"] = 60, ["lime"] = 12, ["sulfur"] = 12 }, new() { ["fertilizer_2"] = 72 });
+        AssertRecipe("make_dirt", new() { ["gravel"] = 48, ["compost"] = 48 }, new() { ["dirt"] = 96 });
+        AssertRecipe("make_animal_feed_potato", new() { ["potato"] = 120 }, new() { ["animal_feed"] = 96 });
+        AssertRecipe("make_animal_feed_wheat", new() { ["wheat"] = 120 }, new() { ["animal_feed"] = 192 });
+        AssertRecipe("make_animal_feed_corn", new() { ["corn"] = 120 }, new() { ["animal_feed"] = 144 });
+        AssertRecipe("make_animal_feed_soybean", new() { ["soybean"] = 120 }, new() { ["animal_feed"] = 216 });
+        AssertRecipe("make_compost_animal_feed", new() { ["animal_feed"] = 24 }, new() { ["compost"] = 12 });
+        AssertRecipe("make_compost_biomass", new() { ["biomass"] = 24 }, new() { ["compost"] = 16 });
+        AssertRecipe("make_compost_minced_meat", new() { ["minced_meat"] = 24 }, new() { ["compost"] = 8 });
+    }
+
+    [Fact]
+    public void RecipeCost_AnimalFeedAndCompost_AreNoLongerExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("animal_feed"));
+        Assert.False(calculator.IsExternal("compost"));
+        Assert.False(calculator.IsExternal("dirt"));
+        Assert.Equal(4, calculator.Calculate("animal_feed").Routes.Count);
+        Assert.True(calculator.IsExternal("soybean"));
     }
 }

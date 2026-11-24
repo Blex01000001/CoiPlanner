@@ -62,6 +62,10 @@
             <RowTemplate>
                 <MudTd DataLabel="配方">
                     <span class="cost-recipe">@MachineName(context.RecipeId) · @RecipeName(context.RecipeId)</span>
+                    @if (_recipes.TryGetValue(context.RecipeId, out var routeRecipe) && routeRecipe.Locked)
+                    {
+                        <MudChip T="string" Size="Size.Small" Class="ml-1">未解鎖</MudChip>
+                    }
                     @if (context == _report.Routes[0])
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">最便宜</MudChip>

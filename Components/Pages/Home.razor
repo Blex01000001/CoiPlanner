@@ -46,6 +46,10 @@
             <RowTemplate>
                 <MudTd DataLabel="名稱">
                     @context.Name
+                    @if (context.Locked)
+                    {
+                        <MudChip T="string" Size="Size.Small" Class="ml-1">未解鎖</MudChip>
+                    }
                     <MudText Typo="Typo.caption" Class="d-block"><code>@context.Id</code></MudText>
                 </MudTd>
                 <MudTd DataLabel="週期 (秒)" Style="text-align:right">@context.CycleSeconds</MudTd>
