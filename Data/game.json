@@ -5,7 +5,7 @@
     { "id": "coal", "name": "煤礦", "unit": "單位", "kind": "loose", "color": "#7a7570" },
     { "id": "steam_high", "name": "蒸汽(高壓)", "unit": "單位", "kind": "fluid", "color": "#e6eaec" },
     { "id": "iron_ore", "name": "鐵礦", "unit": "單位", "kind": "loose", "color": "#b5651d" },
-    { "id": "molten_iron", "name": "鐵水", "unit": "單位", "kind": "molten", "color": "#ff7043" },
+    { "id": "molten_iron", "name": "熔融鐵", "unit": "單位", "kind": "molten", "color": "#ff7043" },
     { "id": "crushed_iron_ore", "name": "碎鐵礦石", "unit": "單位", "kind": "loose", "color": "#d08a4e" },
     { "id": "lime", "name": "石灰石", "unit": "單位", "kind": "loose", "color": "#e8e4c9" },
     { "id": "slag", "name": "爐渣", "unit": "單位", "kind": "loose", "color": "#8e6e53" },
@@ -98,6 +98,17 @@
     { "id": "composite_core", "name": "基礎複合芯材", "unit": "單位", "kind": "unit", "color": "#dc3898" },
     { "id": "space_station_part_basic", "name": "空間站部件(基礎)", "unit": "單位", "kind": "unit", "color": "#71c5d0" },
     { "id": "crew_rations", "name": "船員補給食品", "unit": "單位", "kind": "unit", "color": "#d9c668" },
+    { "id": "impure_copper", "name": "不純銅", "unit": "單位", "kind": "unit", "color": "#c32232" },
+    { "id": "acid", "name": "酸", "unit": "單位", "kind": "fluid", "color": "#dc38d7" },
+    { "id": "molten_copper", "name": "熔融銅", "unit": "單位", "kind": "molten", "color": "#735fe3" },
+    { "id": "molten_aluminium", "name": "熔融鋁", "unit": "單位", "kind": "molten", "color": "#2297c3" },
+    { "id": "molten_glass", "name": "熔融玻璃", "unit": "單位", "kind": "molten", "color": "#38dc79" },
+    { "id": "iron_scrap", "name": "鐵廢料", "unit": "單位", "kind": "loose", "color": "#dc385d" },
+    { "id": "copper_scrap", "name": "銅廢料", "unit": "單位", "kind": "loose", "color": "#2622c3" },
+    { "id": "crushed_copper_ore", "name": "碎銅礦石", "unit": "單位", "kind": "loose", "color": "#a868d9" },
+    { "id": "sand", "name": "砂", "unit": "單位", "kind": "loose", "color": "#5fe383" },
+    { "id": "glass_mixture", "name": "玻璃混合物", "unit": "單位", "kind": "loose", "color": "#39ac53" },
+    { "id": "cullet", "name": "碎玻璃", "unit": "單位", "kind": "loose", "color": "#ac3967" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -767,6 +778,69 @@
       "cycleSeconds": 60
     },
     {
+      "id": "electrolyze_copper_acid",
+      "name": "電解銅(酸)",
+      "inputs": [ { "productId": "impure_copper", "quantity": 24 }, { "productId": "acid", "quantity": 6 } ],
+      "outputs": [ { "productId": "copper_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "electrolyze_copper_water",
+      "name": "電解銅(水)",
+      "inputs": [ { "productId": "impure_copper", "quantity": 24 }, { "productId": "water", "quantity": 6 } ],
+      "outputs": [ { "productId": "copper_plate", "quantity": 19.5 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_impure_copper",
+      "name": "鑄造不純銅",
+      "inputs": [ { "productId": "molten_copper", "quantity": 24 } ],
+      "outputs": [ { "productId": "impure_copper", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_aluminium",
+      "name": "鑄造鋁",
+      "inputs": [ { "productId": "molten_aluminium", "quantity": 24 } ],
+      "outputs": [ { "productId": "aluminium", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_iron_scrap",
+      "name": "高爐熔煉鐵廢料",
+      "inputs": [ { "productId": "iron_scrap", "quantity": 48 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_iron", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_copper_scrap",
+      "name": "高爐熔煉銅廢料",
+      "inputs": [ { "productId": "copper_scrap", "quantity": 48 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_copper", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_copper_ore",
+      "name": "高爐煉銅",
+      "inputs": [ { "productId": "crushed_copper_ore", "quantity": 48 }, { "productId": "sand", "quantity": 6 }, { "productId": "coal", "quantity": 15 } ],
+      "outputs": [ { "productId": "molten_copper", "quantity": 48 }, { "productId": "slag", "quantity": 18 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_glass_mixture",
+      "name": "高爐熔煉玻璃(玻璃混合物)",
+      "inputs": [ { "productId": "glass_mixture", "quantity": 60 }, { "productId": "coal", "quantity": 15 } ],
+      "outputs": [ { "productId": "molten_glass", "quantity": 48 }, { "productId": "slag", "quantity": 24 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_glass_cullet",
+      "name": "高爐熔煉玻璃(碎玻璃)",
+      "inputs": [ { "productId": "cullet", "quantity": 72 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_glass", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_cement",
       "name": "燒製水泥",
       "inputs": [
@@ -790,11 +864,12 @@
     { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
     { "id": "lime_quarry", "name": "石灰石場", "category": "採集", "recipeIds": [ "mine_lime" ] },
     { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "recipeIds": [ "crush_iron_ore" ] },
-    { "id": "blast_furnace_2", "name": "高爐II", "category": "冶金", "recipeIds": [ "smelt_iron_blast" ] },
+    { "id": "blast_furnace_2", "name": "高爐II", "category": "冶金", "workers": 18, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "smelt_iron_blast", "smelt_iron_scrap", "smelt_copper_scrap", "smelt_copper_ore", "smelt_glass_mixture", "smelt_glass_cullet" ] },
     { "id": "air_separator", "name": "空氣分離器", "category": "加工", "recipeIds": [ "separate_air" ] },
     { "id": "oxygen_furnace_2", "name": "氧氣轉爐II", "category": "冶金", "recipeIds": [ "make_steel" ] },
     { "id": "cooled_caster_2", "name": "水冷鑄造機II", "category": "冶金", "recipeIds": [ "cast_steel_plate" ] },
-    { "id": "metal_caster_2", "name": "金屬鑄造機II", "category": "冶金", "recipeIds": [ "cast_iron_plate" ] },
+    { "id": "metal_caster_2", "name": "金屬鑄造機II", "category": "冶金", "workers": 2, "recipeIds": [ "cast_iron_plate", "cast_impure_copper", "cast_aluminium" ] },
+    { "id": "copper_electrolyzer", "name": "銅電解槽", "category": "冶金", "powerUseKw": 400, "workers": 5, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "electrolyze_copper_acid", "electrolyze_copper_water" ] },
     { "id": "assembly_4", "name": "組裝機IV", "category": "加工", "powerUseKw": 250, "workers": 2, "maintenanceType": "維修II", "maintenancePerMinute": 1.9, "computingTf": 3, "recipeIds": [ "assemble_mechanical_parts", "assemble_mechanical_parts_iron", "assemble_building_parts_1_iron", "assemble_building_parts_1_steel", "assemble_building_parts_2", "assemble_building_parts_3", "assemble_building_parts_4", "assemble_vehicle_parts_1", "assemble_vehicle_parts_2", "assemble_vehicle_parts_3", "assemble_lab_equipment_1", "assemble_lab_equipment_2", "assemble_lab_equipment_3", "assemble_lab_equipment_4", "assemble_rail_parts", "assemble_furniture", "assemble_appliances", "assemble_luxury_goods", "assemble_printed_circuit_board", "assemble_electronics_1", "assemble_electronics_2", "assemble_uranium_rod", "assemble_solar_cell", "assemble_electronics_3", "assemble_server", "assemble_medical_equipment", "assemble_medical_supplies_1", "assemble_medical_supplies_2", "assemble_medical_supplies_3", "assemble_packaged_food_meat", "assemble_packaged_food_eggs", "assemble_packaged_food_tofu", "assemble_office_supplies", "assemble_composite_panel", "assemble_composite_core", "assemble_space_station_part_basic", "assemble_crew_rations" ] },
     { "id": "oil_well", "name": "油田", "category": "採集", "recipeIds": [ "pump_crude_oil" ] },
     { "id": "distillation_1", "name": "蒸餾塔I", "category": "石化", "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 1.4, "recipeIds": [ "distill_crude_oil" ] },
