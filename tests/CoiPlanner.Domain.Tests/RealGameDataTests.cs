@@ -608,4 +608,37 @@ public class RealGameDataTests
         Assert.False(calculator.IsExternal("concrete_slab"));
         Assert.Equal(4, calculator.Calculate("concrete_slab").Routes.Count);
     }
+
+    [Fact]
+    public void AnaerobicDigester_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "anaerobic_digester");
+        Assert.Equal((4, 50, "維修I", 0.47), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(11, m.RecipeIds.Count);
+
+        AssertRecipe("digest_sludge", new() { ["sludge"] = 18 }, new() { ["fuel_gas"] = 8, ["compost"] = 3 });
+        AssertRecipe("digest_potato", new() { ["potato"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_vegetables", new() { ["vegetables"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_fruit", new() { ["fruit"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_poppy", new() { ["poppy"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_wheat", new() { ["wheat"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_corn", new() { ["corn"] = 14 }, new() { ["fuel_gas"] = 14, ["compost"] = 1 });
+        AssertRecipe("digest_soybean", new() { ["soybean"] = 14 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_sugarcane", new() { ["sugarcane"] = 12 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_minced_meat", new() { ["minced_meat"] = 8 }, new() { ["fuel_gas"] = 4, ["compost"] = 2 });
+        AssertRecipe("digest_eggs", new() { ["eggs"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+
+        // 罌粟與甘蔗的配方是未解鎖的
+        Assert.Equal(["digest_poppy", "digest_sugarcane"], m.RecipeIds.Where(id => Data.Recipes.Single(r => r.Id == id).Locked).Order());
+    }
+
+    [Fact]
+    public void RecipeCost_FuelGasAndCompost_NowHaveDigesterRoutes()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.Contains(calculator.Calculate("fuel_gas").Routes, r => r.RecipeId == "digest_corn");
+        Assert.Contains(calculator.Calculate("compost").Routes, r => r.RecipeId == "digest_sludge");
+        Assert.True(calculator.IsExternal("sludge"));
+    }
 }
