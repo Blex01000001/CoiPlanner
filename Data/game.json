@@ -135,6 +135,15 @@
     { "id": "corn", "name": "玉米", "unit": "單位", "kind": "loose", "color": "#47dc65" },
     { "id": "soybean", "name": "大豆", "unit": "單位", "kind": "loose", "color": "#dda2a7" },
     { "id": "minced_meat", "name": "碎肉", "unit": "單位", "kind": "unit", "color": "#125fda" },
+    { "id": "hydrated_alumina", "name": "水合氧化鋁", "unit": "單位", "kind": "loose", "color": "#76b315" },
+    { "id": "alumina", "name": "氧化鋁", "unit": "單位", "kind": "loose", "color": "#a9d6cd" },
+    { "id": "sludge", "name": "污泥", "unit": "單位", "kind": "loose", "color": "#7a3b79" },
+    { "id": "fruit", "name": "水果", "unit": "單位", "kind": "loose", "color": "#31e0b1" },
+    { "id": "poppy", "name": "罌粟", "unit": "單位", "kind": "loose", "color": "#280bcf" },
+    { "id": "sugarcane", "name": "甘蔗", "unit": "單位", "kind": "loose", "color": "#14b0eb" },
+    { "id": "wastewater", "name": "廢水", "unit": "單位", "kind": "fluid", "color": "#287c5f" },
+    { "id": "bio_sludge", "name": "生物污泥", "unit": "單位", "kind": "loose", "color": "#f2620d" },
+    { "id": "toxic_slurry", "name": "有毒泥漿", "unit": "單位", "kind": "fluid", "color": "#7e75e5" },
     { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
   ],
   "recipes": [
@@ -1073,8 +1082,136 @@
       "cycleSeconds": 60
     },
     {
+      "id": "mix_concrete_slag_sand",
+      "name": "調配混凝土板(碎爐渣＋砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "sand", "quantity": 12 }, { "productId": "crushed_slag", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_gravel_sand",
+      "name": "調配混凝土板(碎石＋砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "sand", "quantity": 12 }, { "productId": "gravel", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_slag_manufactured_sand",
+      "name": "調配混凝土板(碎爐渣＋機制砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "manufactured_sand", "quantity": 12 }, { "productId": "crushed_slag", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_gravel_manufactured_sand",
+      "name": "調配混凝土板(碎石＋機制砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "manufactured_sand", "quantity": 12 }, { "productId": "gravel", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_sludge",
+      "name": "消化污泥",
+      "inputs": [ { "productId": "sludge", "quantity": 18 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 8 }, { "productId": "compost", "quantity": 3 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_potato",
+      "name": "消化馬鈴薯",
+      "inputs": [ { "productId": "potato", "quantity": 14 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 8 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_vegetables",
+      "name": "消化蔬菜",
+      "inputs": [ { "productId": "vegetables", "quantity": 14 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 8 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_fruit",
+      "name": "消化水果",
+      "inputs": [ { "productId": "fruit", "quantity": 12 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 12 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_poppy",
+      "name": "消化罌粟",
+      "inputs": [ { "productId": "poppy", "quantity": 14 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 8 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "digest_wheat",
+      "name": "消化小麥",
+      "inputs": [ { "productId": "wheat", "quantity": 12 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 12 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_corn",
+      "name": "消化玉米",
+      "inputs": [ { "productId": "corn", "quantity": 14 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 14 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_soybean",
+      "name": "消化大豆",
+      "inputs": [ { "productId": "soybean", "quantity": 14 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 12 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_sugarcane",
+      "name": "消化甘蔗",
+      "inputs": [ { "productId": "sugarcane", "quantity": 12 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 8 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "digest_minced_meat",
+      "name": "消化碎肉",
+      "inputs": [ { "productId": "minced_meat", "quantity": 8 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 4 }, { "productId": "compost", "quantity": 2 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "digest_eggs",
+      "name": "消化雞蛋",
+      "inputs": [ { "productId": "eggs", "quantity": 12 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 12 }, { "productId": "compost", "quantity": 1 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "treat_wastewater_sand",
+      "name": "處理廢水(砂)",
+      "inputs": [ { "productId": "wastewater", "quantity": 160 }, { "productId": "sand", "quantity": 8 }, { "productId": "chlorine", "quantity": 8 } ],
+      "outputs": [ { "productId": "water", "quantity": 80 }, { "productId": "sludge", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "treat_wastewater_filter",
+      "name": "處理廢水(過濾介質)",
+      "inputs": [ { "productId": "wastewater", "quantity": 160 }, { "productId": "filter_media", "quantity": 8 }, { "productId": "chlorine", "quantity": 16 } ],
+      "outputs": [ { "productId": "water", "quantity": 120 }, { "productId": "bio_sludge", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "treat_toxic_slurry",
+      "name": "處理有毒泥漿",
+      "inputs": [ { "productId": "toxic_slurry", "quantity": 108 }, { "productId": "filter_media", "quantity": 6 }, { "productId": "brine", "quantity": 18 } ],
+      "outputs": [ { "productId": "water", "quantity": 36 }, { "productId": "slag", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_cement",
-      "name": "燒製水泥",
+      "name": "燒製水泥(燃氣)",
       "inputs": [
         { "productId": "lime", "quantity": 18 },
         { "productId": "fuel_gas", "quantity": 6 }
@@ -1084,6 +1221,36 @@
         { "productId": "carbon_dioxide", "quantity": 18 }
       ],
       "cycleSeconds": 60
+    },
+    {
+      "id": "make_cement_coal",
+      "name": "燒製水泥(煤)",
+      "inputs": [ { "productId": "lime", "quantity": 9 }, { "productId": "coal", "quantity": 1.5 } ],
+      "outputs": [ { "productId": "cement", "quantity": 3 }, { "productId": "exhaust", "quantity": 9 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_cement_hydrogen",
+      "name": "燒製水泥(氫氣)",
+      "inputs": [ { "productId": "lime", "quantity": 18 }, { "productId": "hydrogen", "quantity": 6 } ],
+      "outputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "spent_gas", "quantity": 4.5 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "calcine_alumina_gas",
+      "name": "煅燒氧化鋁(燃氣)",
+      "inputs": [ { "productId": "hydrated_alumina", "quantity": 36 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "outputs": [ { "productId": "alumina", "quantity": 24 }, { "productId": "carbon_dioxide", "quantity": 6 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "calcine_alumina_hydrogen",
+      "name": "煅燒氧化鋁(氫氣)",
+      "inputs": [ { "productId": "hydrated_alumina", "quantity": 36 }, { "productId": "hydrogen", "quantity": 6 } ],
+      "outputs": [ { "productId": "alumina", "quantity": 24 }, { "productId": "spent_gas", "quantity": 12 } ],
+      "cycleSeconds": 60,
+      "locked": true
     }
   ],
   "machines": [
@@ -1107,7 +1274,8 @@
     { "id": "distillation_1", "name": "蒸餾塔I", "category": "石化", "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 1.4, "recipeIds": [ "distill_crude_oil" ] },
     { "id": "distillation_2", "name": "蒸餾塔II", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "distill_medium_oil" ] },
     { "id": "distillation_3", "name": "蒸餾塔III", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "distill_light_oil" ] },
-    { "id": "rotary_kiln", "name": "迴轉窯", "category": "加工", "recipeIds": [ "make_cement" ] },
+    { "id": "rotary_kiln", "name": "迴轉窯(燃氣)", "category": "加工", "powerUseKw": 100, "workers": 10, "maintenanceType": "維修I", "maintenancePerMinute": 1.4, "recipeIds": [ "make_cement", "make_cement_hydrogen", "calcine_alumina_gas", "calcine_alumina_hydrogen" ] },
+    { "id": "rotary_kiln_coal", "name": "迴轉窯", "category": "加工", "powerUseKw": 100, "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 0.94, "recipeIds": [ "make_cement_coal" ] },
     { "id": "diesel_generator_1", "name": "柴油發電機1", "category": "電力", "powerGenerationKw": 800, "recipeIds": [ "generate_diesel_1" ] },
     { "id": "diesel_generator_2", "name": "柴油發電機2", "category": "電力", "powerGenerationKw": 5000, "recipeIds": [ "generate_diesel_2" ] },
     { "id": "evaporation_pond_heated", "name": "蒸發池(加熱)", "category": "加工", "powerUseKw": 250, "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "evaporate_seawater_brine", "evaporate_seawater_salt", "evaporate_brine" ] },
@@ -1116,6 +1284,9 @@
     { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] },
     { "id": "chemical_plant", "name": "化工廠", "category": "加工", "powerUseKw": 250, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "make_fertilizer", "make_fertilizer_organic", "synthesize_ammonia", "make_paper", "make_diesel_biofuel", "make_graphite", "make_disinfectant" ] },
     { "id": "mixer_2", "name": "攪拌機II", "category": "加工", "powerUseKw": 200, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "mix_glass_mixture", "mix_glass_mixture_acid", "make_acid", "mix_sulfur_slag", "mix_brine", "make_filter_media_sand", "make_filter_media_manufactured_sand", "make_organic_fertilizer_compost", "make_organic_fertilizer_dirt", "make_fertilizer_2", "make_dirt", "make_animal_feed_potato", "make_animal_feed_wheat", "make_animal_feed_corn", "make_animal_feed_soybean", "make_compost_animal_feed", "make_compost_biomass", "make_compost_minced_meat" ] },
+    { "id": "concrete_mixer_3", "name": "混凝土攪拌機III", "category": "加工", "powerUseKw": 400, "workers": 10, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "mix_concrete_slag_sand", "mix_concrete_gravel_sand", "mix_concrete_slag_manufactured_sand", "mix_concrete_gravel_manufactured_sand" ] },
+    { "id": "anaerobic_digester", "name": "厭氧消化器", "category": "加工", "powerUseKw": 50, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.47, "recipeIds": [ "digest_sludge", "digest_potato", "digest_vegetables", "digest_fruit", "digest_poppy", "digest_wheat", "digest_corn", "digest_soybean", "digest_sugarcane", "digest_minced_meat", "digest_eggs" ] },
+    { "id": "wastewater_treatment", "name": "廢水處理", "category": "加工", "powerUseKw": 600, "workers": 26, "maintenanceType": "維修I", "maintenancePerMinute": 4.7, "recipeIds": [ "treat_wastewater_sand", "treat_wastewater_filter", "treat_toxic_slurry" ] },
     { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "powerUseKw": 400, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "desalinate_ultra_steam", "desalinate", "desalinate_low_steam" ] }
   ],
   "transports": [

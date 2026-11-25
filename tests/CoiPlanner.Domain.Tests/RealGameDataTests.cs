@@ -462,7 +462,8 @@ public class RealGameDataTests
     [Fact]
     public void CrusherLarge_LockedRecipes_AreMarked()
     {
-        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).Order().ToList();
+        var crusher = Data.Machines.Single(m => m.Id == "crusher_large").RecipeIds.ToHashSet();
+        var locked = Data.Recipes.Where(r => r.Locked && crusher.Contains(r.Id)).Select(r => r.Id).Order().ToList();
 
         Assert.Equal(["crush_bauxite", "crush_titanium_ore", "crush_uranium_ore"], locked);
     }
@@ -543,5 +544,124 @@ public class RealGameDataTests
         Assert.DoesNotContain(pinned.RawInputs, a => a.ProductId == "iron_scrap");
         Assert.True(pinned.Steps.Single(s => s.ProductId == "molten_iron").Pinned);
         Assert.True(pinned.WeightedCost > byDefault.WeightedCost);
+    }
+
+    [Fact]
+    public void RotaryKilns_MatchUserData()
+    {
+        var coal = Data.Machines.Single(x => x.Id == "rotary_kiln_coal");
+        Assert.Equal("迴轉窯", coal.Name);
+        Assert.Equal((6, 100, "維修I", 0.94), (coal.Workers, coal.PowerUseKw, coal.MaintenanceType, coal.MaintenancePerMinute));
+        Assert.Equal(["make_cement_coal"], coal.RecipeIds);
+        AssertRecipe("make_cement_coal", new() { ["lime"] = 9, ["coal"] = 1.5 }, new() { ["cement"] = 3, ["exhaust"] = 9 });
+
+        var gas = Data.Machines.Single(x => x.Id == "rotary_kiln");
+        Assert.Equal("迴轉窯(燃氣)", gas.Name);
+        Assert.Equal((10, 100, "維修I", 1.4), (gas.Workers, gas.PowerUseKw, gas.MaintenanceType, gas.MaintenancePerMinute));
+        Assert.Equal(4, gas.RecipeIds.Count);
+        AssertRecipe("make_cement", new() { ["lime"] = 18, ["fuel_gas"] = 6 }, new() { ["cement"] = 6, ["carbon_dioxide"] = 18 });
+        AssertRecipe("make_cement_hydrogen", new() { ["lime"] = 18, ["hydrogen"] = 6 }, new() { ["cement"] = 6, ["spent_gas"] = 4.5 });
+        AssertRecipe("calcine_alumina_gas", new() { ["hydrated_alumina"] = 36, ["fuel_gas"] = 6 }, new() { ["alumina"] = 24, ["carbon_dioxide"] = 6 });
+        AssertRecipe("calcine_alumina_hydrogen", new() { ["hydrated_alumina"] = 36, ["hydrogen"] = 6 }, new() { ["alumina"] = 24, ["spent_gas"] = 12 });
+    }
+
+    [Fact]
+    public void RotaryKilns_LockedRecipes_AreTheAluminaOnes()
+    {
+        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).ToHashSet();
+
+        Assert.Contains("calcine_alumina_gas", locked);
+        Assert.Contains("calcine_alumina_hydrogen", locked);
+        Assert.DoesNotContain("make_cement_coal", locked);
+    }
+
+    [Fact]
+    public void RecipeCost_Cement_HasThreeRoutes_AndAluminaTracesToExternalHydratedAlumina()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.Equal(3, calculator.Calculate("cement").Routes.Count);
+        var alumina = calculator.Calculate("alumina");
+        Assert.Equal(2, alumina.Routes.Count);
+        Assert.True(calculator.IsExternal("hydrated_alumina"));
+        Assert.All(alumina.Routes, r => Assert.Contains(r.RawInputs, a => a.ProductId == "hydrated_alumina"));
+    }
+
+    [Fact]
+    public void ConcreteMixerIII_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "concrete_mixer_3");
+        Assert.Equal((10, 400, "維修I", 2.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(4, m.RecipeIds.Count);
+
+        AssertRecipe("mix_concrete_slag_sand", new() { ["cement"] = 6, ["sand"] = 12, ["crushed_slag"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_gravel_sand", new() { ["cement"] = 6, ["sand"] = 12, ["gravel"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_slag_manufactured_sand", new() { ["cement"] = 6, ["manufactured_sand"] = 12, ["crushed_slag"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_gravel_manufactured_sand", new() { ["cement"] = 6, ["manufactured_sand"] = 12, ["gravel"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+    }
+
+    [Fact]
+    public void RecipeCost_ConcreteSlab_HasFourRoutes_AndIsNoLongerExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("concrete_slab"));
+        Assert.Equal(4, calculator.Calculate("concrete_slab").Routes.Count);
+    }
+
+    [Fact]
+    public void AnaerobicDigester_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "anaerobic_digester");
+        Assert.Equal((4, 50, "維修I", 0.47), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(11, m.RecipeIds.Count);
+
+        AssertRecipe("digest_sludge", new() { ["sludge"] = 18 }, new() { ["fuel_gas"] = 8, ["compost"] = 3 });
+        AssertRecipe("digest_potato", new() { ["potato"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_vegetables", new() { ["vegetables"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_fruit", new() { ["fruit"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_poppy", new() { ["poppy"] = 14 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_wheat", new() { ["wheat"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_corn", new() { ["corn"] = 14 }, new() { ["fuel_gas"] = 14, ["compost"] = 1 });
+        AssertRecipe("digest_soybean", new() { ["soybean"] = 14 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+        AssertRecipe("digest_sugarcane", new() { ["sugarcane"] = 12 }, new() { ["fuel_gas"] = 8, ["compost"] = 1 });
+        AssertRecipe("digest_minced_meat", new() { ["minced_meat"] = 8 }, new() { ["fuel_gas"] = 4, ["compost"] = 2 });
+        AssertRecipe("digest_eggs", new() { ["eggs"] = 12 }, new() { ["fuel_gas"] = 12, ["compost"] = 1 });
+
+        // 罌粟與甘蔗的配方是未解鎖的
+        Assert.Equal(["digest_poppy", "digest_sugarcane"], m.RecipeIds.Where(id => Data.Recipes.Single(r => r.Id == id).Locked).Order());
+    }
+
+    [Fact]
+    public void RecipeCost_FuelGasAndCompost_NowHaveDigesterRoutes()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.Contains(calculator.Calculate("fuel_gas").Routes, r => r.RecipeId == "digest_corn");
+        Assert.Contains(calculator.Calculate("compost").Routes, r => r.RecipeId == "digest_sludge");
+        Assert.True(calculator.IsExternal("fruit"));
+    }
+
+    [Fact]
+    public void WastewaterTreatment_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "wastewater_treatment");
+        Assert.Equal((26, 600, "維修I", 4.7), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(3, m.RecipeIds.Count);
+
+        AssertRecipe("treat_wastewater_sand", new() { ["wastewater"] = 160, ["sand"] = 8, ["chlorine"] = 8 }, new() { ["water"] = 80, ["sludge"] = 24 });
+        AssertRecipe("treat_wastewater_filter", new() { ["wastewater"] = 160, ["filter_media"] = 8, ["chlorine"] = 16 }, new() { ["water"] = 120, ["bio_sludge"] = 36 });
+        AssertRecipe("treat_toxic_slurry", new() { ["toxic_slurry"] = 108, ["filter_media"] = 6, ["brine"] = 18 }, new() { ["water"] = 36, ["slag"] = 60 });
+    }
+
+    [Fact]
+    public void RecipeCost_Sludge_NowHasAWastewaterRoute()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("sludge"));
+        Assert.Contains(calculator.Calculate("sludge").Routes, r => r.RecipeId == "treat_wastewater_sand");
+        Assert.True(calculator.IsExternal("wastewater"));
+        Assert.True(calculator.IsExternal("toxic_slurry"));
     }
 }
