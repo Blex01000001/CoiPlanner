@@ -639,6 +639,29 @@ public class RealGameDataTests
 
         Assert.Contains(calculator.Calculate("fuel_gas").Routes, r => r.RecipeId == "digest_corn");
         Assert.Contains(calculator.Calculate("compost").Routes, r => r.RecipeId == "digest_sludge");
-        Assert.True(calculator.IsExternal("sludge"));
+        Assert.True(calculator.IsExternal("fruit"));
+    }
+
+    [Fact]
+    public void WastewaterTreatment_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "wastewater_treatment");
+        Assert.Equal((26, 600, "維修I", 4.7), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(3, m.RecipeIds.Count);
+
+        AssertRecipe("treat_wastewater_sand", new() { ["wastewater"] = 160, ["sand"] = 8, ["chlorine"] = 8 }, new() { ["water"] = 80, ["sludge"] = 24 });
+        AssertRecipe("treat_wastewater_filter", new() { ["wastewater"] = 160, ["filter_media"] = 8, ["chlorine"] = 16 }, new() { ["water"] = 120, ["bio_sludge"] = 36 });
+        AssertRecipe("treat_toxic_slurry", new() { ["toxic_slurry"] = 108, ["filter_media"] = 6, ["brine"] = 18 }, new() { ["water"] = 36, ["slag"] = 60 });
+    }
+
+    [Fact]
+    public void RecipeCost_Sludge_NowHasAWastewaterRoute()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("sludge"));
+        Assert.Contains(calculator.Calculate("sludge").Routes, r => r.RecipeId == "treat_wastewater_sand");
+        Assert.True(calculator.IsExternal("wastewater"));
+        Assert.True(calculator.IsExternal("toxic_slurry"));
     }
 }
