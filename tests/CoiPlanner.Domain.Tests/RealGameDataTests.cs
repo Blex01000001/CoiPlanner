@@ -462,7 +462,8 @@ public class RealGameDataTests
     [Fact]
     public void CrusherLarge_LockedRecipes_AreMarked()
     {
-        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).Order().ToList();
+        var crusher = Data.Machines.Single(m => m.Id == "crusher_large").RecipeIds.ToHashSet();
+        var locked = Data.Recipes.Where(r => r.Locked && crusher.Contains(r.Id)).Select(r => r.Id).Order().ToList();
 
         Assert.Equal(["crush_bauxite", "crush_titanium_ore", "crush_uranium_ore"], locked);
     }
@@ -543,5 +544,46 @@ public class RealGameDataTests
         Assert.DoesNotContain(pinned.RawInputs, a => a.ProductId == "iron_scrap");
         Assert.True(pinned.Steps.Single(s => s.ProductId == "molten_iron").Pinned);
         Assert.True(pinned.WeightedCost > byDefault.WeightedCost);
+    }
+
+    [Fact]
+    public void RotaryKilns_MatchUserData()
+    {
+        var coal = Data.Machines.Single(x => x.Id == "rotary_kiln_coal");
+        Assert.Equal("迴轉窯", coal.Name);
+        Assert.Equal((6, 100, "維修I", 0.94), (coal.Workers, coal.PowerUseKw, coal.MaintenanceType, coal.MaintenancePerMinute));
+        Assert.Equal(["make_cement_coal"], coal.RecipeIds);
+        AssertRecipe("make_cement_coal", new() { ["lime"] = 9, ["coal"] = 1.5 }, new() { ["cement"] = 3, ["exhaust"] = 9 });
+
+        var gas = Data.Machines.Single(x => x.Id == "rotary_kiln");
+        Assert.Equal("迴轉窯(燃氣)", gas.Name);
+        Assert.Equal((10, 100, "維修I", 1.4), (gas.Workers, gas.PowerUseKw, gas.MaintenanceType, gas.MaintenancePerMinute));
+        Assert.Equal(4, gas.RecipeIds.Count);
+        AssertRecipe("make_cement", new() { ["lime"] = 18, ["fuel_gas"] = 6 }, new() { ["cement"] = 6, ["carbon_dioxide"] = 18 });
+        AssertRecipe("make_cement_hydrogen", new() { ["lime"] = 18, ["hydrogen"] = 6 }, new() { ["cement"] = 6, ["spent_gas"] = 4.5 });
+        AssertRecipe("calcine_alumina_gas", new() { ["hydrated_alumina"] = 36, ["fuel_gas"] = 6 }, new() { ["alumina"] = 24, ["carbon_dioxide"] = 6 });
+        AssertRecipe("calcine_alumina_hydrogen", new() { ["hydrated_alumina"] = 36, ["hydrogen"] = 6 }, new() { ["alumina"] = 24, ["spent_gas"] = 12 });
+    }
+
+    [Fact]
+    public void RotaryKilns_LockedRecipes_AreTheAluminaOnes()
+    {
+        var locked = Data.Recipes.Where(r => r.Locked).Select(r => r.Id).ToHashSet();
+
+        Assert.Contains("calcine_alumina_gas", locked);
+        Assert.Contains("calcine_alumina_hydrogen", locked);
+        Assert.DoesNotContain("make_cement_coal", locked);
+    }
+
+    [Fact]
+    public void RecipeCost_Cement_HasThreeRoutes_AndAluminaTracesToExternalHydratedAlumina()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.Equal(3, calculator.Calculate("cement").Routes.Count);
+        var alumina = calculator.Calculate("alumina");
+        Assert.Equal(2, alumina.Routes.Count);
+        Assert.True(calculator.IsExternal("hydrated_alumina"));
+        Assert.All(alumina.Routes, r => Assert.Contains(r.RawInputs, a => a.ProductId == "hydrated_alumina"));
     }
 }
