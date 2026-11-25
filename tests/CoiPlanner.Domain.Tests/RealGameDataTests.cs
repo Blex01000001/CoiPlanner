@@ -586,4 +586,26 @@ public class RealGameDataTests
         Assert.True(calculator.IsExternal("hydrated_alumina"));
         Assert.All(alumina.Routes, r => Assert.Contains(r.RawInputs, a => a.ProductId == "hydrated_alumina"));
     }
+
+    [Fact]
+    public void ConcreteMixerIII_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "concrete_mixer_3");
+        Assert.Equal((10, 400, "維修I", 2.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(4, m.RecipeIds.Count);
+
+        AssertRecipe("mix_concrete_slag_sand", new() { ["cement"] = 6, ["sand"] = 12, ["crushed_slag"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_gravel_sand", new() { ["cement"] = 6, ["sand"] = 12, ["gravel"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_slag_manufactured_sand", new() { ["cement"] = 6, ["manufactured_sand"] = 12, ["crushed_slag"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+        AssertRecipe("mix_concrete_gravel_manufactured_sand", new() { ["cement"] = 6, ["manufactured_sand"] = 12, ["gravel"] = 36, ["water"] = 24 }, new() { ["concrete_slab"] = 48 });
+    }
+
+    [Fact]
+    public void RecipeCost_ConcreteSlab_HasFourRoutes_AndIsNoLongerExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("concrete_slab"));
+        Assert.Equal(4, calculator.Calculate("concrete_slab").Routes.Count);
+    }
 }

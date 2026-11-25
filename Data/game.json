@@ -1075,6 +1075,34 @@
       "cycleSeconds": 60
     },
     {
+      "id": "mix_concrete_slag_sand",
+      "name": "調配混凝土板(碎爐渣＋砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "sand", "quantity": 12 }, { "productId": "crushed_slag", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_gravel_sand",
+      "name": "調配混凝土板(碎石＋砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "sand", "quantity": 12 }, { "productId": "gravel", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_slag_manufactured_sand",
+      "name": "調配混凝土板(碎爐渣＋機制砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "manufactured_sand", "quantity": 12 }, { "productId": "crushed_slag", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mix_concrete_gravel_manufactured_sand",
+      "name": "調配混凝土板(碎石＋機制砂)",
+      "inputs": [ { "productId": "cement", "quantity": 6 }, { "productId": "manufactured_sand", "quantity": 12 }, { "productId": "gravel", "quantity": 36 }, { "productId": "water", "quantity": 24 } ],
+      "outputs": [ { "productId": "concrete_slab", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
       "id": "make_cement",
       "name": "燒製水泥(燃氣)",
       "inputs": [
@@ -1149,6 +1177,7 @@
     { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] },
     { "id": "chemical_plant", "name": "化工廠", "category": "加工", "powerUseKw": 250, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "make_fertilizer", "make_fertilizer_organic", "synthesize_ammonia", "make_paper", "make_diesel_biofuel", "make_graphite", "make_disinfectant" ] },
     { "id": "mixer_2", "name": "攪拌機II", "category": "加工", "powerUseKw": 200, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "mix_glass_mixture", "mix_glass_mixture_acid", "make_acid", "mix_sulfur_slag", "mix_brine", "make_filter_media_sand", "make_filter_media_manufactured_sand", "make_organic_fertilizer_compost", "make_organic_fertilizer_dirt", "make_fertilizer_2", "make_dirt", "make_animal_feed_potato", "make_animal_feed_wheat", "make_animal_feed_corn", "make_animal_feed_soybean", "make_compost_animal_feed", "make_compost_biomass", "make_compost_minced_meat" ] },
+    { "id": "concrete_mixer_3", "name": "混凝土攪拌機III", "category": "加工", "powerUseKw": 400, "workers": 10, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "mix_concrete_slag_sand", "mix_concrete_gravel_sand", "mix_concrete_slag_manufactured_sand", "mix_concrete_gravel_manufactured_sand" ] },
     { "id": "thermal_desalinator", "name": "熱脫鹽器", "category": "加工", "powerUseKw": 400, "workers": 4, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "desalinate_ultra_steam", "desalinate", "desalinate_low_steam" ] }
   ],
   "transports": [
