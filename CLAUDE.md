@@ -26,6 +26,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
 | `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
 | `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
+| `NAMES.md` | 名稱對照表：同義名稱（別名→正式名稱）、名稱相近但不同的物品、名稱寫法規則。`NameMapTests` 會檢查它和 `Data/game.json` 一致 | 使用者貼資料出現別名、確認同義關係時 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
 | `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
 
@@ -46,7 +47,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（背景統計值如空氣汙染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
+1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。

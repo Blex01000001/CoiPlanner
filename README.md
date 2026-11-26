@@ -27,6 +27,7 @@ dotnet test
 | `Data/*.json` | 物品（含運輸型態）、配方、機器與運輸方式資料；啟動時全部載入並驗證（目前是 `Data/game.json`） |
 | `Domain/Models` | Product、Recipe、Machine、Transport、Node、ResourceSource、Edge、ProductionPlan；`Simulation.cs` 為模擬參數與狀態 |
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（規劃檢查、額定速率、運輸上限）、`ProductionSimulator`（逐步模擬）、`RecipeCostCalculator`（配方成本比較）、`ProductionPlanSerializer`（規劃存取） |
+| `NAMES.md` | 名稱對照表：同義名稱、名稱相近的不同物品、名稱寫法規則 |
 | `Components/Pages/Home.razor` | 資料瀏覽（`/data`） |
 | `Components/Pages/Cost.razor` | 配方成本比較（`/cost`，整頁滿版） |
 | `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁（節點編輯器）：版面與程式碼 |
