@@ -23,6 +23,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `Program.cs` | WebAssembly 啟動、DI、提示訊息位置、載入遊戲資料 | 很少改 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
+| `scripts/assign-colors.cjs`、`scripts/prepare-pages.cjs` | 幫沒有 `color` 的物品自動配色；發佈後整理成 GitHub Pages 內容 | 很少改 |
 | `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
 | `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
 | `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
@@ -53,7 +54,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 2 分鐘
 - **運輸方式**：`id`、`name`、`kind`、`tiersPerMinute`（各等級每分鐘吞吐量）。
 
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
+1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（新物品可以先不寫，寫完後跑 `node scripts/assign-colors.cjs` 自動補上不重複的顏色；背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。

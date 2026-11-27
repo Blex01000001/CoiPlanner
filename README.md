@@ -35,6 +35,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試（先 dotnet b
 | `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁（節點編輯器）：版面與程式碼 |
 | `Components/Planning/` | 規劃頁的畫面元件：模擬控制列、規劃面板、物料平衡面板 |
 | `scripts/prepare-pages.cjs` | 發佈後整理成 GitHub Pages 內容（子路徑、版本號、404.html） |
+| `scripts/assign-colors.cjs` | 幫還沒有 `color` 的物品自動補上不重複的顏色（新增物品時用） |
 | `.github/workflows/deploy.yml` | 測試、發佈並部署到 GitHub Pages |
 | `wwwroot/js/graphEditor.js`、`wwwroot/js/graphEditor/` | litegraph 包裝（入口與 ES 模組）；只負責畫面，計算一律在 C# |
 | `tests/CoiPlanner.Domain.Tests/` | 單元測試；`Fixtures/` 是測試專用的虛構資料，不會被網站載入 |
