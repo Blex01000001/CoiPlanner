@@ -1,0 +1,10 @@
+// 運輸方式：tiersPerMinute 依序為一級、二級……的每分鐘吞吐量；一種物品型態（kind）只對應一種運輸方式
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "transports": [
+    { "id": "pipe", "name": "管線", "kind": "fluid", "tiersPerMinute": [ 60, 120, 200, 400, 900 ] },
+    { "id": "loose_belt", "name": "散裝運輸帶", "kind": "loose", "tiersPerMinute": [ 60, 120, 220, 400 ] },
+    { "id": "molten_channel", "name": "熔融通道", "kind": "molten", "tiersPerMinute": [ 60, 120, 220, 400 ] },
+    { "id": "belt", "name": "運輸帶", "kind": "unit", "tiersPerMinute": [ 60, 120, 220, 400 ] }
+  ]
+}

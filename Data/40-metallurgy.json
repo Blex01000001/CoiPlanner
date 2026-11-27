@@ -1,0 +1,209 @@
+// 冶金：粉碎、高爐、轉爐、鑄造、銅電解。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "crusher_large", "name": "粉碎機(大型)", "category": "冶金", "powerUseKw": 1000, "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 3.8, "recipeIds": [ "crush_iron_ore", "crush_copper_ore", "crush_slag", "crush_rock", "grind_gravel", "crush_quartz", "grind_quartz_sand", "crush_uranium_ore", "crush_gold_ore", "grind_gold_ore", "crush_bauxite", "crush_titanium_ore" ] },
+    { "id": "blast_furnace_2", "name": "高爐 II", "category": "冶金", "workers": 18, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "smelt_iron_blast", "smelt_iron_scrap", "smelt_copper_scrap", "smelt_copper_ore", "smelt_glass_mixture", "smelt_glass_cullet" ] },
+    { "id": "oxygen_furnace_2", "name": "氧氣轉爐 II", "category": "冶金", "recipeIds": [ "make_steel" ] },
+    { "id": "cooled_caster_2", "name": "水冷鑄造機 II", "category": "冶金", "recipeIds": [ "cast_steel_plate" ] },
+    { "id": "metal_caster_2", "name": "金屬鑄造機 II", "category": "冶金", "workers": 2, "recipeIds": [ "cast_iron_plate", "cast_impure_copper", "cast_aluminium" ] },
+    { "id": "copper_electrolyzer", "name": "銅電解槽", "category": "冶金", "powerUseKw": 400, "workers": 5, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "electrolyze_copper_acid", "electrolyze_copper_water" ] }
+  ],
+  "recipes": [
+    {
+      "id": "crush_iron_ore",
+      "name": "粉碎鐵礦石",
+      "inputs": [ { "productId": "iron_ore", "quantity": 192 } ],
+      "outputs": [ { "productId": "crushed_iron_ore", "quantity": 192 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_copper_ore",
+      "name": "粉碎銅礦石",
+      "inputs": [ { "productId": "copper_ore", "quantity": 192 } ],
+      "outputs": [ { "productId": "crushed_copper_ore", "quantity": 192 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_slag",
+      "name": "粉碎爐渣",
+      "inputs": [ { "productId": "slag", "quantity": 144 } ],
+      "outputs": [ { "productId": "crushed_slag", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_rock",
+      "name": "粉碎岩石",
+      "inputs": [ { "productId": "rock", "quantity": 144 } ],
+      "outputs": [ { "productId": "gravel", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_gravel",
+      "name": "碎石製機制砂",
+      "inputs": [ { "productId": "gravel", "quantity": 48 } ],
+      "outputs": [ { "productId": "manufactured_sand", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_quartz",
+      "name": "粉碎石英",
+      "inputs": [ { "productId": "quartz", "quantity": 288 } ],
+      "outputs": [ { "productId": "crushed_quartz", "quantity": 288 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_quartz_sand",
+      "name": "碎石英製砂",
+      "inputs": [ { "productId": "crushed_quartz", "quantity": 96 } ],
+      "outputs": [ { "productId": "sand", "quantity": 96 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_uranium_ore",
+      "name": "粉碎鈾礦石",
+      "inputs": [ { "productId": "uranium_ore", "quantity": 72 } ],
+      "outputs": [ { "productId": "uranium_powder", "quantity": 72 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "crush_gold_ore",
+      "name": "粉碎金礦石",
+      "inputs": [ { "productId": "gold_ore", "quantity": 144 } ],
+      "outputs": [ { "productId": "crushed_gold_ore", "quantity": 144 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "grind_gold_ore",
+      "name": "碎金礦石製金礦粉",
+      "inputs": [ { "productId": "crushed_gold_ore", "quantity": 72 } ],
+      "outputs": [ { "productId": "gold_powder", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crush_bauxite",
+      "name": "粉碎鋁土礦",
+      "inputs": [ { "productId": "bauxite", "quantity": 72 } ],
+      "outputs": [ { "productId": "bauxite_powder", "quantity": 72 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "crush_titanium_ore",
+      "name": "粉碎鈦礦石",
+      "inputs": [ { "productId": "titanium_ore", "quantity": 96 } ],
+      "outputs": [ { "productId": "crushed_titanium_ore", "quantity": 96 } ],
+      "cycleSeconds": 60,
+      "locked": true
+    },
+    {
+      "id": "smelt_iron_blast",
+      "name": "高爐煉鐵",
+      "inputs": [
+        { "productId": "crushed_iron_ore", "quantity": 48 },
+        { "productId": "lime", "quantity": 6 },
+        { "productId": "coal", "quantity": 15 }
+      ],
+      "outputs": [
+        { "productId": "molten_iron", "quantity": 48 },
+        { "productId": "slag", "quantity": 18 },
+        { "productId": "exhaust", "quantity": 36 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_iron_scrap",
+      "name": "高爐熔煉鐵廢料",
+      "inputs": [ { "productId": "iron_scrap", "quantity": 48 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_iron", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_copper_scrap",
+      "name": "高爐熔煉銅廢料",
+      "inputs": [ { "productId": "copper_scrap", "quantity": 48 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_copper", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_copper_ore",
+      "name": "高爐煉銅",
+      "inputs": [ { "productId": "crushed_copper_ore", "quantity": 48 }, { "productId": "sand", "quantity": 6 }, { "productId": "coal", "quantity": 15 } ],
+      "outputs": [ { "productId": "molten_copper", "quantity": 48 }, { "productId": "slag", "quantity": 18 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_glass_mixture",
+      "name": "高爐熔煉玻璃(玻璃混合物)",
+      "inputs": [ { "productId": "glass_mixture", "quantity": 60 }, { "productId": "coal", "quantity": 15 } ],
+      "outputs": [ { "productId": "molten_glass", "quantity": 48 }, { "productId": "slag", "quantity": 24 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "smelt_glass_cullet",
+      "name": "高爐熔煉玻璃(碎玻璃)",
+      "inputs": [ { "productId": "cullet", "quantity": 72 }, { "productId": "coal", "quantity": 9 } ],
+      "outputs": [ { "productId": "molten_glass", "quantity": 48 }, { "productId": "exhaust", "quantity": 27 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "make_steel",
+      "name": "煉鋼",
+      "inputs": [
+        { "productId": "molten_iron", "quantity": 48 },
+        { "productId": "oxygen", "quantity": 18 }
+      ],
+      "outputs": [
+        { "productId": "molten_steel", "quantity": 24 },
+        { "productId": "exhaust", "quantity": 36 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_steel_plate",
+      "name": "鑄造鋼板",
+      "inputs": [
+        { "productId": "molten_steel", "quantity": 24 },
+        { "productId": "water", "quantity": 12 }
+      ],
+      "outputs": [ { "productId": "steel_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_iron_plate",
+      "name": "鑄造鐵板",
+      "inputs": [ { "productId": "molten_iron", "quantity": 24 } ],
+      "outputs": [ { "productId": "iron_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_impure_copper",
+      "name": "鑄造不純銅",
+      "inputs": [ { "productId": "molten_copper", "quantity": 24 } ],
+      "outputs": [ { "productId": "impure_copper", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "cast_aluminium",
+      "name": "鑄造鋁",
+      "inputs": [ { "productId": "molten_aluminium", "quantity": 24 } ],
+      "outputs": [ { "productId": "aluminium", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "electrolyze_copper_acid",
+      "name": "電解銅(酸)",
+      "inputs": [ { "productId": "impure_copper", "quantity": 24 }, { "productId": "acid", "quantity": 6 } ],
+      "outputs": [ { "productId": "copper_plate", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "electrolyze_copper_water",
+      "name": "電解銅(水)",
+      "inputs": [ { "productId": "impure_copper", "quantity": 24 }, { "productId": "water", "quantity": 6 } ],
+      "outputs": [ { "productId": "copper_plate", "quantity": 19.5 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}

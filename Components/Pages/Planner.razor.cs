@@ -1,6 +1,7 @@
 using CoiPlanner.Components.Planning;
 using CoiPlanner.Domain.Models;
 using CoiPlanner.Domain.Services;
+using CoiPlanner.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
@@ -11,7 +12,6 @@ namespace CoiPlanner.Components.Pages;
 /// <summary>產線規劃頁的程式碼；畫面標記在 Planner.razor（注入的服務也宣告在那裡）。</summary>
 public partial class Planner
 {
-    private const string StorageKey = "coiplanner.plan";
     private const long MaxImportBytes = 1024 * 1024;
     // 每 100 毫秒推進一次模擬並把狀態送到畫布；1× 時正好是一步（0.1 秒）
     private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
@@ -104,10 +104,6 @@ public partial class Planner
             if (++_tick % PanelRefreshTicks == 0)
                 StateHasChanged();
         }
-        catch (JSDisconnectedException)
-        {
-            _loopCts.Cancel();
-        }
         catch (Exception ex) when (!_loopCts.IsCancellationRequested)
         {
             // 模擬出錯時停下來並提示，不能讓整個頁面當掉
@@ -171,13 +167,13 @@ public partial class Planner
             _pendingLoad = null;
         }
 
-        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, Serializer.Serialize(plan));
+        await Storage.SetStringAsync(StorageKeys.Plan, Serializer.Serialize(plan));
         StateHasChanged();
     }
 
     private async Task<ProductionPlan> ReadAutosaveAsync()
     {
-        var json = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        var json = await Storage.GetStringAsync(StorageKeys.Plan);
         if (string.IsNullOrEmpty(json))
             return new ProductionPlan();
 
@@ -216,7 +212,7 @@ public partial class Planner
         }
         catch (Exception ex)
         {
-            // 任何未預期的錯誤都不能讓 circuit 中斷，記錄下來並提示使用者
+            // 任何未預期的錯誤都不能讓頁面當掉，記錄下來並提示使用者
             Logger.LogError(ex, "讀取 {FileName} 失敗", file.Name);
             Snackbar.Add($"無法匯入 {file.Name}：{ex.GetType().Name}: {ex.Message}", Severity.Error);
             return;
@@ -329,20 +325,13 @@ public partial class Planner
     public async ValueTask DisposeAsync()
     {
         _loopCts.Cancel();
-        try
+        if (_editor is not null)
         {
-            if (_editor is not null)
-            {
-                await _editor.InvokeVoidAsync("dispose");
-                await _editor.DisposeAsync();
-            }
-            if (_module is not null)
-                await _module.DisposeAsync();
+            await _editor.InvokeVoidAsync("dispose");
+            await _editor.DisposeAsync();
         }
-        catch (JSDisconnectedException)
-        {
-            // 連線已中斷時瀏覽器端的物件已經不存在，不需要清理
-        }
+        if (_module is not null)
+            await _module.DisposeAsync();
         _dotnetRef?.Dispose();
         _loopCts.Dispose();
     }

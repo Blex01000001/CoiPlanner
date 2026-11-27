@@ -6,7 +6,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 ## 檔案地圖
 | 檔案 | 負責 | 常見修改 |
 |---|---|---|
-| `Data/game.json` | 物品（含運輸型態 `kind`）、配方、機器、運輸方式。建置時全部 `Data/*.json` 編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 載入並驗證，有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
+| `Data/*.json` | 遊戲資料，依用途分檔（數字前綴決定載入順序，也決定資料瀏覽頁與選單的順序）：`10-products.json` 全部物品、`11-transports.json` 運輸方式；機器和它們的配方依產業分檔：`20-mining`（採集）、`30-steam`（鍋爐）、`31-power`（發電機）、`40-metallurgy`（冶金）、`50-petrochemical`（石化）、`60-chemistry`（化工、發酵）、`61-materials`（建材）、`62-agriculture`（農業與有機）、`70-assembly`（組裝）。建置時全部編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 合併並驗證（跨檔引用沒問題），有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
 | `Domain/Models/` | 領域模型。`ProductionPlan.cs`＝規劃檔格式；`Simulation.cs`＝模擬參數與狀態 | 加欄位 |
 | `Domain/Services/PlanCalculator.cs` | 規劃檢查（問題清單）、額定速率、連線運輸上限；**不算實際流量** | 新增檢查規則 |
 | `Domain/Services/RecipeCostCalculator.cs` | 配方成本比較：選一個物品，列出能產出它的每個配方，展開到原料，算每 1 單位的原料（加權）、副產品，以及維持 1 單位/分的耗電、工人、維修。原料權重與指定的中間物品做法由使用者設定（存在瀏覽器 `coiplanner.costWeights`、`coiplanner.costRecipes`，不屬於規劃檔） | 成本規則 |
@@ -15,18 +15,20 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `Domain/Services/ProductionPlanSerializer.cs`、`JsonDefaults.cs` | 規劃 JSON（camelCase、允許註解與尾逗號） | 很少改 |
 | `Components/Pages/Planner.razor`、`Planner.razor.cs` | 產線規劃頁：`.razor` 只有版面，`.razor.cs` 是 interop、模擬迴圈、面板切換、匯入匯出、自動存檔；**所有狀態都在這裡** | 流程、新的狀態或呼叫 |
 | `Components/Planning/` | 規劃頁的畫面元件，只顯示並回報操作：`SimulationBar` 模擬控制列、`PlanPanel` 規劃面板（說明、匯出入、問題）、`BalancePanel` 物料平衡 | 面板與控制項的外觀 |
-| `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`stock.js` 暫存長條、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`linkPopup.js` 拖出連線放在空白處的跳窗（列出可接的節點、點選後新增並連線）、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
+| `wwwroot/js/graphEditor.js`（入口）、`wwwroot/js/graphEditor/` | litegraph 包裝，拆成 ES 模組（模組表與覆寫清單在入口檔開頭）：`nodes.js` 節點類型、`plan.js` 存檔／載入、`status.js` 狀態與顏色、`colors.js` 物品顏色（連線、插槽、節點）、`stock.js` 暫存長條、`flow.js` 連線外觀、`viewport.js` 格線與 fit view、`menus.js` 選單與其動作、`linkPopup.js` 拖出連線放在空白處的跳窗（列出可接的節點、點選後新增並連線）、`editor.js` 核心與對 litegraph 的覆寫、`shared.js` 共用 | 畫布外觀與互動 |
 | `Components/Pages/Home.razor` | 資料瀏覽（物品、配方、機器、運輸），路徑 `/data` | 顯示新資料欄位 |
-| `Components/Pages/Cost.razor` | 配方成本頁（`/cost`，整頁滿版）：選物品、原料權重、比較表；狀態都在這個頁面，物品與權重存瀏覽器 | 成本表的外觀與欄位 |
+| `Components/Pages/Cost.razor` | 配方成本頁（`/cost`，整頁滿版）：選物品、原料權重、指定中間物品做法、比較表；狀態都在這個頁面，選擇的物品、權重與指定的做法存瀏覽器 | 成本表的外觀與欄位 |
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左側三顆浮動換頁按鈕（產線規劃、資料瀏覽、配方成本）。起始頁 `/` 是產線規劃（`/planner` 也可），資料瀏覽是 `/data`，配方成本是 `/cost` | 很少改 |
 | `wwwroot/index.html`、`favicon.svg`／`favicon.png`／`apple-touch-icon.png` | 網頁骨架：`<head>`、CSS、啟動 Blazor 的 script、頁籤圖示（PNG 由 SVG 產生） | 新增 CSS |
 | `Program.cs` | WebAssembly 啟動、DI、提示訊息位置、載入遊戲資料 | 很少改 |
+| `Services/BrowserStorage.cs` | 瀏覽器 `localStorage` 的讀寫（`BrowserStorage`），鍵名集中在 `StorageKeys`；讀 JSON 壞掉時回傳預設值 | 新增要記住的設定時 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
+| `scripts/assign-colors.cjs`、`scripts/prepare-pages.cjs` | 幫沒有 `color` 的物品自動配色；發佈後整理成 GitHub Pages 內容 | 很少改 |
 | `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
 | `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
-| `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
-| `NAMES.md` | 名稱對照表：同義名稱（別名→正式名稱）、名稱相近但不同的物品、名稱寫法規則。`NameMapTests` 會檢查它和 `Data/game.json` 一致 | 使用者貼資料出現別名、確認同義關係時 |
+| `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/*.json` | 每次改 Domain 或資料都補 |
+| `NAMES.md` | 名稱對照表：同義名稱（別名→正式名稱）、名稱相近但不同的物品、名稱寫法規則。`NameMapTests` 會檢查它和 `Data/*.json` 一致 | 使用者貼資料出現別名、確認同義關係時 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
 | `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
 
@@ -39,20 +41,27 @@ dotnet test --no-build --filter "FullyQualifiedName~ProductionSimulatorTests"   
 ```bash
 for f in wwwroot/js/graphEditor.js wwwroot/js/graphEditor/*.js; do node --check "$f" || break; done   # 改 JS 後必跑（1 秒）；只查語法
 tsc -p tsconfig.check.json | grep -E "^wwwroot/js/.*TS(2304|2305|2307|2459|2460|2614|2724|2552)"   # 改 JS 後必跑（2 秒）；列出找不到的名稱或匯出，沒有輸出＝沒問題（需要 tsc，雲端容器內建）
-node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
+node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 2 分鐘；改 JS／Razor／CSS 後、commit 前必跑（需先 dotnet build）
 # 部署用的是 Release（有裁剪）；改動可能受影響時（JSON 序列化、反射）另跑：dotnet build -c Release && CONFIG=Release node tests/e2e/smoke.cjs
 ```
 - 冒煙測試先 `dotnet publish --no-build` 到 `tests/e2e/.output/site`、跑 `scripts/prepare-pages.cjs`（和部署相同的整理），再用內建的 Node 靜態伺服器在 5170 埠提供（和 GitHub Pages 一樣只是檔案）；失敗時印出步驟並截圖到 `tests/e2e/.output/`。新增畫面功能時在 `smoke.cjs` 補一個 `step`。
 - **測試全過才 commit，不可為了通過而跳過或刪除測試。**
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
+## `Data/*.json` 欄位（細節以 `Domain/Models/` 的註解為準）
+- **物品**：`id`、`name`、`unit`、`kind`（運輸型態）、`color`；`background: true`＝背景統計值（如空氣污染）。
+- **配方**：`id`、`name`、`inputs`、`outputs`、`cycleSeconds`（一律 60）；選填 `powerMultiplier`（耗電倍率，預設 1）、`locked`（未解鎖，只顯示用）。
+- **機器**：`id`、`name`、`category`（右鍵選單第一層分類）、`recipeIds`；選填 `powerUseKw`、`powerGenerationKw`、`workers`、`maintenanceType`＋`maintenancePerMinute`、`computingTf`（只記錄）。
+- **運輸方式**：`id`、`name`、`kind`、`tiersPerMinute`（各等級每分鐘吞吐量）。
+
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
+1. **新增／刪除機器、配方、物品**：只改 `Data/*.json`。新物品加在 `10-products.json`；新機器連同它的配方放進對應產業的檔案（配方緊接在所屬機器的檔案裡，不跨檔放；找不到合適的檔案就新增一個，檔名用「數字-英文.json」）。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（新物品可以先不寫，寫完後跑 `node scripts/assign-colors.cjs` 自動補上不重複的顏色；背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
 5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／stock／flow／viewport／menus／linkPopup.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
 6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`。
+7. **新增要存在瀏覽器的設定**：在 `StorageKeys` 加鍵名，用 `BrowserStorage` 讀寫，不要直接呼叫 `localStorage`。
 
 ## 架構決策（不要改回去）
 - **不修改 `wwwroot/lib/litegraph/`**：檔案原樣複製自 npm，才能直接升級；行為差異全在 `graphEditor/` 覆寫。
@@ -82,7 +91,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 35 秒�
 - 規劃檔＝`ProductionPlan` 的 JSON（`nodes`、`sources`、`edges`、`groups`、`notes`），匯出、匯入、自動存檔共用；群組與註解不參與計算。
 - 自動存檔在瀏覽器 `localStorage` 鍵 `coiplanner.plan`；讀取失敗時改用空白規劃並提示。匯入上限 1 MB（`MaxImportBytes`）。
 - 新欄位必須有預設值，舊檔才能載入；資料中不存在的機器／物品節點於載入時略過並提示。
-- `Data/game.json` 的結構由使用者手動維護，同樣視為對外格式。
+- `Data/*.json` 的結構由使用者手動維護，同樣視為對外格式。
 
 ## 環境陷阱
 - 冒煙測試的伺服器是 Node 程序，異常中斷時用 `pkill -x node`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。

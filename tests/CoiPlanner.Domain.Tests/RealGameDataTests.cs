@@ -14,10 +14,10 @@ public class RealGameDataTests
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
             var candidate = Path.Combine(dir.FullName, "Data");
-            if (File.Exists(Path.Combine(candidate, "game.json")))
+            if (Directory.Exists(candidate) && Directory.GetFiles(candidate, "*.json").Length > 0)
                 return candidate;
         }
-        throw new DirectoryNotFoundException("找不到 Data/game.json");
+        throw new DirectoryNotFoundException("找不到 Data/*.json");
     }
 
     private static Recipe RecipeOf(string machineId) =>
@@ -79,7 +79,7 @@ public class RealGameDataTests
     {
         Assert.Equal(6, Amounts(RecipeOf("distillation_1").Inputs)["steam_high"]);
         Assert.Equal(3, Amounts(RecipeOf("distillation_2").Inputs)["steam_high"]);
-        Assert.Equal(3, Amounts(RecipeOf("distillation_3").Inputs)["steam_high"]);
+        Assert.Equal(3, Amounts(Recipe("distill_light_oil").Inputs)["steam_high"]);
     }
 
     [Fact]
@@ -386,8 +386,8 @@ public class RealGameDataTests
 
         Assert.NotEmpty(report.Routes);
         Assert.All(report.Routes, r => Assert.True(double.IsFinite(r.WeightedCost) && r.WeightedCost > 0));
-        // 抗生素、肉等沒有配方產出的物品視為外部輸入
-        Assert.True(new RecipeCostCalculator(Data).IsExternal("antibiotics"));
+        // 肉等沒有配方產出的物品視為外部輸入
+        Assert.True(new RecipeCostCalculator(Data).IsExternal("meat"));
     }
 
     [Fact]
@@ -663,5 +663,42 @@ public class RealGameDataTests
         Assert.Contains(calculator.Calculate("sludge").Routes, r => r.RecipeId == "treat_wastewater_sand");
         Assert.True(calculator.IsExternal("wastewater"));
         Assert.True(calculator.IsExternal("toxic_slurry"));
+    }
+
+    [Fact]
+    public void FermentationTank_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "fermentation_tank");
+        Assert.Equal((4, 20, "維修I", 0.94), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        Assert.Equal(["ferment_sugar", "ferment_corn_mash", "ferment_antibiotics"], m.RecipeIds);
+
+        AssertRecipe("ferment_sugar", new() { ["sugar"] = 16, ["oxygen"] = 16 }, new() { ["ethanol"] = 12, ["carbon_dioxide"] = 16 });
+        AssertRecipe("ferment_corn_mash", new() { ["corn_mash"] = 12, ["oxygen"] = 16 }, new() { ["ethanol"] = 8, ["carbon_dioxide"] = 12 });
+        AssertRecipe("ferment_antibiotics", new() { ["sugar"] = 4, ["ammonia"] = 1, ["oxygen"] = 8 }, new() { ["antibiotics"] = 8, ["carbon_dioxide"] = 4 });
+        Assert.True(Recipe("ferment_sugar").Locked);
+        Assert.False(Recipe("ferment_corn_mash").Locked);
+        Assert.True(Recipe("ferment_antibiotics").Locked);
+    }
+
+    [Fact]
+    public void DistillationIII_TitaniumChlorideRecipe_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "distillation_3");
+        Assert.Equal(["distill_light_oil", "distill_titanium_chloride"], m.RecipeIds);
+
+        AssertRecipe("distill_light_oil", new() { ["light_oil"] = 30, ["steam_high"] = 3 }, new() { ["naphtha"] = 24, ["fuel_gas"] = 12 });
+        AssertRecipe("distill_titanium_chloride", new() { ["titanium_chloride"] = 12, ["steam_high"] = 3 }, new() { ["titanium_chloride_pure"] = 12, ["spent_gas"] = 3 });
+        Assert.True(Recipe("distill_titanium_chloride").Locked);
+    }
+
+    [Fact]
+    public void RecipeCost_EthanolAndAntibiotics_AreNoLongerExternal()
+    {
+        var calculator = new RecipeCostCalculator(Data);
+
+        Assert.False(calculator.IsExternal("ethanol"));
+        Assert.False(calculator.IsExternal("antibiotics"));
+        Assert.True(calculator.IsExternal("corn_mash"));
+        Assert.True(calculator.IsExternal("sugar"));
     }
 }

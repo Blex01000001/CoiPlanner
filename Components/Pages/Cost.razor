@@ -1,12 +1,11 @@
 @page "/cost"
 @using CoiPlanner.Domain.Models
 @using CoiPlanner.Domain.Services
-@using System.Text.Json
 @inject GameData Data
 @inject RecipeCostCalculator Calculator
-@inject IJSRuntime JS
+@inject BrowserStorage Storage
 @* 配方成本頁（整頁滿版）：選一個物品，列出每個能產出它的配方，比較每 1 單位的原料（加權）、副產品，以及耗電、工人、維修。
-   計算在 RecipeCostCalculator；選擇的物品與原料權重存在瀏覽器（不屬於規劃檔），離開頁面再回來還在。 *@
+   計算在 RecipeCostCalculator；選擇的物品、原料權重與指定的做法存在瀏覽器（BrowserStorage，不屬於規劃檔），離開頁面再回來還在。 *@
 <PageTitle>配方成本 - CoiPlanner</PageTitle>
 
 <div class="cost-page">
@@ -155,9 +154,6 @@
 </div>
 
 @code {
-    private const string WeightsKey = "coiplanner.costWeights";
-    private const string ProductKey = "coiplanner.costProduct";
-    private const string RecipesKey = "coiplanner.costRecipes";
 
     private string? _productId;
     private Dictionary<string, double> _weights = new();
@@ -180,30 +176,11 @@
         if (!firstRender)
             return;
 
-        try
-        {
-            var weights = await JS.InvokeAsync<string?>("localStorage.getItem", WeightsKey);
-            if (!string.IsNullOrEmpty(weights))
-                _weights = JsonSerializer.Deserialize<Dictionary<string, double>>(weights) ?? new();
-        }
-        catch (JsonException)
-        {
-            // 壞掉的權重就當作沒有，全部用預設值 1
-            _weights = new();
-        }
+        // 壞掉或沒有的資料一律用預設值（權重全部 1、沒有指定做法）
+        _weights = await Storage.GetJsonAsync(StorageKeys.CostWeights, new Dictionary<string, double>());
+        _recipeOverrides = await Storage.GetJsonAsync(StorageKeys.CostRecipes, new Dictionary<string, string>());
 
-        try
-        {
-            var recipes = await JS.InvokeAsync<string?>("localStorage.getItem", RecipesKey);
-            if (!string.IsNullOrEmpty(recipes))
-                _recipeOverrides = JsonSerializer.Deserialize<Dictionary<string, string>>(recipes) ?? new();
-        }
-        catch (JsonException)
-        {
-            _recipeOverrides = new();
-        }
-
-        var product = await JS.InvokeAsync<string?>("localStorage.getItem", ProductKey);
+        var product = await Storage.GetStringAsync(StorageKeys.CostProduct);
         if (product is not null && Calculator.TargetProductIds.Contains(product))
             _productId = product;
 
@@ -216,16 +193,16 @@
         _productId = string.IsNullOrEmpty(id) ? null : id;
         Recalculate();
         if (_productId is null)
-            await JS.InvokeVoidAsync("localStorage.removeItem", ProductKey);
+            await Storage.RemoveAsync(StorageKeys.CostProduct);
         else
-            await JS.InvokeVoidAsync("localStorage.setItem", ProductKey, _productId);
+            await Storage.SetStringAsync(StorageKeys.CostProduct, _productId);
     }
 
     private async Task OnWeightChanged(string productId, double weight)
     {
         _weights[productId] = Math.Max(0, weight);
         Recalculate();
-        await JS.InvokeVoidAsync("localStorage.setItem", WeightsKey, JsonSerializer.Serialize(_weights));
+        await Storage.SetJsonAsync(StorageKeys.CostWeights, _weights);
     }
 
     private async Task OnRecipeChosen(string productId, string? recipeId)
@@ -235,7 +212,7 @@
         else
             _recipeOverrides[productId] = recipeId;
         Recalculate();
-        await JS.InvokeVoidAsync("localStorage.setItem", RecipesKey, JsonSerializer.Serialize(_recipeOverrides));
+        await Storage.SetJsonAsync(StorageKeys.CostRecipes, _recipeOverrides);
     }
 
     private void Recalculate() =>

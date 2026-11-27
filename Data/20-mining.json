@@ -1,0 +1,56 @@
+// 採集：抽水、採礦、抽石油。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "water_pump", "name": "抽水機", "category": "採集", "recipeIds": [ "pump_water" ] },
+    { "id": "seawater_pump", "name": "海水泵", "category": "採集", "powerUseKw": 100, "workers": 1, "maintenanceType": "維修I", "maintenancePerMinute": 0.2, "recipeIds": [ "pump_seawater" ] },
+    { "id": "coal_mine", "name": "煤礦場", "category": "採集", "recipeIds": [ "mine_coal" ] },
+    { "id": "iron_ore_mine", "name": "鐵礦場", "category": "採集", "recipeIds": [ "mine_iron_ore" ] },
+    { "id": "lime_quarry", "name": "石灰石場", "category": "採集", "recipeIds": [ "mine_lime" ] },
+    { "id": "oil_well", "name": "油田", "category": "採集", "recipeIds": [ "pump_crude_oil" ] }
+  ],
+  "recipes": [
+    {
+      "id": "pump_water",
+      "name": "抽水",
+      "inputs": [],
+      "outputs": [ { "productId": "water", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "pump_seawater",
+      "name": "抽海水",
+      "inputs": [],
+      "outputs": [ { "productId": "seawater", "quantity": 108 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mine_coal",
+      "name": "採煤礦",
+      "inputs": [],
+      "outputs": [ { "productId": "coal", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mine_iron_ore",
+      "name": "採鐵礦",
+      "inputs": [],
+      "outputs": [ { "productId": "iron_ore", "quantity": 30 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "mine_lime",
+      "name": "採石灰石",
+      "inputs": [],
+      "outputs": [ { "productId": "lime", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "pump_crude_oil",
+      "name": "抽石油",
+      "inputs": [],
+      "outputs": [ { "productId": "crude_oil", "quantity": 60 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}
