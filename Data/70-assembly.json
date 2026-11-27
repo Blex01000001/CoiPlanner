@@ -1,0 +1,268 @@
+// 組裝：組裝機。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "assembly_4", "name": "組裝機 IV", "category": "加工", "powerUseKw": 250, "workers": 2, "maintenanceType": "維修II", "maintenancePerMinute": 1.9, "computingTf": 3, "recipeIds": [ "assemble_mechanical_parts", "assemble_mechanical_parts_iron", "assemble_building_parts_1_iron", "assemble_building_parts_1_steel", "assemble_building_parts_2", "assemble_building_parts_3", "assemble_building_parts_4", "assemble_vehicle_parts_1", "assemble_vehicle_parts_2", "assemble_vehicle_parts_3", "assemble_lab_equipment_1", "assemble_lab_equipment_2", "assemble_lab_equipment_3", "assemble_lab_equipment_4", "assemble_rail_parts", "assemble_furniture", "assemble_appliances", "assemble_luxury_goods", "assemble_printed_circuit_board", "assemble_electronics_1", "assemble_electronics_2", "assemble_uranium_rod", "assemble_solar_cell", "assemble_electronics_3", "assemble_server", "assemble_medical_equipment", "assemble_medical_supplies_1", "assemble_medical_supplies_2", "assemble_medical_supplies_3", "assemble_packaged_food_meat", "assemble_packaged_food_eggs", "assemble_packaged_food_tofu", "assemble_office_supplies", "assemble_composite_panel", "assemble_composite_core", "assemble_space_station_part_basic", "assemble_crew_rations" ] }
+  ],
+  "recipes": [
+    {
+      "id": "assemble_mechanical_parts",
+      "name": "組裝機械零件(鋼板)",
+      "inputs": [ { "productId": "steel_plate", "quantity": 24 } ],
+      "outputs": [ { "productId": "mechanical_parts", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_mechanical_parts_iron",
+      "name": "組裝機械零件(鐵板)",
+      "inputs": [ { "productId": "iron_plate", "quantity": 60 } ],
+      "outputs": [ { "productId": "mechanical_parts", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_building_parts_1_iron",
+      "name": "組裝建築零件 I(鐵板)",
+      "inputs": [ { "productId": "iron_plate", "quantity": 36 }, { "productId": "wood", "quantity": 36 }, { "productId": "concrete_slab", "quantity": 48 } ],
+      "outputs": [ { "productId": "building_parts_1", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_building_parts_1_steel",
+      "name": "組裝建築零件 I(鋼)",
+      "inputs": [ { "productId": "steel_plate", "quantity": 24 }, { "productId": "wood", "quantity": 24 }, { "productId": "concrete_slab", "quantity": 36 } ],
+      "outputs": [ { "productId": "building_parts_1", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_building_parts_2",
+      "name": "組裝建築零件 II",
+      "inputs": [ { "productId": "building_parts_1", "quantity": 48 }, { "productId": "electronics_1", "quantity": 24 } ],
+      "outputs": [ { "productId": "building_parts_2", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_building_parts_3",
+      "name": "組裝建築零件 III",
+      "inputs": [ { "productId": "building_parts_2", "quantity": 24 }, { "productId": "steel_plate", "quantity": 12 } ],
+      "outputs": [ { "productId": "building_parts_3", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_building_parts_4",
+      "name": "組裝建築零件 IV",
+      "inputs": [ { "productId": "building_parts_3", "quantity": 12 }, { "productId": "electronics_2", "quantity": 6 } ],
+      "outputs": [ { "productId": "building_parts_4", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_vehicle_parts_1",
+      "name": "組裝車輛零件 I",
+      "inputs": [ { "productId": "mechanical_parts", "quantity": 48 }, { "productId": "electronics_1", "quantity": 16 } ],
+      "outputs": [ { "productId": "vehicle_parts_1", "quantity": 32 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_vehicle_parts_2",
+      "name": "組裝車輛零件 II",
+      "inputs": [ { "productId": "vehicle_parts_1", "quantity": 16 }, { "productId": "steel_plate", "quantity": 8 }, { "productId": "glass", "quantity": 4 } ],
+      "outputs": [ { "productId": "vehicle_parts_2", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_vehicle_parts_3",
+      "name": "組裝車輛零件 III",
+      "inputs": [ { "productId": "vehicle_parts_2", "quantity": 16 }, { "productId": "electronics_2", "quantity": 4 } ],
+      "outputs": [ { "productId": "vehicle_parts_3", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_lab_equipment_1",
+      "name": "組裝實驗室設備 I",
+      "inputs": [ { "productId": "mechanical_parts", "quantity": 32 }, { "productId": "electronics_1", "quantity": 16 } ],
+      "outputs": [ { "productId": "lab_equipment_1", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_lab_equipment_2",
+      "name": "組裝實驗室設備 II",
+      "inputs": [ { "productId": "lab_equipment_1", "quantity": 24 }, { "productId": "paper", "quantity": 8 }, { "productId": "glass", "quantity": 8 } ],
+      "outputs": [ { "productId": "lab_equipment_2", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_lab_equipment_3",
+      "name": "組裝實驗室設備 III",
+      "inputs": [ { "productId": "lab_equipment_2", "quantity": 24 }, { "productId": "electronics_2", "quantity": 4 } ],
+      "outputs": [ { "productId": "lab_equipment_3", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_lab_equipment_4",
+      "name": "組裝實驗室設備 IV",
+      "inputs": [ { "productId": "lab_equipment_3", "quantity": 16 }, { "productId": "electronics_3", "quantity": 2 } ],
+      "outputs": [ { "productId": "lab_equipment_4", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_rail_parts",
+      "name": "組裝鐵軌零件",
+      "inputs": [ { "productId": "concrete_slab", "quantity": 16 }, { "productId": "steel_plate", "quantity": 8 } ],
+      "outputs": [ { "productId": "rail_parts", "quantity": 32 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_furniture",
+      "name": "組裝家具",
+      "inputs": [ { "productId": "glass", "quantity": 16 }, { "productId": "steel_plate", "quantity": 8 }, { "productId": "wood", "quantity": 16 } ],
+      "outputs": [ { "productId": "furniture", "quantity": 32 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_appliances",
+      "name": "組裝家用電器",
+      "inputs": [ { "productId": "electronics_1", "quantity": 16 }, { "productId": "electronics_2", "quantity": 8 }, { "productId": "steel_plate", "quantity": 8 } ],
+      "outputs": [ { "productId": "appliances", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_luxury_goods",
+      "name": "組裝奢侈品",
+      "inputs": [ { "productId": "gold", "quantity": 4 }, { "productId": "imported_goods", "quantity": 12 } ],
+      "outputs": [ { "productId": "luxury_goods", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_printed_circuit_board",
+      "name": "組裝印刷電路板",
+      "inputs": [ { "productId": "glass", "quantity": 6 }, { "productId": "plastic_pellets", "quantity": 12 }, { "productId": "copper_plate", "quantity": 6 } ],
+      "outputs": [ { "productId": "printed_circuit_board", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_electronics_1",
+      "name": "組裝電子產品 I",
+      "inputs": [ { "productId": "rubber", "quantity": 8 }, { "productId": "copper_plate", "quantity": 48 } ],
+      "outputs": [ { "productId": "electronics_1", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_electronics_2",
+      "name": "組裝電子產品 II",
+      "inputs": [ { "productId": "printed_circuit_board", "quantity": 12 }, { "productId": "electronics_1", "quantity": 24 }, { "productId": "polysilicon", "quantity": 6 } ],
+      "outputs": [ { "productId": "electronics_2", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_uranium_rod",
+      "name": "組裝鈾棒",
+      "inputs": [ { "productId": "enriched_uranium", "quantity": 4 }, { "productId": "steel_plate", "quantity": 2 } ],
+      "outputs": [ { "productId": "uranium_rod", "quantity": 4 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_solar_cell",
+      "name": "組裝太陽能電池",
+      "inputs": [ { "productId": "steel_plate", "quantity": 1 }, { "productId": "polysilicon", "quantity": 12 }, { "productId": "glass", "quantity": 4 } ],
+      "outputs": [ { "productId": "solar_cell", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_electronics_3",
+      "name": "組裝電子產品 III",
+      "inputs": [ { "productId": "microchip", "quantity": 3 }, { "productId": "electronics_2", "quantity": 6 } ],
+      "outputs": [ { "productId": "electronics_3", "quantity": 3 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_server",
+      "name": "組裝伺服器",
+      "inputs": [ { "productId": "steel_plate", "quantity": 2 }, { "productId": "electronics_3", "quantity": 4 } ],
+      "outputs": [ { "productId": "server", "quantity": 2 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_medical_equipment",
+      "name": "組裝醫用器材",
+      "inputs": [ { "productId": "steel_plate", "quantity": 12 }, { "productId": "plastic_pellets", "quantity": 12 } ],
+      "outputs": [ { "productId": "medical_equipment", "quantity": 12 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_medical_supplies_1",
+      "name": "組裝醫療用品",
+      "inputs": [ { "productId": "medical_equipment", "quantity": 24 }, { "productId": "disinfectant", "quantity": 24 } ],
+      "outputs": [ { "productId": "medical_supplies_1", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_medical_supplies_2",
+      "name": "組裝醫療用品 II",
+      "inputs": [ { "productId": "medical_supplies_1", "quantity": 48 }, { "productId": "antibiotics", "quantity": 24 } ],
+      "outputs": [ { "productId": "medical_supplies_2", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_medical_supplies_3",
+      "name": "組裝醫療用品 III",
+      "inputs": [ { "productId": "medical_supplies_2", "quantity": 48 }, { "productId": "anesthetic", "quantity": 24 }, { "productId": "morphine", "quantity": 24 } ],
+      "outputs": [ { "productId": "medical_supplies_3", "quantity": 48 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_packaged_food_meat",
+      "name": "組裝包裝食品(肉)",
+      "inputs": [ { "productId": "meat", "quantity": 12 }, { "productId": "bread", "quantity": 24 } ],
+      "outputs": [ { "productId": "packaged_food", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_packaged_food_eggs",
+      "name": "組裝包裝食品(雞蛋)",
+      "inputs": [ { "productId": "eggs", "quantity": 12 }, { "productId": "bread", "quantity": 24 } ],
+      "outputs": [ { "productId": "packaged_food", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_packaged_food_tofu",
+      "name": "組裝包裝食品(豆腐)",
+      "inputs": [ { "productId": "tofu", "quantity": 24 }, { "productId": "vegetables", "quantity": 32 } ],
+      "outputs": [ { "productId": "packaged_food", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_office_supplies",
+      "name": "組裝辦公用品",
+      "inputs": [ { "productId": "paper", "quantity": 12 }, { "productId": "furniture", "quantity": 8 }, { "productId": "electronics_2", "quantity": 4 } ],
+      "outputs": [ { "productId": "office_supplies", "quantity": 24 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_composite_panel",
+      "name": "組裝複合面板",
+      "inputs": [ { "productId": "aluminium", "quantity": 16 }, { "productId": "steel_plate", "quantity": 2 }, { "productId": "plastic_pellets", "quantity": 4 } ],
+      "outputs": [ { "productId": "composite_panel", "quantity": 16 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_composite_core",
+      "name": "組裝基礎複合芯材",
+      "inputs": [ { "productId": "composite_panel", "quantity": 16 }, { "productId": "steel_plate", "quantity": 8 }, { "productId": "electronics_2", "quantity": 2 } ],
+      "outputs": [ { "productId": "composite_core", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_space_station_part_basic",
+      "name": "組裝空間站部件(基礎)",
+      "inputs": [ { "productId": "composite_core", "quantity": 8 }, { "productId": "solar_cell", "quantity": 4 }, { "productId": "chemical_fuel", "quantity": 2 } ],
+      "outputs": [ { "productId": "space_station_part_basic", "quantity": 4 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "assemble_crew_rations",
+      "name": "組裝船員補給食品",
+      "inputs": [ { "productId": "packaged_food", "quantity": 4 }, { "productId": "medical_supplies_2", "quantity": 2 }, { "productId": "plastic_pellets", "quantity": 2 } ],
+      "outputs": [ { "productId": "crew_rations", "quantity": 8 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}

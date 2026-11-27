@@ -6,7 +6,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 ## 檔案地圖
 | 檔案 | 負責 | 常見修改 |
 |---|---|---|
-| `Data/game.json` | 物品（含運輸型態 `kind`）、配方、機器、運輸方式。建置時全部 `Data/*.json` 編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 載入並驗證，有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
+| `Data/*.json` | 遊戲資料，依用途分檔（數字前綴決定載入順序，也決定資料瀏覽頁與選單的順序）：`10-products.json` 全部物品、`11-transports.json` 運輸方式；機器和它們的配方依產業分檔：`20-mining`（採集）、`30-steam`（鍋爐）、`31-power`（發電機）、`40-metallurgy`（冶金）、`50-petrochemical`（石化）、`60-chemistry`（化工）、`61-materials`（建材）、`62-agriculture`（農業與有機）、`70-assembly`（組裝）。建置時全部編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 合併並驗證（跨檔引用沒問題），有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
 | `Domain/Models/` | 領域模型。`ProductionPlan.cs`＝規劃檔格式；`Simulation.cs`＝模擬參數與狀態 | 加欄位 |
 | `Domain/Services/PlanCalculator.cs` | 規劃檢查（問題清單）、額定速率、連線運輸上限；**不算實際流量** | 新增檢查規則 |
 | `Domain/Services/RecipeCostCalculator.cs` | 配方成本比較：選一個物品，列出能產出它的每個配方，展開到原料，算每 1 單位的原料（加權）、副產品，以及維持 1 單位/分的耗電、工人、維修。原料權重與指定的中間物品做法由使用者設定（存在瀏覽器 `coiplanner.costWeights`、`coiplanner.costRecipes`，不屬於規劃檔） | 成本規則 |
@@ -27,8 +27,8 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `scripts/assign-colors.cjs`、`scripts/prepare-pages.cjs` | 幫沒有 `color` 的物品自動配色；發佈後整理成 GitHub Pages 內容 | 很少改 |
 | `tsconfig.check.json` | 上面 `tsc` 檢查用的設定（只找名稱與匯出，型別錯誤是雜訊） | 很少改 |
 | `tests/e2e/smoke.cjs`、`tests/e2e/fixtures/` | 瀏覽器冒煙測試與測試用規劃檔（使用實際的機器 id） | 新增畫面功能時補步驟 |
-| `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/game.json` | 每次改 Domain 或資料都補 |
-| `NAMES.md` | 名稱對照表：同義名稱（別名→正式名稱）、名稱相近但不同的物品、名稱寫法規則。`NameMapTests` 會檢查它和 `Data/game.json` 一致 | 使用者貼資料出現別名、確認同義關係時 |
+| `tests/CoiPlanner.Domain.Tests/` | xUnit。虛構測試資料只在 `Fixtures/sample.json`（`TestData.Sample` 由它載入）；`RealGameDataTests.cs` 檢查實際的 `Data/*.json` | 每次改 Domain 或資料都補 |
+| `NAMES.md` | 名稱對照表：同義名稱（別名→正式名稱）、名稱相近但不同的物品、名稱寫法規則。`NameMapTests` 會檢查它和 `Data/*.json` 一致 | 使用者貼資料出現別名、確認同義關係時 |
 | `README.md` | 專案說明、執行方式、專案結構 | 結構或執行方式改變時 |
 | `PROGRESS.md` | 已知限制與待辦（更新規則見下方「PROGRESS.md」） | 需要時才讀 |
 
@@ -48,14 +48,14 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 2 分鐘
 - **測試全過才 commit，不可為了通過而跳過或刪除測試。**
 - 第一次在雲端容器：沒有 `dotnet` 時執行 `apt-get install -y dotnet-sdk-8.0`（約 1 分鐘）。
 
-## `Data/game.json` 欄位（細節以 `Domain/Models/` 的註解為準）
+## `Data/*.json` 欄位（細節以 `Domain/Models/` 的註解為準）
 - **物品**：`id`、`name`、`unit`、`kind`（運輸型態）、`color`；`background: true`＝背景統計值（如空氣污染）。
 - **配方**：`id`、`name`、`inputs`、`outputs`、`cycleSeconds`（一律 60）；選填 `powerMultiplier`（耗電倍率，預設 1）、`locked`（未解鎖，只顯示用）。
 - **機器**：`id`、`name`、`category`（右鍵選單第一層分類）、`recipeIds`；選填 `powerUseKw`、`powerGenerationKw`、`workers`、`maintenanceType`＋`maintenancePerMinute`、`computingTf`（只記錄）。
 - **運輸方式**：`id`、`name`、`kind`、`tiersPerMinute`（各等級每分鐘吞吐量）。
 
 ## 常見任務
-1. **新增／刪除機器、配方、物品**：只改 `Data/game.json`。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（新物品可以先不寫，寫完後跑 `node scripts/assign-colors.cjs` 自動補上不重複的顏色；背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
+1. **新增／刪除機器、配方、物品**：只改 `Data/*.json`。新物品加在 `10-products.json`；新機器連同它的配方放進對應產業的檔案（配方緊接在所屬機器的檔案裡，不跨檔放；找不到合適的檔案就新增一個，檔名用「數字-英文.json」）。**使用者貼的資料出現不確定的名稱時，先查 `NAMES.md`**（別名要換成正式名稱，不要新增物品；沒列在表裡又有疑義就停下來問，確認後把結果加進表）。名稱要符合 `NAMES.md` 第 3 節的寫法規則（污、蒸汽、羅馬數字前加空格，測試會檢查）。配方一律 `cycleSeconds: 60`，`quantity` 即每分鐘量；新物品必須有 `kind`（且該型態要有運輸方式）與 `color`（新物品可以先不寫，寫完後跑 `node scripts/assign-colors.cjs` 自動補上不重複的顏色；背景統計值如空氣污染改設 `"background": true`，不要 `kind`，不能連線也沒有資源來源節點，只出現在物料平衡面板）（`#rrggbb`，連線與節點的顏色，不與其他物品重複）。`RealGameDataTests` 會檢查每個配方都有機器執行、每個物品都出現在配方中；新增重要配方時可補抽查值。刪除的機器在舊存檔中會於載入時略過並提示（`ReportDropped`）；`tests/e2e/fixtures/` 用到的話一起改。
 2. **規劃檔加欄位**：`ProductionPlan.cs`（給預設值，舊檔才能載入）→ `graphEditor/plan.js` 的 `snapshot()` 與 `load()` → `ProductionPlanSerializerTests` 補往返測試。
 3. **新增規劃檢查**：`PlanCalculator`；問題要帶 `NodeId` 或 `EdgeIndex`，畫布才會標紅。補 `PlanCalculatorTests`。
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
@@ -91,7 +91,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 2 分鐘
 - 規劃檔＝`ProductionPlan` 的 JSON（`nodes`、`sources`、`edges`、`groups`、`notes`），匯出、匯入、自動存檔共用；群組與註解不參與計算。
 - 自動存檔在瀏覽器 `localStorage` 鍵 `coiplanner.plan`；讀取失敗時改用空白規劃並提示。匯入上限 1 MB（`MaxImportBytes`）。
 - 新欄位必須有預設值，舊檔才能載入；資料中不存在的機器／物品節點於載入時略過並提示。
-- `Data/game.json` 的結構由使用者手動維護，同樣視為對外格式。
+- `Data/*.json` 的結構由使用者手動維護，同樣視為對外格式。
 
 ## 環境陷阱
 - 冒煙測試的伺服器是 Node 程序，異常中斷時用 `pkill -x node`；`pkill -f`／`pgrep -f` 會連自己的 shell 一起殺掉。

@@ -25,7 +25,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試（先 dotnet b
 ## 專案結構
 | 路徑 | 內容 |
 |---|---|
-| `Data/*.json` | 物品（含運輸型態）、配方、機器與運輸方式資料；啟動時全部載入並驗證（目前是 `Data/game.json`） |
+| `Data/*.json` | 遊戲資料，依用途分檔：物品（`10-products.json`）、運輸方式（`11-transports.json`），機器與配方依產業分檔（`20-mining.json`…`70-assembly.json`）；啟動時全部合併並驗證 |
 | `Domain/Models` | 遊戲資料（GameData、Product、Recipe、Machine、Transport）、規劃檔（ProductionPlan、Node、ResourceSource、Edge）、檢查結果（PlanResult）、模擬參數與狀態（`Simulation.cs`）、配方成本結果（`RecipeCost.cs`） |
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（規劃檢查、額定速率、運輸上限）、`ProductionSimulator`（逐步模擬）、`RecipeCostCalculator`（配方成本比較）、`ProductionPlanSerializer`（規劃存取） |
 | `NAMES.md` | 名稱對照表：同義名稱、名稱相近的不同物品、名稱寫法規則 |

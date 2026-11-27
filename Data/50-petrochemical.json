@@ -1,0 +1,102 @@
+// 石化：蒸餾、裂解、氫重整。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "distillation_1", "name": "蒸餾塔 I", "category": "石化", "workers": 6, "maintenanceType": "維修I", "maintenancePerMinute": 1.4, "recipeIds": [ "distill_crude_oil" ] },
+    { "id": "distillation_2", "name": "蒸餾塔 II", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "distill_medium_oil" ] },
+    { "id": "distillation_3", "name": "蒸餾塔 III", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "distill_light_oil" ] },
+    { "id": "cracking_unit", "name": "裂解裝置", "category": "石化", "powerUseKw": 160, "workers": 12, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "crack_heavy_to_diesel", "crack_heavy_to_naphtha", "crack_naphtha_to_diesel", "crack_diesel_to_naphtha", "crack_naphtha_to_gas", "crack_gas_to_diesel" ] },
+    { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] }
+  ],
+  "recipes": [
+    {
+      "id": "distill_crude_oil",
+      "name": "蒸餾石油",
+      "inputs": [
+        { "productId": "crude_oil", "quantity": 60 },
+        { "productId": "steam_high", "quantity": 6 }
+      ],
+      "outputs": [
+        { "productId": "medium_oil", "quantity": 48 },
+        { "productId": "heavy_oil", "quantity": 12 },
+        { "productId": "sour_water", "quantity": 18 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "distill_medium_oil",
+      "name": "蒸餾中油",
+      "inputs": [
+        { "productId": "medium_oil", "quantity": 48 },
+        { "productId": "steam_high", "quantity": 3 }
+      ],
+      "outputs": [
+        { "productId": "diesel", "quantity": 36 },
+        { "productId": "light_oil", "quantity": 30 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "distill_light_oil",
+      "name": "蒸餾輕油",
+      "inputs": [
+        { "productId": "light_oil", "quantity": 30 },
+        { "productId": "steam_high", "quantity": 3 }
+      ],
+      "outputs": [
+        { "productId": "naphtha", "quantity": 24 },
+        { "productId": "fuel_gas", "quantity": 12 }
+      ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_heavy_to_diesel",
+      "name": "裂解重油(產柴油)",
+      "inputs": [ { "productId": "heavy_oil", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 36 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_heavy_to_naphtha",
+      "name": "裂解重油(產石腦油)",
+      "inputs": [ { "productId": "heavy_oil", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "naphtha", "quantity": 36 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_naphtha_to_diesel",
+      "name": "裂解石腦油(產柴油)",
+      "inputs": [ { "productId": "naphtha", "quantity": 24 }, { "productId": "hydrogen", "quantity": 9 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_diesel_to_naphtha",
+      "name": "裂解柴油(產石腦油)",
+      "inputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "steam_high", "quantity": 3 } ],
+      "outputs": [ { "productId": "naphtha", "quantity": 18 }, { "productId": "fuel_gas", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_naphtha_to_gas",
+      "name": "裂解石腦油(產燃氣)",
+      "inputs": [ { "productId": "naphtha", "quantity": 24 }, { "productId": "steam_high", "quantity": 2 } ],
+      "outputs": [ { "productId": "fuel_gas", "quantity": 24 }, { "productId": "hydrogen", "quantity": 8 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "crack_gas_to_diesel",
+      "name": "轉化燃氣(產柴油)",
+      "inputs": [ { "productId": "fuel_gas", "quantity": 36 }, { "productId": "oxygen", "quantity": 18 } ],
+      "outputs": [ { "productId": "diesel", "quantity": 24 }, { "productId": "water", "quantity": 6 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "reform_hydrogen",
+      "name": "重整燃氣製氫",
+      "inputs": [ { "productId": "fuel_gas", "quantity": 24 }, { "productId": "steam_high", "quantity": 2 } ],
+      "outputs": [ { "productId": "hydrogen", "quantity": 28 }, { "productId": "carbon_dioxide", "quantity": 24 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}

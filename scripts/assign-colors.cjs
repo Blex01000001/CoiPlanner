@@ -2,7 +2,7 @@
 // 用法：node scripts/assign-colors.cjs [資料夾，預設 Data]
 // - 讀取資料夾內所有 *.json（允許 // 註解），找出 products 裡沒有 color 的物品，
 //   直接在原檔案該物品那一行的結尾補上 "color": "#rrggbb"，其他內容與格式不動。
-// - 物品必須寫成單行物件（{ "id": "...", ..., "kind": "..." }），這也是 Data/game.json 目前的寫法；不是單行時會報錯，不會亂改。
+// - 物品必須寫成單行物件（{ "id": "...", ..., "kind": "..." }），這也是 Data/10-products.json 目前的寫法；不是單行時會報錯，不會亂改。
 // - 顏色由固定的演算法產生（色相用黃金比例分散，飽和度與亮度輪替），同樣的輸入每次結果相同。
 const fs = require("fs");
 const path = require("path");

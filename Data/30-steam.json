@@ -1,0 +1,95 @@
+// 蒸汽：各種鍋爐。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "steam_boiler_coal", "name": "鍋爐", "category": "蒸氣", "workers": 4, "recipeIds": [ "boil_steam_coal", "boil_steam_wood_chips", "boil_steam_biomass", "boil_steam_animal_feed" ] },
+    { "id": "boiler_gas", "name": "鍋爐(燃氣)", "category": "蒸氣", "recipeIds": [ "boil_steam_light_oil", "boil_steam_naphtha", "boil_steam_ethanol", "boil_steam_fuel_gas", "boil_steam_hydrogen", "boil_steam_heavy_oil", "boil_steam_medium_oil" ] },
+    { "id": "boiler_electric", "name": "鍋爐(電)", "category": "蒸氣", "recipeIds": [ "boil_steam_electric" ] }
+  ],
+  "recipes": [
+    {
+      "id": "boil_steam_coal",
+      "name": "燃煤產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "coal", "quantity": 30 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 60 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_wood_chips",
+      "name": "燃木屑產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "wood_chips", "quantity": 48 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_biomass",
+      "name": "燃生物質產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "biomass", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_animal_feed",
+      "name": "燃動物飼料產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "animal_feed", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_light_oil",
+      "name": "燃輕油產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "light_oil", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_naphtha",
+      "name": "燃石腦油產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "naphtha", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_ethanol",
+      "name": "燃乙醇產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "ethanol", "quantity": 54 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "carbon_dioxide", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_fuel_gas",
+      "name": "燃燃氣產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "fuel_gas", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "carbon_dioxide", "quantity": 72 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_hydrogen",
+      "name": "燃氫氣產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "hydrogen", "quantity": 72 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "spent_gas", "quantity": 36 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_heavy_oil",
+      "name": "燃重油產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "heavy_oil", "quantity": 36 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 90 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_medium_oil",
+      "name": "燃中油產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 48 }, { "productId": "medium_oil", "quantity": 42 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 48 }, { "productId": "exhaust", "quantity": 90 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "boil_steam_electric",
+      "name": "電力產生蒸汽",
+      "inputs": [ { "productId": "water", "quantity": 12 } ],
+      "outputs": [ { "productId": "steam_high", "quantity": 12 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}

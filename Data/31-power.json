@@ -1,0 +1,24 @@
+// 電力：發電機。機器與它們的配方
+// 數值由使用者提供，皆為每分鐘量：配方一律以 60 秒為一個週期，quantity 即每分鐘數量。
+{
+  "machines": [
+    { "id": "diesel_generator_1", "name": "柴油發電機1", "category": "電力", "powerGenerationKw": 800, "recipeIds": [ "generate_diesel_1" ] },
+    { "id": "diesel_generator_2", "name": "柴油發電機2", "category": "電力", "powerGenerationKw": 5000, "recipeIds": [ "generate_diesel_2" ] }
+  ],
+  "recipes": [
+    {
+      "id": "generate_diesel_1",
+      "name": "柴油發電(1)",
+      "inputs": [ { "productId": "diesel", "quantity": 3 } ],
+      "outputs": [ { "productId": "air_pollution", "quantity": 3 } ],
+      "cycleSeconds": 60
+    },
+    {
+      "id": "generate_diesel_2",
+      "name": "柴油發電(2)",
+      "inputs": [ { "productId": "diesel", "quantity": 18 } ],
+      "outputs": [ { "productId": "exhaust", "quantity": 24 } ],
+      "cycleSeconds": 60
+    }
+  ]
+}

@@ -14,10 +14,10 @@ public class RealGameDataTests
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
             var candidate = Path.Combine(dir.FullName, "Data");
-            if (File.Exists(Path.Combine(candidate, "game.json")))
+            if (Directory.Exists(candidate) && Directory.GetFiles(candidate, "*.json").Length > 0)
                 return candidate;
         }
-        throw new DirectoryNotFoundException("找不到 Data/game.json");
+        throw new DirectoryNotFoundException("找不到 Data/*.json");
     }
 
     private static Recipe RecipeOf(string machineId) =>
