@@ -29,6 +29,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試（先 dotnet b
 | `Domain/Models` | 遊戲資料（GameData、Product、Recipe、Machine、Transport）、規劃檔（ProductionPlan、Node、ResourceSource、Edge）、檢查結果（PlanResult）、模擬參數與狀態（`Simulation.cs`）、配方成本結果（`RecipeCost.cs`） |
 | `Domain/Services` | `GameDataLoader`（載入資料）、`PlanCalculator`（規劃檢查、額定速率、運輸上限）、`ProductionSimulator`（逐步模擬）、`RecipeCostCalculator`（配方成本比較）、`ProductionPlanSerializer`（規劃存取） |
 | `NAMES.md` | 名稱對照表：同義名稱、名稱相近的不同物品、名稱寫法規則 |
+| `Services/BrowserStorage.cs` | 瀏覽器儲存（自動存檔、配方成本的設定）的讀寫與鍵名 |
 | `Components/Layout/MainLayout.razor` | 共用版面：左側浮動換頁按鈕 |
 | `Components/Pages/Home.razor` | 資料瀏覽（`/data`） |
 | `Components/Pages/Cost.razor` | 配方成本比較（`/cost`，整頁滿版） |

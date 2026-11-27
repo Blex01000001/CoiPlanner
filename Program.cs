@@ -1,6 +1,7 @@
 using CoiPlanner;
 using CoiPlanner.Components;
 using CoiPlanner.Domain.Services;
+using CoiPlanner.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -20,5 +21,6 @@ builder.Services.AddSingleton(gameData);
 builder.Services.AddSingleton(new PlanCalculator(gameData));
 builder.Services.AddSingleton(new RecipeCostCalculator(gameData));
 builder.Services.AddSingleton<ProductionPlanSerializer>();
+builder.Services.AddSingleton<BrowserStorage>();
 
 await builder.Build().RunAsync();

@@ -21,6 +21,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 | `Components/Layout/MainLayout.razor` | 無 App Bar，左側三顆浮動換頁按鈕（產線規劃、資料瀏覽、配方成本）。起始頁 `/` 是產線規劃（`/planner` 也可），資料瀏覽是 `/data`，配方成本是 `/cost` | 很少改 |
 | `wwwroot/index.html`、`favicon.svg`／`favicon.png`／`apple-touch-icon.png` | 網頁骨架：`<head>`、CSS、啟動 Blazor 的 script、頁籤圖示（PNG 由 SVG 產生） | 新增 CSS |
 | `Program.cs` | WebAssembly 啟動、DI、提示訊息位置、載入遊戲資料 | 很少改 |
+| `Services/BrowserStorage.cs` | 瀏覽器 `localStorage` 的讀寫（`BrowserStorage`），鍵名集中在 `StorageKeys`；讀 JSON 壞掉時回傳預設值 | 新增要記住的設定時 |
 | `wwwroot/app.css` | 版面：畫布滿版、浮動元件位置 | 位置與樣式 |
 | `wwwroot/lib/litegraph/` | 第三方 litegraph 0.17.2；搜尋預設略過（`.ignore`），查內部實作時明確指定路徑 | **不可修改** |
 | `scripts/assign-colors.cjs`、`scripts/prepare-pages.cjs` | 幫沒有 `color` 的物品自動配色；發佈後整理成 GitHub Pages 內容 | 很少改 |
@@ -60,6 +61,7 @@ node tests/e2e/smoke.cjs                  # 瀏覽器冒煙測試，約 2 分鐘
 4. **改模擬行為**：`ProductionSimulator`／`SimulationSettings`，補 `ProductionSimulatorTests`；畫面只改 `graphEditor/status.js` 的 `applySimulation`、`statusOf`。
 5. **畫布互動、選單**：`graphEditor/` 內對應的模組（新方法放進 `plan／status／stock／flow／viewport／menus／linkPopup.js` 的類別，名稱不可與其他模組重複），用節點子類或 canvas 實例覆寫，不改 lib（覆寫清單見 `graphEditor.js` 開頭）。
 6. **新增 JS→C# 呼叫**：C# 方法加 `[JSInvokable]`，JS 用 `dotnetRef.invokeMethodAsync`。
+7. **新增要存在瀏覽器的設定**：在 `StorageKeys` 加鍵名，用 `BrowserStorage` 讀寫，不要直接呼叫 `localStorage`。
 
 ## 架構決策（不要改回去）
 - **不修改 `wwwroot/lib/litegraph/`**：檔案原樣複製自 npm，才能直接升級；行為差異全在 `graphEditor/` 覆寫。

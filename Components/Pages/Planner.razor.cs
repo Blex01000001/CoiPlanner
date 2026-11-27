@@ -1,6 +1,7 @@
 using CoiPlanner.Components.Planning;
 using CoiPlanner.Domain.Models;
 using CoiPlanner.Domain.Services;
+using CoiPlanner.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
@@ -11,7 +12,6 @@ namespace CoiPlanner.Components.Pages;
 /// <summary>產線規劃頁的程式碼；畫面標記在 Planner.razor（注入的服務也宣告在那裡）。</summary>
 public partial class Planner
 {
-    private const string StorageKey = "coiplanner.plan";
     private const long MaxImportBytes = 1024 * 1024;
     // 每 100 毫秒推進一次模擬並把狀態送到畫布；1× 時正好是一步（0.1 秒）
     private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
@@ -171,13 +171,13 @@ public partial class Planner
             _pendingLoad = null;
         }
 
-        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, Serializer.Serialize(plan));
+        await Storage.SetStringAsync(StorageKeys.Plan, Serializer.Serialize(plan));
         StateHasChanged();
     }
 
     private async Task<ProductionPlan> ReadAutosaveAsync()
     {
-        var json = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        var json = await Storage.GetStringAsync(StorageKeys.Plan);
         if (string.IsNullOrEmpty(json))
             return new ProductionPlan();
 
