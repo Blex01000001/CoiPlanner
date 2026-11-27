@@ -6,7 +6,7 @@
     { "id": "distillation_2", "name": "蒸餾塔 II", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "distill_medium_oil" ] },
     { "id": "distillation_3", "name": "蒸餾塔 III", "category": "石化", "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "distill_light_oil", "distill_titanium_chloride" ] },
     { "id": "cracking_unit", "name": "裂解裝置", "category": "石化", "powerUseKw": 160, "workers": 12, "maintenanceType": "維修I", "maintenancePerMinute": 2.8, "recipeIds": [ "crack_heavy_to_diesel", "crack_heavy_to_naphtha", "crack_naphtha_to_diesel", "crack_diesel_to_naphtha", "crack_naphtha_to_gas", "crack_gas_to_diesel" ] },
-    { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen" ] }
+    { "id": "hydrogen_reformer", "name": "氫重整器", "category": "石化", "powerUseKw": 400, "workers": 8, "maintenanceType": "維修I", "maintenancePerMinute": 1.9, "recipeIds": [ "reform_hydrogen", "reform_hydrogen_ultra_steam" ] }
   ],
   "recipes": [
     {
@@ -105,6 +105,13 @@
       "outputs": [ { "productId": "titanium_chloride_pure", "quantity": 12 }, { "productId": "spent_gas", "quantity": 3 } ],
       "cycleSeconds": 60,
       "locked": true
+    },
+    {
+      "id": "reform_hydrogen_ultra_steam",
+      "name": "超高壓蒸汽製氫",
+      "inputs": [ { "productId": "water", "quantity": 16 }, { "productId": "steam_ultra_high", "quantity": 12 } ],
+      "outputs": [ { "productId": "hydrogen", "quantity": 32 }, { "productId": "oxygen", "quantity": 32 }, { "productId": "spent_gas", "quantity": 12 } ],
+      "cycleSeconds": 60
     }
   ]
 }
