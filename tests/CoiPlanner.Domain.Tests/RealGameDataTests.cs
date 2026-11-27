@@ -701,4 +701,27 @@ public class RealGameDataTests
         Assert.True(calculator.IsExternal("corn_mash"));
         Assert.True(calculator.IsExternal("sugar"));
     }
+
+    [Fact]
+    public void AirSeparator_StatsMatchUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "air_separator");
+        Assert.Equal((6, 400, "維修I", 2.8), (m.Workers, m.PowerUseKw, m.MaintenanceType, m.MaintenancePerMinute));
+        AssertRecipe("separate_air", new(), new() { ["oxygen"] = 36, ["nitrogen"] = 36 });
+    }
+
+    [Fact]
+    public void HydrogenReformer_UltraSteamRecipe_MatchesUserData()
+    {
+        var m = Data.Machines.Single(x => x.Id == "hydrogen_reformer");
+        Assert.Equal(["reform_hydrogen", "reform_hydrogen_ultra_steam"], m.RecipeIds);
+        AssertRecipe("reform_hydrogen_ultra_steam", new() { ["water"] = 16, ["steam_ultra_high"] = 12 }, new() { ["hydrogen"] = 32, ["oxygen"] = 32, ["spent_gas"] = 12 });
+    }
+
+    [Fact]
+    public void ChemicalPlant_OrganicFertilizerRecipe_StillMakesFertilizerI()
+    {
+        // 使用者確認：有機肥料配方產出肥料 I 45（不是肥料 II）
+        AssertRecipe("make_fertilizer_organic", new() { ["fertilizer_organic"] = 30, ["ammonia"] = 12, ["oxygen"] = 18 }, new() { ["fertilizer_1"] = 45 });
+    }
 }
