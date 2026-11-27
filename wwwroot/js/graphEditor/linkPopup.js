@@ -38,7 +38,7 @@ export class LinkPopupMethods {
      * towardInput 為 true 代表從輸出插槽拖出（要找吃這個物品的節點），false 代表從輸入插槽拖出（要找供應這個物品的節點）。
      */
     openLinkPopup(context) {
-        // 背景統計值（空氣汙染）不能連線，也沒有資源節點
+        // 背景統計值（空氣污染）不能連線，也沒有資源節點
         if (!this.productsById.has(context.productId)) return;
         this.showLinkPopup(context, this.linkCandidates(context.productId, context.towardInput));
     }

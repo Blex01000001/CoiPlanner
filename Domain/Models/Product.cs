@@ -13,7 +13,7 @@ public sealed record Product
     public string? Kind { get; init; }
 
     /// <summary>
-    /// 背景統計值（例如空氣汙染）：機器會產出，但不能運輸、不能連線，也不能當資源來源，只在物料平衡面板累計。
+    /// 背景統計值（例如空氣污染）：機器會產出，但不能運輸、不能連線，也不能當資源來源，只在物料平衡面板累計。
     /// 不需要物品型態。
     /// </summary>
     public bool Background { get; init; }

@@ -173,7 +173,7 @@ async function main() {
 
         await step("拖放匯入，模擬到穩定後機械零件每分鐘 48", async () => {
             await dropFile("steel.json");
-            // 組裝機IV 要用電（250 kW）而這條產線沒有發電機；這一步只測物料流，先停用電力，測完再啟用
+            // 組裝機 IV 要用電（250 kW）而這條產線沒有發電機；這一步只測物料流，先停用電力，測完再啟用
             await page.click('[aria-label="切換電力"]');
             await page.click(".planner-sim-bar >> text=20×");
             await waitForClock(180);
