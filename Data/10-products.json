@@ -145,6 +145,10 @@
     { "id": "wastewater", "name": "廢水", "unit": "單位", "kind": "fluid", "color": "#287c5f" },
     { "id": "bio_sludge", "name": "生物污泥", "unit": "單位", "kind": "loose", "color": "#f2620d" },
     { "id": "toxic_slurry", "name": "有毒泥漿", "unit": "單位", "kind": "fluid", "color": "#7e75e5" },
-    { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" }
+    { "id": "cement", "name": "水泥", "unit": "單位", "kind": "unit", "color": "#bdb7a8" },
+    { "id": "sugar", "name": "糖", "unit": "單位", "kind": "loose", "color": "#36557f" },
+    { "id": "corn_mash", "name": "玉米泥", "unit": "單位", "kind": "loose", "color": "#df8de0" },
+    { "id": "titanium_chloride", "name": "氯化鈦", "unit": "單位", "kind": "fluid", "color": "#47937c" },
+    { "id": "titanium_chloride_pure", "name": "氯化鈦(純)", "unit": "單位", "kind": "fluid", "color": "#32287c" }
   ]
 }

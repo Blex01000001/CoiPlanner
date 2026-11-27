@@ -43,6 +43,8 @@
 | 氧化鋁 | alumina | 水合氧化鋁 | hydrated_alumina | 待確認 |
 | 肥料 I | fertilizer_1 | 肥料(有機) | fertilizer_organic | 待確認 |
 | 鋼 | steel_plate | 鋼水 | molten_steel | 待確認 |
+| 玉米 | corn | 玉米泥 | corn_mash | 待確認 |
+| 氯化鈦 | titanium_chloride | 氯化鈦(純) | titanium_chloride_pure | 待確認 |
 
 ## 3. 寫法規則
 

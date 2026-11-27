@@ -6,7 +6,7 @@ Blazor WebAssembly 獨立版（.NET 8，靜態網站、沒有伺服器，程式�
 ## 檔案地圖
 | 檔案 | 負責 | 常見修改 |
 |---|---|---|
-| `Data/*.json` | 遊戲資料，依用途分檔（數字前綴決定載入順序，也決定資料瀏覽頁與選單的順序）：`10-products.json` 全部物品、`11-transports.json` 運輸方式；機器和它們的配方依產業分檔：`20-mining`（採集）、`30-steam`（鍋爐）、`31-power`（發電機）、`40-metallurgy`（冶金）、`50-petrochemical`（石化）、`60-chemistry`（化工）、`61-materials`（建材）、`62-agriculture`（農業與有機）、`70-assembly`（組裝）。建置時全部編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 合併並驗證（跨檔引用沒問題），有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
+| `Data/*.json` | 遊戲資料，依用途分檔（數字前綴決定載入順序，也決定資料瀏覽頁與選單的順序）：`10-products.json` 全部物品、`11-transports.json` 運輸方式；機器和它們的配方依產業分檔：`20-mining`（採集）、`30-steam`（鍋爐）、`31-power`（發電機）、`40-metallurgy`（冶金）、`50-petrochemical`（石化）、`60-chemistry`（化工、發酵）、`61-materials`（建材）、`62-agriculture`（農業與有機）、`70-assembly`（組裝）。建置時全部編進組件，啟動時 `GameDataLoader.LoadFromAssembly` 合併並驗證（跨檔引用沒問題），有錯網站無法啟動；**改了資料要重新建置** | 新增／刪除機器、配方、物品 |
 | `Domain/Models/` | 領域模型。`ProductionPlan.cs`＝規劃檔格式；`Simulation.cs`＝模擬參數與狀態 | 加欄位 |
 | `Domain/Services/PlanCalculator.cs` | 規劃檢查（問題清單）、額定速率、連線運輸上限；**不算實際流量** | 新增檢查規則 |
 | `Domain/Services/RecipeCostCalculator.cs` | 配方成本比較：選一個物品，列出能產出它的每個配方，展開到原料，算每 1 單位的原料（加權）、副產品，以及維持 1 單位/分的耗電、工人、維修。原料權重與指定的中間物品做法由使用者設定（存在瀏覽器 `coiplanner.costWeights`、`coiplanner.costRecipes`，不屬於規劃檔） | 成本規則 |
